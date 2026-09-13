@@ -13,6 +13,10 @@
   "settingsTitle": "Inställningar",
   "settingsAiTile": "Artificiell intelligens",
   "settingsAiTileSubtitle": "Leverantör, modell och API-nyckel",
+  "settingsLanguageTile": "Språk",
+  "settingsLanguageSystem": "Som systemet",
+  "settingsLanguageSheetTitle": "Appens språk",
+  "settingsLanguageSystemSubtitle": "Följer telefonens språk",
   "settingsLegalTile": "Villkor och ansvar",
   "settingsLegalTileSubtitle": "Informationen du godkände vid första starten",
 

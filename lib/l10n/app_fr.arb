@@ -13,6 +13,10 @@
   "settingsTitle": "Réglages",
   "settingsAiTile": "Intelligence artificielle",
   "settingsAiTileSubtitle": "Fournisseur, modèle et clé API",
+  "settingsLanguageTile": "Langue",
+  "settingsLanguageSystem": "Comme le système",
+  "settingsLanguageSheetTitle": "Langue de l'app",
+  "settingsLanguageSystemSubtitle": "Suit la langue du téléphone",
   "settingsLegalTile": "Conditions et responsabilité",
   "settingsLegalTileSubtitle": "L'avis accepté au premier lancement",
 

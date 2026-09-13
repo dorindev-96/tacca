@@ -9,6 +9,7 @@ import 'package:tacca/data/repositories/settings_repository.dart';
 import 'package:tacca/data/repositories/workout_log_repository.dart';
 import 'package:tacca/features/history/cubit/history_cubit.dart';
 import 'package:tacca/features/plans/cubit/plans_cubit.dart';
+import 'package:tacca/features/settings/cubit/locale_cubit.dart';
 import 'package:tacca/features/workout/cubit/active_session_cubit.dart';
 import 'package:tacca/l10n/app_localizations.dart';
 import 'package:tacca/services/ai/ai_provider.dart';
@@ -102,6 +103,9 @@ void main() {
             ),
             BlocProvider<ActiveSessionCubit>(
               create: (context) => ActiveSessionCubit(repository: logs),
+            ),
+            BlocProvider<LocaleCubit>(
+              create: (context) => LocaleCubit(settings: settings),
             ),
           ],
           child: MaterialApp.router(
@@ -380,6 +384,10 @@ void main() {
             ),
             BlocProvider<ActiveSessionCubit>(
               create: (context) => ActiveSessionCubit(repository: logs),
+            ),
+            BlocProvider<LocaleCubit>(
+              create: (context) =>
+                  LocaleCubit(settings: FakeSettingsRepository()),
             ),
           ],
           child: MaterialApp.router(

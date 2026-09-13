@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/constants.dart';
 import '../features/legal/widgets/legal_gate.dart';
+import '../features/settings/cubit/locale_cubit.dart';
 import '../l10n/app_localizations.dart';
 import 'router.dart';
 import 'theme.dart';
@@ -40,7 +42,14 @@ class _AppState extends State<App> {
 
   @override
   Widget build(BuildContext context) {
+    // La lingua scelta a mano vince su quella del telefono; `null` — nessuna
+    // scelta, o preferenza non ancora letta — la lascia decidere al sistema.
+    // In entrambi i casi la parola finale è di `resolveLocale`, perché anche
+    // una lingua scelta a mano passa da lì.
+    final locale = context.watch<LocaleCubit>().state;
+
     return MaterialApp.router(
+      locale: locale,
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: kDebugMode,
       // Un tema solo: il restyling ha una palette sola (vedi AppTheme). Il

@@ -114,7 +114,7 @@ void main() {
 
       expect(cubit.state.step, AiPasteImportStep.paste);
       expect(clipboard.last, contains('Panca 10x4 1\'30"'));
-      expect(clipboard.last, contains('=== SCHEDA ==='));
+      expect(clipboard.last, contains('=== WORKOUT PLAN ==='));
       expect(clipboard.last, contains('è una scheda push'));
       // Il prompt resta nello stato: si deve poter ricopiare dal passo 2.
       expect(cubit.state.prompt, clipboard.last);

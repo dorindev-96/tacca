@@ -13,6 +13,10 @@
   "settingsTitle": "Einstellungen",
   "settingsAiTile": "Künstliche Intelligenz",
   "settingsAiTileSubtitle": "Anbieter, Modell und API-Key",
+  "settingsLanguageTile": "Sprache",
+  "settingsLanguageSystem": "Wie das System",
+  "settingsLanguageSheetTitle": "Sprache der App",
+  "settingsLanguageSystemSubtitle": "Folgt der Sprache des Telefons",
   "settingsLegalTile": "Nutzungsbedingungen und Haftung",
   "settingsLegalTileSubtitle": "Der beim ersten Start akzeptierte Hinweis",
 

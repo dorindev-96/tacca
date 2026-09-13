@@ -59,45 +59,47 @@ class PlanParser {
   List<String> validate(PlanDto dto) {
     final issues = <String>[];
     if (dto.name == null || dto.name!.trim().isEmpty) {
-      issues.add('campo "name" mancante o vuoto');
+      issues.add('the "name" field is missing or empty');
     }
     if (dto.days.isEmpty) {
-      issues.add('la scheda deve avere almeno un giorno in "days"');
+      issues.add('the plan must have at least one day in "days"');
     }
     for (var d = 0; d < dto.days.length; d++) {
       final day = dto.days[d];
-      final dayRef = 'giorno ${d + 1}';
+      final dayRef = 'day ${d + 1}';
       for (var b = 0; b < day.blocks.length; b++) {
         final block = day.blocks[b];
-        final blockRef = '$dayRef, blocco ${b + 1}';
+        final blockRef = '$dayRef, block ${b + 1}';
         final typeName = block.type;
         final type = typeName == null
             ? null
             : BlockType.values.asNameMap()[typeName];
         if (type == null) {
-          issues.add('$blockRef: tipo di blocco sconosciuto "$typeName"');
+          issues.add('$blockRef: unknown block type "$typeName"');
           continue;
         }
         switch (type) {
           case BlockType.emom:
             if ((block.intervalSeconds ?? 0) <= 0) {
-              issues.add('$blockRef: EMOM senza "intervalSeconds"');
+              issues.add('$blockRef: EMOM without "intervalSeconds"');
             }
             if ((block.totalMinutes ?? 0) <= 0) {
-              issues.add('$blockRef: EMOM senza "totalMinutes"');
+              issues.add('$blockRef: EMOM without "totalMinutes"');
             }
           case BlockType.amrap:
             if ((block.durationSeconds ?? 0) <= 0) {
-              issues.add('$blockRef: AMRAP senza "durationSeconds"');
+              issues.add('$blockRef: AMRAP without "durationSeconds"');
             }
           case BlockType.tabata:
             if ((block.workSeconds ?? 0) <= 0 ||
                 (block.restSeconds ?? 0) <= 0) {
-              issues.add('$blockRef: Tabata senza "workSeconds"/"restSeconds"');
+              issues.add(
+                '$blockRef: Tabata without "workSeconds"/"restSeconds"',
+              );
             }
           case BlockType.freeText:
             if (block.content == null || block.content!.trim().isEmpty) {
-              issues.add('$blockRef: blocco freeText senza "content"');
+              issues.add('$blockRef: freeText block without "content"');
             }
           case BlockType.standard:
           case BlockType.superset:
@@ -108,7 +110,7 @@ class PlanParser {
         for (var e = 0; e < block.exercises.length; e++) {
           final exercise = block.exercises[e];
           if (exercise.name == null || exercise.name!.trim().isEmpty) {
-            issues.add('$blockRef, esercizio ${e + 1}: "name" mancante');
+            issues.add('$blockRef, exercise ${e + 1}: "name" missing');
           }
         }
       }
@@ -217,17 +219,17 @@ class PlanParser {
       dto = PlanDto.fromJson(decoded);
     } catch (e) {
       throw PlanParseException(
-        'JSON non conforme allo schema della scheda: $e',
+        'JSON does not conform to the plan schema: $e',
         cause: e,
       );
     }
 
     // Validazione sulla risposta così com'è: i riferimenti nei messaggi
-    // d'errore ("giorno 2, blocco 3") devono corrispondere a ciò che il
+    // d'errore ("day 2, block 3") devono corrispondere a ciò che il
     // modello ha scritto, perché è a lui che tornano nel retry.
     final issues = validate(dto);
     if (issues.isNotEmpty) {
-      throw PlanParseException('Scheda non valida: ${issues.join('; ')}.');
+      throw PlanParseException('Invalid plan: ${issues.join('; ')}.');
     }
     return normalizePlanDto(dto);
   }
@@ -238,12 +240,10 @@ class PlanParser {
   PlanParseException _noJsonFound(String raw) {
     return raw.contains('{')
         ? const PlanParseException(
-            'Il JSON è incompleto: manca la parentesi graffa di chiusura. '
-            'Probabilmente la risposta è stata copiata solo in parte.',
+            'The JSON is incomplete: the closing brace is missing. The '
+            'answer was probably copied only in part.',
           )
-        : const PlanParseException(
-            'Nessun oggetto JSON trovato nella risposta.',
-          );
+        : const PlanParseException('No JSON object found in the answer.');
   }
 
   /// I possibili oggetti JSON dentro [raw], in ordine di attendibilità:
@@ -331,13 +331,13 @@ class PlanParser {
       }
       if (decoded is! Map<String, dynamic>) {
         throw const PlanParseException(
-          'La risposta JSON non è un oggetto scheda.',
+          'The decoded JSON is not a plan object.',
         );
       }
       return decoded;
     }
     throw PlanParseException(
-      'JSON malformato: ${failure!.message}',
+      'Malformed JSON: ${failure!.message}',
       cause: failure,
     );
   }
