@@ -27,6 +27,7 @@ import '../services/live_session/live_session_controller.dart';
 import '../services/live_session/live_session_factory.dart';
 import '../services/notifications/notification_host.dart';
 import '../services/notifications/session_notifier.dart';
+import '../services/share/image_share_service.dart';
 import '../services/timer/timer_engine.dart';
 import '../services/wakelock/screen_wake.dart';
 
@@ -138,6 +139,9 @@ class AppProviders extends StatelessWidget {
         ),
         RepositoryProvider<LinkOpener>(
           create: (context) => const UrlLauncherLinkOpener(),
+        ),
+        RepositoryProvider<ImageShareService>(
+          create: (context) => const SystemImageShareService(),
         ),
       ],
       child: MultiBlocProvider(

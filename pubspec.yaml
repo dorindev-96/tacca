@@ -3,7 +3,7 @@ description: "Gym workout plans: manual editor, guided session with timers, hist
 repository: https://github.com/dorex96/tacca
 issue_tracker: https://github.com/dorex96/tacca/issues
 publish_to: 'none'
-version: 0.1.0+5
+version: 0.1.0+6
 
 environment:
   sdk: ^3.9.0
@@ -35,6 +35,10 @@ dependencies:
   # Apre i termini e condizioni nel browser di sistema. L'app non
   # incorpora nessuna WebView: vedi lib/services/links/link_opener.dart.
   url_launcher: ^6.3.2
+  # Foglio di condivisione di sistema: serve solo a consegnare a un'altra app
+  # (WhatsApp, mail, "Salva nelle foto") il PNG di una scheda esportata. Il
+  # disegno dell'immagine è nostro, vedi services/images/widget_image_renderer.dart.
+  share_plus: ^12.0.2
 
 dev_dependencies:
   flutter_test:

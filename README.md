@@ -21,6 +21,7 @@ Personal project, pre-1.0. What is actually built:
 | Area | State |
 | --- | --- |
 | Plans archive, manual editor | ✅ done |
+| Share a plan as an image | ✅ done |
 | Workout session, timers, crash recovery | ✅ done |
 | Lock-screen set confirmation | ✅ done — iOS needs a one-off Xcode setup |
 | History | ✅ done |
@@ -31,7 +32,7 @@ Personal project, pre-1.0. What is actually built:
 
 ## Features
 
-**Plans.** Archive with search, active/archived sections and an "in use" badge; duplicate, archive, restore, delete. Deleting a plan never deletes the history attached to it.
+**Plans.** Archive with search, active/archived sections and an "in use" badge; duplicate, archive, restore, delete. Deleting a plan never deletes the history attached to it. *Condividi* exports the whole plan — every day, every block, every exercise — as a single PNG and hands it to the system share sheet, so a plan can reach someone who does not have the app: a chat, not an interchange format. The image is not a screenshot; the plan is taller than the screen, so it is laid out again off-screen at a fixed width and whatever height it needs.
 
 **Manual editor.** A plan is *days → blocks → exercises*. A block is a grouping with a type: `standard`, `superset`, `circuit`, `EMOM`, `AMRAP`, `Tabata`, `For Time`, or free text for anything that resists structure. Each type exposes only its own parameters (interval and total minutes for EMOM, work/rest/rounds for Tabata, time cap for For Time, …).
 
@@ -111,7 +112,7 @@ lib/
   core/       design tokens (colour, type, radius, spacing, icons), shared widgets
   data/       ObjectBox store, entities, repositories
   features/   plans · ai_import · workout · history · settings · legal
-  services/   ai · timer · notifications · live_session · images (OCR) · clipboard · feedback · wakelock · links
+  services/   ai · timer · notifications · live_session · images (OCR, off-screen rendering) · share · clipboard · feedback · wakelock · links
 ```
 
 Decisions worth knowing before you read the code:
@@ -125,6 +126,7 @@ Decisions worth knowing before you read the code:
 - **One visual language, one theme.** The look comes from a design file, not from a Material seed colour: near-white background, white cards at radius 26, ink `#192126`, a single lime accent `#BBF246` reserved for the one live thing on screen (the plan in use, the current exercise, the active tab). Lato for the interface, the platform font for prose. There is deliberately no dark theme — it was never designed — so `themeMode` is pinned to light.
 - **Nothing opens inside the app.** The one external link — the terms and conditions — is handed to the system browser through `LinkOpener` (`url_launcher` in `LaunchMode.externalApplication`), and the app copies the link to the clipboard if no browser answers. There is deliberately no in-app browser: a WebView is one more surface to declare and maintain.
 - **The lock screen is a service, not a widget.** `services/live_session/` publishes an immutable snapshot to whatever surface the platform offers and hands back the confirmations that arrive from it; the two implementations share nothing but that contract. Because the button runs without the app (an iOS App Intent, an Android background isolate), confirmations go through a durable queue and are applied with the timestamp of the tap, while the surface itself is moved forward one step on the spot — the same arithmetic written once in Dart and once in Swift.
+- **Exporting a plan means re-drawing it, not screenshotting it.** `WidgetImageRenderer` mounts a throwaway element tree with its own `RenderView`, constrained in width and free in height, and paints it into a `RepaintBoundary`. A boundary inside the real page could only ever capture the visible part of the viewport. The consequence is that the widget it draws (`PlanShareImage`) has to carry its own `Directionality`, `MediaQuery`, `Localizations` and `Theme`: there is no `MaterialApp` above it.
 - **Icons are drawn, not fonted.** `lib/core/design/linear_icons.dart` holds the real glyphs of the design's icon set as SVG path data, painted by `LinearIcon`. Material icons are not used in the UI: their optical grid is visibly foreign next to these shapes.
 
 The visual design (colours, typography scale, icon set, layout) is adapted from the free [Gym Full](https://www.figma.com/community/file/1415305484748482666/gym-full-figma) Figma community file.

@@ -47,7 +47,7 @@ Enforced rules:
 - **`Box`/`Store` may only be used inside `data/`.** ObjectBox entities are plain Dart POJOs and double as the domain model (ADR-01, Option C: repository pattern, no separate domain layer). DTOs exist only at the AI boundary.
 - DI is explicit composition in `app/di.dart` via `RepositoryProvider`/`BlocProvider` — no service locator, no `get_it`. The ObjectBox `Store` is opened in `main()` before `runApp`.
 
-**Folder layout** (feature-first presentation, shared `data/` layer): `app/`, `core/`, `data/` (db, entities, repositories), `services/` (ai, timer, notifications, live_session, images, clipboard), `features/` (plans, ai_import, workout, history, settings). No barrel files — use direct imports. Files `snake_case.dart`; suffixes `*Cubit`, `*Bloc`, `*Repository`, `*Page`, `*Dto`.
+**Folder layout** (feature-first presentation, shared `data/` layer): `app/`, `core/`, `data/` (db, entities, repositories), `services/` (ai, timer, notifications, live_session, images, share, clipboard), `features/` (plans, ai_import, workout, history, settings). No barrel files — use direct imports. Files `snake_case.dart`; suffixes `*Cubit`, `*Bloc`, `*Repository`, `*Page`, `*Dto`.
 
 ### Design system
 L'aspetto viene da un file di design ("Gym full figma"), non da un seed color Material, e vive in due posti soli — mai nelle pagine:
@@ -86,6 +86,17 @@ All responses flow through **one** pipeline in `plan_parser.dart`: extract JSON 
 
 ### TimerEngine
 UI-independent service. **Wall-clock based**, not tick-count: state is always computed from `startedAt` + `DateTime.now()`, so it stays exact after backgrounding (the 250ms `Timer.periodic` only drives UI updates). Only one timer active at a time. Foreground: `audioplayers` beep + `vibration` + `wakelock_plus`. Background: schedule `flutter_local_notifications`, reconcile from wall-clock on return. iOS background beep punctuality is an open risk (spike S-01).
+
+### Condivisione di una scheda come immagine
+*Condividi*, nel menu del dettaglio scheda, esporta la scheda **intera** in un PNG e lo passa al foglio di sistema (`ImageShareService` → `share_plus`): è il modo in cui una scheda esce dall'app verso chi non ce l'ha, cioè una chat, non un formato da reimportare.
+
+Non è uno screenshot, e non può esserlo: la pagina è più alta dello schermo e di un `RepaintBoundary` dentro un `ListView` esiste solo la parte visibile del viewport. `WidgetImageRenderer` (`services/images/`) monta perciò un albero usa-e-getta con una `RenderView` sua, **larghezza fissa e altezza libera** (vincoli non "tight" → `sizedByChild`), ci disegna dentro `PlanShareImage` e lo smonta. Da qui le regole:
+
+- **il widget esportato deve bastare a sé stesso**: niente `Expanded` e niente scrollable (in altezza non c'è nessun viewport da riempire), e si porta addosso `Directionality`, `MediaQuery`, `Localizations` e `Theme`, perché sopra di lui non c'è nessun `MaterialApp`. Il `MediaQuery` è quello di default apposta: il fattore di ingrandimento del testo di chi condivide non deve sfondare un'impaginazione a larghezza fissa;
+- **la scheda in sola lettura si disegna una volta sola**: `features/plans/widgets/plan_day_view.dart` (`PlanDaySection`/`PlanBlockCard`/`PlanExerciseRow`) serve sia il dettaglio sia il manifesto. Due copie vorrebbero dire due schede diverse, quella che si legge e quella che si manda;
+- **niente lime nell'immagine**: le chip di stato ("In uso", "Archiviata") dicono "questa, adesso" dentro l'app e non significano niente in una chat, quindi non ci finiscono;
+- **oltre i tetti cala la densità, non si rinuncia**: `maxPixels` evita l'allocazione da centinaia di MB, `maxDimension` tiene il lato lungo sotto il limite dei decoder (BitmapFactory di Android e con lui le app di messaggistica si fermano intorno ai 16384 px, e una scheda lunga sfonda in altezza molto prima che in megapixel). Una scheda lunghissima resta condivisibile, solo meno definita;
+- il rendering è caro e non c'entra con la pagina che lo chiede: `ImageShareService` è un'interfaccia, e i widget test della pagina usano la fake (`RecordingImageShareService`). Il disegno vero ha i suoi test in `test/services/images/`.
 
 ### Legal gate (manleva del primo avvio)
 `LegalGate` lives in `MaterialApp.builder`, **above** the router: until the notice is accepted the router — and therefore every screen — is not mounted at all (a resume-session dialog must never pop up behind an unaccepted disclaimer). Acceptance is **versioned**: `SettingsRepository` stores `AppConstants.legalNoticeVersion`, not a boolean, so bumping that constant puts the notice back in front of everyone who accepted an older wording — bump it whenever the substance of the terms changes. A secure-storage failure counts as "never accepted"; a failed write does not block the user (the notice simply returns next launch). The wording lives in exactly one widget, `LegalNoticeBody`, shown both by the gate and by *Impostazioni → Termini e responsabilità*: two divergent copies of a disclaimer are a problem, not a presentation detail. The full terms are on the web and open in the **system browser** through `LinkOpener` (`url_launcher`, `LaunchMode.externalApplication`, clipboard fallback when no browser answers). There is no in-app WebView, and adding one is a decision, not a shortcut.

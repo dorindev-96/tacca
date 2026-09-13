@@ -6,8 +6,10 @@ import 'package:tacca/data/entities/workout_log.dart';
 import 'package:tacca/data/entities/workout_plan.dart';
 import 'package:tacca/features/plans/cubit/plans_cubit.dart';
 import 'package:tacca/features/plans/pages/plan_detail_page.dart';
+import 'package:tacca/features/plans/widgets/plan_share_image.dart';
 import 'package:tacca/features/workout/cubit/active_session_cubit.dart';
 import 'package:tacca/l10n/app_localizations.dart';
+import 'package:tacca/services/share/image_share_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,17 +18,19 @@ import 'package:go_router/go_router.dart' hide Block;
 import '../../../support/fakes.dart';
 
 /// Avvio di una sessione dal dettaglio scheda (RF-06), con la regola che ne
-/// ammette **una sola per volta**.
+/// ammette **una sola per volta**, e condivisione della scheda come immagine.
 ///
 /// Le due rotte della sessione sono sostituite da due schermate finte: qui
 /// interessa quale delle due si apre, non cosa fa il Bloc una volta dentro.
 void main() {
   late FakePlanRepository plans;
   late FakeWorkoutLogRepository logs;
+  late RecordingImageShareService sharer;
 
   setUp(() {
     plans = FakePlanRepository();
     logs = FakeWorkoutLogRepository();
+    sharer = RecordingImageShareService();
   });
 
   tearDown(() => logs.dispose());
@@ -57,7 +61,11 @@ void main() {
   WorkoutLog seedOpenSession(WorkoutPlan plan) =>
       logs.startSession(plan: plan, day: plan.days.first);
 
-  Future<void> pumpDetail(WidgetTester tester, {required int planId}) async {
+  Future<void> pumpDetail(
+    WidgetTester tester, {
+    required int planId,
+    ImageShareService? shareService,
+  }) async {
     await tester.pumpWidget(
       MultiBlocProvider(
         providers: [
@@ -79,23 +87,45 @@ void main() {
                 path: '/plans/:id',
                 builder: (context, state) => PlanDetailPage(
                   planId: int.parse(state.pathParameters['id']!),
-                ),
-              ),
-              GoRoute(
-                path: '/workout/new',
-                builder: (context, state) => Scaffold(
-                  body: Text(
-                    'NUOVA SESSIONE ${state.uri.queryParameters['dayId']}',
+      RepositoryProvider<ImageShareService>.value(
+        value: shareService ?? sharer,
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<PlansCubit>(
+              create: (context) => PlansCubit(repository: plans),
+            ),
+            BlocProvider<ActiveSessionCubit>(
+              create: (context) => ActiveSessionCubit(repository: logs),
+            ),
+          ],
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: GoRouter(
+              initialLocation: '/plans/$planId',
+              routes: [
+                GoRoute(
+                  path: '/plans/:id',
+                  builder: (context, state) => PlanDetailPage(
+                    planId: int.parse(state.pathParameters['id']!),
                   ),
                 ),
-              ),
-              GoRoute(
-                path: '/workout/:logId',
-                builder: (context, state) => Scaffold(
-                  body: Text('SESSIONE ${state.pathParameters['logId']}'),
+                GoRoute(
+                  path: '/workout/new',
+                  builder: (context, state) => Scaffold(
+                    body: Text(
+                      'NUOVA SESSIONE ${state.uri.queryParameters['dayId']}',
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                GoRoute(
+                  path: '/workout/:logId',
+                  builder: (context, state) => Scaffold(
+                    body: Text('SESSIONE ${state.pathParameters['logId']}'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -203,4 +233,50 @@ void main() {
       expect(find.text('NUOVA SESSIONE 2'), findsOneWidget);
     },
   );
+
+  testWidgets('"Condividi" manda in chat la scheda intera come immagine', (
+    tester,
+  ) async {
+    seedPlan(days: 2);
+    await pumpDetail(tester, planId: 1);
+
+    await tester.tap(find.byTooltip('Mostra il menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Condividi'));
+    await tester.pumpAndSettle();
+
+    expect(sharer.shared, hasLength(1));
+    final call = sharer.shared.single;
+    expect(call.width, PlanShareImage.logicalWidth);
+    // Quello che viene disegnato è il manifesto della scheda aperta, non uno
+    // scatto della pagina.
+    expect(call.widget, isA<PlanShareImage>());
+    expect((call.widget as PlanShareImage).plan.id, 1);
+    // Il nome del file è quello della scheda, ridotto a caratteri innocui.
+    expect(call.fileName, 'push-pull-legs.png');
+    expect(call.text, 'Push Pull Legs');
+    // Ancora del popover per iPad: senza, il foglio compare dove capita.
+    expect(call.originRect, isNotNull);
+  });
+
+  testWidgets('se l\'immagine non si crea, l\'utente lo viene a sapere', (
+    tester,
+  ) async {
+    seedPlan();
+    await pumpDetail(
+      tester,
+      planId: 1,
+      shareService: RecordingImageShareService(fails: true),
+    );
+
+    await tester.tap(find.byTooltip('Mostra il menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Condividi'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Non è stato possibile creare l\'immagine della scheda.'),
+      findsOneWidget,
+    );
+  });
 }

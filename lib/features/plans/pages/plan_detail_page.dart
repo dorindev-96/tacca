@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart' hide Block;
 
-import '../../../core/block_type_labels.dart';
 import '../../../core/design/app_colors.dart';
-import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
@@ -18,18 +16,18 @@ import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/square_icon_button.dart';
 import '../../../core/widgets/surface_card.dart';
-import '../../../data/entities/block.dart';
-import '../../../data/entities/exercise.dart';
-import '../../../data/entities/workout_day.dart';
 import '../../../data/entities/workout_plan.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../services/share/image_share_service.dart';
 import '../../workout/cubit/active_session_cubit.dart';
 import '../../workout/widgets/active_session_sheet.dart';
 import '../../workout/widgets/day_picker_sheet.dart';
 import '../cubit/plans_cubit.dart';
 import '../cubit/plans_state.dart';
+import '../widgets/plan_day_view.dart';
+import '../widgets/plan_share_image.dart';
 
-enum _DetailAction { setActive, duplicate, archiveToggle, delete }
+enum _DetailAction { setActive, duplicate, archiveToggle, share, delete }
 
 /// Consultazione di una scheda (RF-01): sola lettura, con azioni di lista
 /// disponibili anche da qui. Legge da [PlansCubit] (già in memoria, niente
@@ -96,6 +94,10 @@ class PlanDetailPage extends StatelessWidget {
               label: plan.isArchived
                   ? l10n.plansActionRestore
                   : l10n.plansActionArchive,
+            ),
+            appMenuItem(
+              value: _DetailAction.share,
+              label: l10n.plansActionShare,
             ),
             appMenuItem(
               value: _DetailAction.delete,
@@ -193,7 +195,7 @@ class PlanDetailPage extends StatelessWidget {
               ),
             ),
           for (final day in plan.days)
-            _DaySection(day: day, showLabel: showDayLabels),
+            PlanDaySection(day: day, showLabel: showDayLabels),
         ],
       ),
     );
@@ -229,6 +231,60 @@ class PlanDetailPage extends StatelessWidget {
     context.push('/workout/new?planId=${plan.id}&dayId=$dayId');
   }
 
+  /// Esporta la scheda **intera** come immagine e la passa al foglio di
+  /// condivisione (RF-01): è il modo in cui una scheda esce dall'app verso chi
+  /// non ce l'ha installata — una chat, non un formato da reimportare.
+  ///
+  /// L'immagine non è uno screenshot: la pagina è più alta dello schermo e di
+  /// un `ListView` esiste solo la parte visibile. Viene ridisegnata da capo
+  /// fuori dall'albero ([PlanShareImage]), a larghezza fissa e altezza
+  /// libera.
+  ///
+  /// Il rettangolo passato al servizio è quello della pagina: su iPad il
+  /// foglio di condivisione è un popover e senza un'ancora compare dove
+  /// capita.
+  Future<void> _shareAsImage(
+    BuildContext context,
+    WorkoutPlan plan,
+    AppLocalizations l10n,
+  ) async {
+    final sharer = context.read<ImageShareService>();
+    final messenger = ScaffoldMessenger.of(context);
+    final poster = PlanShareImage(
+      plan: plan,
+      locale: Localizations.localeOf(context),
+    );
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box != null && box.hasSize
+        ? box.localToGlobal(Offset.zero) & box.size
+        : null;
+
+    try {
+      await sharer.shareWidgetAsImage(
+        widget: poster,
+        width: PlanShareImage.logicalWidth,
+        fileName: _imageFileName(plan.name, l10n),
+        text: plan.name,
+        originRect: origin,
+      );
+    } on Exception {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l10n.planShareFailed)));
+    }
+  }
+
+  /// Nome del file che vedrà chi riceve l'immagine: il nome della scheda
+  /// ridotto ai caratteri che sopravvivono a un file system e a una chat.
+  String _imageFileName(String planName, AppLocalizations l10n) {
+    final slug = planName
+        .toLowerCase()
+        .replaceAll(RegExp('[^a-z0-9]+'), '-')
+        .replaceAll(RegExp('^-+|-+\$'), '');
+    final name = slug.isEmpty ? l10n.planShareFileNameFallback : slug;
+    return '${name.length <= 60 ? name : name.substring(0, 60)}.png';
+  }
+
   Future<void> _handle(
     BuildContext context,
     PlansCubit cubit,
@@ -247,6 +303,8 @@ class PlanDetailPage extends StatelessWidget {
         } else {
           cubit.archivePlan(plan.id);
         }
+      case _DetailAction.share:
+        await _shareAsImage(context, plan, l10n);
       case _DetailAction.delete:
         final confirmed = await showConfirmDialog(
           context,
@@ -278,200 +336,6 @@ class _TextCard extends StatelessWidget {
         vertical: AppSpacing.lg,
       ),
       child: Text(text, style: AppTypography.paragraph),
-    );
-  }
-}
-
-class _DaySection extends StatelessWidget {
-  const _DaySection({required this.day, required this.showLabel});
-
-  final WorkoutDay day;
-  final bool showLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (showLabel) ...[
-            Text(day.label, style: AppTypography.subtitle),
-            if ((day.notes ?? '').isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.xs + 2),
-              Text(day.notes!, style: AppTypography.paragraphSmall),
-            ],
-            const SizedBox(height: AppSpacing.md),
-          ],
-          if (day.blocks.isEmpty)
-            Text(l10n.dayNoBlocks, style: AppTypography.paragraphSmall)
-          else
-            for (final block in day.blocks)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: _BlockCard(block: block),
-              ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BlockCard extends StatelessWidget {
-  const _BlockCard({required this.block});
-
-  final Block block;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final exercises = block.exercises.toList();
-
-    return SurfaceCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(
-                blockTypeLabel(l10n, block.type),
-                style: AppTypography.blockType,
-              ),
-              for (final param in _params(l10n)) MetaChip(label: param),
-            ],
-          ),
-          if ((block.notes ?? '').isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(block.notes!, style: AppTypography.paragraphSmall),
-          ],
-          const SizedBox(height: AppSpacing.lg),
-          if (block.type == BlockType.freeText)
-            Text(block.freeTextContent ?? '', style: AppTypography.paragraph)
-          else if (exercises.isEmpty)
-            Text(l10n.blockNoExercises, style: AppTypography.paragraphSmall)
-          else
-            for (var i = 0; i < exercises.length; i++) ...[
-              if (i > 0) const SizedBox(height: AppSpacing.lg),
-              _ExerciseRow(exercise: exercises[i], position: i + 1),
-            ],
-        ],
-      ),
-    );
-  }
-
-  List<String> _params(AppLocalizations l10n) {
-    final parts = <String>[];
-    void add(String label, int? value) {
-      if (value != null) parts.add('$label: $value');
-    }
-
-    switch (block.type) {
-      case BlockType.standard:
-      case BlockType.freeText:
-        break;
-      case BlockType.superset:
-      case BlockType.circuit:
-        add(l10n.planEditorParamRounds, block.rounds);
-        add(
-          l10n.planEditorParamRestBetweenRounds,
-          block.restBetweenRoundsSeconds,
-        );
-      case BlockType.emom:
-        add(l10n.planEditorParamIntervalSeconds, block.intervalSeconds);
-        add(l10n.planEditorParamTotalMinutes, block.totalMinutes);
-      case BlockType.amrap:
-        add(l10n.planEditorParamDurationSeconds, block.durationSeconds);
-      case BlockType.tabata:
-        add(l10n.planEditorParamWorkSeconds, block.workSeconds);
-        add(l10n.planEditorParamRestSeconds, block.restSeconds);
-        add(l10n.planEditorParamRounds, block.rounds);
-      case BlockType.forTime:
-        add(l10n.planEditorParamTimeCapSeconds, block.timeCapSeconds);
-    }
-    return parts;
-  }
-}
-
-/// Riga di un esercizio: numero, nome e — allineata a destra, dove l'occhio
-/// la ritrova sempre — la prescrizione serie × ripetizioni.
-class _ExerciseRow extends StatelessWidget {
-  const _ExerciseRow({required this.exercise, required this.position});
-
-  final Exercise exercise;
-  final int position;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    final volume = exercise.sets != null
-        ? '${exercise.sets}×${exercise.reps ?? '?'}'
-        : (exercise.reps ?? '');
-    final details = <String>[
-      if ((exercise.load ?? '').isNotEmpty) exercise.load!,
-      if (exercise.restSeconds != null)
-        l10n.planDetailExerciseRest(exercise.restSeconds!),
-      if (exercise.durationSeconds != null)
-        l10n.planDetailExerciseDuration(exercise.durationSeconds!),
-    ];
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ExercisePosition(position: position),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(exercise.name, style: AppTypography.row),
-              if (details.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.xs),
-                Text(details.join(' · '), style: AppTypography.meta),
-              ],
-              if ((exercise.notes ?? '').isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  exercise.notes!,
-                  style: AppTypography.paragraphSmall.copyWith(
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        if (volume.isNotEmpty) ...[
-          const SizedBox(width: AppSpacing.sm),
-          Text(volume, style: AppTypography.metaStrong.copyWith(fontSize: 14)),
-        ],
-      ],
-    );
-  }
-}
-
-/// Quadratino con il numero d'ordine dell'esercizio dentro il blocco.
-class ExercisePosition extends StatelessWidget {
-  const ExercisePosition({required this.position, super.key});
-
-  final int position;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 26,
-      width: 26,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: AppColors.fill,
-        borderRadius: BorderRadius.circular(AppRadius.xs),
-      ),
-      child: Text('$position', style: AppTypography.chip),
     );
   }
 }

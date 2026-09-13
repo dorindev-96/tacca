@@ -251,6 +251,8 @@
   "@plansActionArchive": { "description": "Azione per archiviare una scheda." },
   "plansActionRestore": "Ripristina",
   "@plansActionRestore": { "description": "Azione per ripristinare una scheda archiviata." },
+  "plansActionShare": "Condividi",
+  "@plansActionShare": { "description": "Azione per esportare una scheda come immagine e mandarla in una chat." },
   "plansActionDelete": "Elimina",
   "@plansActionDelete": { "description": "Azione per eliminare una scheda." },
   "plansDeleteConfirmTitle": "Eliminare la scheda?",
@@ -282,6 +284,11 @@
     "description": "Durata prescritta di un esercizio, nella riga di riepilogo del dettaglio scheda.",
     "placeholders": { "seconds": { "type": "int" } }
   },
+  "planShareFileNameFallback": "scheda",
+  "@planShareFileNameFallback": { "description": "Nome del file immagine condiviso quando il nome della scheda non produce nessun carattere utilizzabile." },
+  "planShareFailed": "Non è stato possibile creare l'immagine della scheda.",
+  "@planShareFailed": { "description": "Errore mostrato quando l'export della scheda in immagine non riesce." },
+
   "dayNoBlocks": "Nessun blocco in questo giorno.",
   "@dayNoBlocks": { "description": "Stato vuoto di un giorno senza blocchi (dettaglio ed editor)." },
   "blockNoExercises": "Nessun esercizio in questo blocco.",

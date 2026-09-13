@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/widgets.dart';
+
 import 'package:tacca/data/entities/log_entry.dart';
 import 'package:tacca/data/entities/log_set.dart';
 import 'package:tacca/data/entities/workout_day.dart';
@@ -17,6 +19,7 @@ import 'package:tacca/services/images/plan_image_store.dart';
 import 'package:tacca/services/links/link_opener.dart';
 import 'package:tacca/services/live_session/live_session_controller.dart';
 import 'package:tacca/services/notifications/session_notifier.dart';
+import 'package:tacca/services/share/image_share_service.dart';
 import 'package:tacca/services/timer/timer_engine.dart';
 import 'package:tacca/services/wakelock/screen_wake.dart';
 
@@ -448,4 +451,57 @@ class FakeLinkOpener implements LinkOpener {
     opened.add(url);
     return succeeds;
   }
+}
+
+/// Foglio di condivisione finto: registra *cosa* è stato condiviso senza
+/// disegnare nessuna immagine.
+///
+/// Il rendering vero è caro (una scheda lunga è un'immagine da megapixel) e
+/// non c'entra niente con la pagina che lo chiede: quello ha i suoi test in
+/// `test/services/images/widget_image_renderer_test.dart`.
+class RecordingImageShareService implements ImageShareService {
+  RecordingImageShareService({this.fails = false});
+
+  /// True = il disegno o la consegna non riescono, come quando il foglio di
+  /// sistema non è disponibile.
+  final bool fails;
+
+  final List<SharedImage> shared = [];
+
+  @override
+  Future<void> shareWidgetAsImage({
+    required Widget widget,
+    required double width,
+    required String fileName,
+    String? text,
+    Rect? originRect,
+  }) async {
+    if (fails) throw Exception('condivisione non riuscita');
+    shared.add(
+      SharedImage(
+        widget: widget,
+        width: width,
+        fileName: fileName,
+        text: text,
+        originRect: originRect,
+      ),
+    );
+  }
+}
+
+/// Una chiamata registrata da [RecordingImageShareService].
+class SharedImage {
+  const SharedImage({
+    required this.widget,
+    required this.width,
+    required this.fileName,
+    required this.text,
+    required this.originRect,
+  });
+
+  final Widget widget;
+  final double width;
+  final String fileName;
+  final String? text;
+  final Rect? originRect;
 }
