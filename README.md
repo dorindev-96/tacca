@@ -8,7 +8,7 @@ An offline-first Flutter app for gym workout plans: write or photograph your pla
 
 Everything except the optional AI import works with no network connection, and all data stays on the device — there is no account, no backend, no telemetry.
 
-> **Language note.** The app UI, the source comments and the specification are in Italian (*"tacca"* is the tally mark you scratch down after a set). This README and the contributor docs are in English. There is currently one locale, `it`; the strings live in `lib/l10n/app_it.arb`, so adding another one is a translation, not a refactor.
+> **Language note.** The source comments and the specification are in Italian (*"tacca"* is the tally mark you scratch down after a set). This README and the contributor docs are in English. The UI ships in five languages — Italian, German, Spanish, French and Swedish — one `lib/l10n/app_<lang>.arb` each, with `app_it.arb` as the template that carries the descriptions. The app follows the phone's language, falls back to Italian when it is none of the five, and *Settings → Language* overrides both. Adding a sixth is a translation, not a refactor: drop in the ARB file, add its name to `core/l10n/language_names.dart`, and `gen-l10n` picks it up. The AI prompts are a separate matter: they are written in English, and they instruct the model to keep the plan itself in whatever language it was written in.
 
 | Archivio schede | Dettaglio scheda | Sessione |
 |---|---|---|
@@ -122,7 +122,7 @@ Decisions worth knowing before you read the code:
 - **ObjectBox does not cascade updates**, so repositories walk the object tree, `put` every child explicitly, and delete the ids that disappeared. That is what makes the editor and the session autosave actually persist.
 - **`ToMany` does not preserve order**, so every child carries an `int sortOrder` and repositories return already-sorted lists. Enums are persisted as strings.
 - **One AI pipeline, in `plan_parser.dart`**: extract JSON → decode → validate → normalize → one automatic retry with the validation error fed back to the model → free-text fallback. Both import routes end here, the keyless one included — what changes is only who performs the corrective retry. Normalization exists because models emit one block per exercise while a block is a *grouping*.
-- **Appearance lives in two places only** — `lib/app/theme.dart` (every component theme) and `lib/core/design/` (colour, spacing, radius, typography and icon tokens). Pages pass no hand-written colours, radii or paddings; user-facing strings go through the ARB file, never inline.
+- **Appearance lives in two places only** — `lib/app/theme.dart` (every component theme) and `lib/core/design/` (colour, spacing, radius, typography and icon tokens). Pages pass no hand-written colours, radii or paddings; user-facing strings go through the ARB files, never inline.
 - **One visual language, one theme.** The look comes from a design file, not from a Material seed colour: near-white background, white cards at radius 26, ink `#192126`, a single lime accent `#BBF246` reserved for the one live thing on screen (the plan in use, the current exercise, the active tab). Lato for the interface, the platform font for prose. There is deliberately no dark theme — it was never designed — so `themeMode` is pinned to light.
 - **Nothing opens inside the app.** The one external link — the terms and conditions — is handed to the system browser through `LinkOpener` (`url_launcher` in `LaunchMode.externalApplication`), and the app copies the link to the clipboard if no browser answers. There is deliberately no in-app browser: a WebView is one more surface to declare and maintain.
 - **The lock screen is a service, not a widget.** `services/live_session/` publishes an immutable snapshot to whatever surface the platform offers and hands back the confirmations that arrive from it; the two implementations share nothing but that contract. Because the button runs without the app (an iOS App Intent, an Android background isolate), confirmations go through a durable queue and are applied with the timestamp of the tap, while the surface itself is moved forward one step on the spot — the same arithmetic written once in Dart and once in Swift.
@@ -150,7 +150,6 @@ bash <(curl -s https://raw.githubusercontent.com/objectbox/objectbox-dart/main/i
 
 ## Roadmap
 
-- Locales beyond Italian
 - Verifying background timer punctuality on iOS
 
 Conversational plan creation is *not* on the list: the AI is there to digitise a plan you already have, and editing it afterwards is the manual editor's job.

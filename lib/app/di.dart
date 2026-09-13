@@ -8,6 +8,7 @@ import '../data/repositories/workout_log_repository.dart';
 import '../features/history/cubit/history_cubit.dart';
 import '../features/legal/cubit/legal_notice_cubit.dart';
 import '../features/plans/cubit/plans_cubit.dart';
+import '../features/settings/cubit/locale_cubit.dart';
 import '../features/workout/cubit/active_session_cubit.dart';
 import '../services/ai/ai_provider.dart';
 import '../services/ai/ai_selection.dart';
@@ -49,8 +50,9 @@ import '../services/wakelock/screen_wake.dart';
 /// piattaforma (player audio, canale notifiche, Live Activity) e una sola
 /// sessione può essere attiva per volta.
 ///
-/// [LegalNoticeCubit] vive qui perché il gate legale è sopra al router: la
-/// manleva del primo avvio deve poter decidere prima di ogni schermata.
+/// [LegalNoticeCubit] e [LocaleCubit] vivono qui perché stanno sopra al
+/// router: la manleva del primo avvio deve poter decidere prima di ogni
+/// schermata, e la lingua la legge `MaterialApp`, che il router lo contiene.
 class AppProviders extends StatelessWidget {
   const AppProviders({
     required this.objectBox,
@@ -162,6 +164,12 @@ class AppProviders extends StatelessWidget {
             create: (context) => ActiveSessionCubit(
               repository: context.read<WorkoutLogRepository>(),
             ),
+          ),
+          // Come il gate legale, la lingua sta sopra al router: a leggerla è
+          // `MaterialApp` stesso, che il router se lo costruisce dentro.
+          BlocProvider<LocaleCubit>(
+            create: (context) =>
+                LocaleCubit(settings: context.read<SettingsRepository>()),
           ),
           // Il gate legale sta sopra al router (vedi App): il suo stato deve
           // esistere prima che venga costruita qualsiasi schermata.

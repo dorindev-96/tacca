@@ -1,8 +1,8 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// Preferenze dell'utente: configurazione AI (RF-08) — provider scelto e,
-/// per ciascun provider, API key e modello — e accettazione dell'informativa
-/// legale mostrata al primo avvio.
+/// Preferenze dell'utente: lingua dell'interfaccia, configurazione AI
+/// (RF-08) — provider scelto e, per ciascun provider, API key e modello — e
+/// accettazione dell'informativa legale mostrata al primo avvio.
 ///
 /// Key e modello sono per provider, non globali: chi ha configurato
 /// OpenRouter e prova Anthropic non deve reinserire nulla tornando indietro.
@@ -15,6 +15,16 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// versione dell'informativa accettata stanno lì accanto: sono singoli valori
 /// e non giustificano un secondo meccanismo di persistenza.
 abstract interface class SettingsRepository {
+  /// Codice della lingua scelta a mano per l'interfaccia (`it`, `de`, …);
+  /// `null` quando l'utente non ha mai scelto e si segue quella del sistema.
+  ///
+  /// È un codice, non una `Locale`: `data/` non conosce Flutter e non deve
+  /// cominciare adesso.
+  Future<String?> getLocaleCode();
+
+  /// `null` torna a seguire la lingua del sistema.
+  Future<void> setLocaleCode(String? languageCode);
+
   /// Id del provider AI scelto; `null` se l'utente non ha mai scelto (si usa
   /// il default del catalogo).
   Future<String?> getAiProviderId();
@@ -49,6 +59,8 @@ class SecureSettingsRepository implements SettingsRepository {
 
   final FlutterSecureStorage _storage;
 
+  static const _localeKey = 'ui.locale';
+
   static const _providerKey = 'ai.provider';
 
   static const _legalNoticeKey = 'legal.acceptedNoticeVersion';
@@ -60,6 +72,13 @@ class SecureSettingsRepository implements SettingsRepository {
   static String _apiKeyKey(String providerId) => 'ai.$providerId.apiKey';
 
   static String _modelKey(String providerId) => 'ai.$providerId.model';
+
+  @override
+  Future<String?> getLocaleCode() => _read(_localeKey);
+
+  @override
+  Future<void> setLocaleCode(String? languageCode) =>
+      _write(_localeKey, languageCode);
 
   @override
   Future<String?> getAiProviderId() => _read(_providerKey);

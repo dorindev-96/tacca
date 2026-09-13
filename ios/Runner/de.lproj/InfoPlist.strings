@@ -1,0 +1,3 @@
+/* Testi dei permessi di sistema (RF-03: foto e galleria per la digitalizzazione). */
+"NSCameraUsageDescription" = "Die Kamera wird gebraucht, um einen Trainingsplan auf Papier zu fotografieren und zu digitalisieren.";
+"NSPhotoLibraryUsageDescription" = "Die Galerie wird gebraucht, um die Fotos eines Trainingsplans zum Digitalisieren auszuwählen.";

@@ -67,26 +67,6 @@ void main() {
     ImageShareService? shareService,
   }) async {
     await tester.pumpWidget(
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<PlansCubit>(
-            create: (context) => PlansCubit(repository: plans),
-          ),
-          BlocProvider<ActiveSessionCubit>(
-            create: (context) => ActiveSessionCubit(repository: logs),
-          ),
-        ],
-        child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: const Locale('it'),
-          routerConfig: GoRouter(
-            initialLocation: '/plans/$planId',
-            routes: [
-              GoRoute(
-                path: '/plans/:id',
-                builder: (context, state) => PlanDetailPage(
-                  planId: int.parse(state.pathParameters['id']!),
       RepositoryProvider<ImageShareService>.value(
         value: shareService ?? sharer,
         child: MultiBlocProvider(
@@ -101,6 +81,10 @@ void main() {
           child: MaterialApp.router(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
+            // I test verificano le stringhe italiane: senza fissare la lingua
+            // la locale di test (en_US) non è fra quelle tradotte e Flutter
+            // ripiegherebbe sulla prima in ordine alfabetico, il tedesco.
+            locale: const Locale('it'),
             routerConfig: GoRouter(
               initialLocation: '/plans/$planId',
               routes: [

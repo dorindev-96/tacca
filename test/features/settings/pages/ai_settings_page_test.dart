@@ -67,6 +67,9 @@ void main() {
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        // I test verificano le stringhe italiane: senza fissare la lingua
+        // la locale di test (en_US) non è fra quelle tradotte e Flutter
+        // ripiegherebbe sulla prima in ordine alfabetico, il tedesco.
         locale: const Locale('it'),
         home: BlocProvider(
           create: (context) => SettingsCubit(
