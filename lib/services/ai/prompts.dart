@@ -11,18 +11,20 @@ library;
 /// compito è solo copiare — e la trascrizione resta il contenuto migliore da
 /// conservare se poi la strutturazione fallisce (RNF-05).
 const transcriptionSystemPrompt = '''
-Sei un trascrittore esperto di schede di allenamento in palestra.
-Ricevi la foto di una scheda e la riporti integralmente in testo.
+You are an expert transcriber of gym workout plans.
+You receive a photo of a plan and write out everything it says, as text.
 
-Regole vincolanti:
-- Trascrivi TUTTE le righe che vedi, dall'alto in basso, nell'ordine
-  dell'originale: titoli, nomi dei giorni, ogni riga di esercizio con i suoi
-  numeri, note a margine. Non saltare righe, non riassumere, non riordinare.
-- Riporta i numeri esattamente come sono scritti (10x4, 10-10x4, 1'30", 5',
-  70% 1RM): non convertirli e non interpretarli.
-- Una riga di trascrizione per ogni riga della scheda.
-- Se una parola è illeggibile scrivi [?] al suo posto: non inventare nulla.
-- Rispondi solo con il testo della scheda: nessun commento, nessun JSON.
+Binding rules:
+- Transcribe EVERY line you can see, top to bottom, in the order of the
+  original: titles, day names, every exercise line with its numbers, notes in
+  the margin. Do not skip lines, do not summarise, do not reorder.
+- Write the plan in ITS OWN LANGUAGE, exactly as printed. These instructions
+  are in English, the plan almost certainly is not: never translate it.
+- Copy numbers exactly as written (10x4, 10-10x4, 1'30", 5', 70% 1RM): do not
+  convert them and do not interpret them.
+- One transcribed line per line of the plan.
+- If a word is illegible write [?] in its place: invent nothing.
+- Reply with the text of the plan only: no commentary, no JSON.
 ''';
 
 /// Le regole di merito dell'estrazione (§6.3): non inventare, non scartare,
@@ -32,86 +34,98 @@ Regole vincolanti:
 /// valgono identiche per la chiamata via API ([extractionSystemPrompt]) e per
 /// il prompt che l'utente copia in una chat qualsiasi ([externalChatPrompt]).
 /// Quello che cambia fra i due è solo la forma della risposta attesa.
-const _extractionRules = '''
-- Non inventare esercizi, serie, carichi o valori assenti dall'originale:
-  i campi non presenti restano null o vengono omessi.
-- Qualunque contenuto che non riesci a interpretare in modo strutturato va
-  conservato testualmente in un blocco {"type": "freeText", "content": "..."}:
-  non scartare mai contenuto.
-- Mantieni la lingua originale della scheda per nomi di esercizi e note.
-- Tempi in secondi nei campi *Seconds; "reps" e "load" sono stringhe libere
-  (es. "8-12", "max", "70% 1RM", "corpo libero").
+const _extractionRules = r'''
+- Do not invent exercises, sets, loads or values that are absent from the
+  original: fields that are not there stay null or are omitted.
+- Any content you cannot interpret in a structured way must be kept verbatim
+  in a {"type": "freeText", "content": "..."} block: never discard content.
+- Times in seconds in the *Seconds fields; "reps" and "load" are free strings
+  (e.g. "8-12", "max", "70% 1RM", "bodyweight").
 
-Completezza (regola più importante):
-- Converti TUTTO il testo ricevuto, riga per riga, nell'ordine in cui compare:
-  tutti i giorni e tutti gli esercizi di ciascun giorno. Non riassumere, non
-  fermarti dopo i primi esercizi, non accorpare righe diverse.
-- Ogni riga di esercizio del testo deve produrre un esercizio nel JSON.
-- Prima di rispondere, ricontrolla di aver riportato tante voci quante sono le
-  righe di esercizio presenti nel testo.
-- I numeri sono piccoli e realistici: "sets" e "rounds" stanno sotto 100, i
-  campi *Seconds sotto 3600. Non ripetere mai una cifra per riempire un campo.
+Language of the answer (read this twice):
+- These instructions are in English. THE PLAN IS NOT, and the JSON you produce
+  must stay in the language of the plan you were given.
+- Copy across in the original language, character for character where you can:
+  exercise names, day labels, the plan name, section headings, and every note.
+  "Panca piana" stays "Panca piana"; "Knäböj" stays "Knäböj". Translating them
+  into English is a mistake, even though we are speaking English here.
+- Only the JSON field names are English, because they are part of the format:
+  "name", "days", "blocks", "exercises", "reps" and the rest.
 
-Notazione ricorrente nelle schede italiane:
-- "10x4" = 10 ripetizioni per 4 serie → "reps": "10", "sets": 4.
-- "10-10x4" = 10 ripetizioni per lato, 4 serie → "reps": "10+10", "sets": 4.
-- Il tempo dopo le serie è il recupero: 1'30" → "restSeconds": 90, 30" → 30.
-- "5' tapis", "Stretching 10'" = esercizi a durata → "durationSeconds": 300 /
-  600, senza serie né ripetizioni.
-- "A ss B" (anche "A + B", "superserie") indica una superserie: un blocco
-  "superset" con entrambi gli esercizi al suo interno. Le serie e il recupero
-  scritti in fondo alla riga valgono per la coppia, non per il secondo
-  esercizio: "Curl EZ 10 ss French press 10 x4 1'" → blocco "superset" con
-  "rounds": 4 e "restBetweenRoundsSeconds": 60, dentro due esercizi con
-  "reps": "10" e senza "sets".
+Completeness (the most important rule):
+- Convert ALL the text you received, line by line, in the order it appears:
+  every day and every exercise of each day. Do not summarise, do not stop
+  after the first few exercises, do not merge different lines.
+- Every exercise line in the text must produce one exercise in the JSON.
+- Before answering, check again that you have as many entries as there are
+  exercise lines in the text.
+- Numbers are small and realistic: "sets" and "rounds" stay under 100, the
+  *Seconds fields under 3600. Never repeat a digit to fill a field.
 
-Raggruppamento in blocchi (l'errore più frequente, leggi con attenzione):
-- Un blocco NON è una riga della scheda: è il GRUPPO di esercizi che si
-  eseguono insieme o di seguito. Il contenitore di default è "standard".
-- Tutti gli esercizi classici consecutivi — ognuno con le sue serie, le sue
-  ripetizioni e il suo recupero — vanno nello STESSO blocco "standard", come
-  oggetti successivi dentro "exercises", nell'ordine della scheda.
-- Un giorno con 5 esercizi classici = 1 blocco "standard" con 5 oggetti in
-  "exercises". SBAGLIATO: 5 blocchi "standard" con un esercizio ciascuno.
-- Apri un nuovo blocco "standard" solo se la scheda segna un cambio di
-  sezione (es. "Riscaldamento", "Parte centrale", "Defaticamento", "Core"):
-  il titolo della sezione va in "notes" del blocco.
-- Apri un blocco di tipo diverso da "standard" solo se la scheda indica
-  esplicitamente quella modalità di esecuzione (superserie, circuito, EMOM,
-  AMRAP, Tabata, for time).
-- "notes" del blocco descrive il gruppo; ciò che riguarda un singolo
-  esercizio va in "notes" di quell'esercizio, mai in quello del blocco.
-- Il numero di blocchi di un giorno è quasi sempre 1 o 2, raramente più di 4.
-  Se ti ritrovi con tanti blocchi quanti sono gli esercizi, hai sbagliato:
-  uniscili in un blocco solo.
+Notation that recurs in workout plans (the words around the numbers change
+with the language, the numbers do not):
+- "10x4" = 10 reps for 4 sets -> "reps": "10", "sets": 4.
+- "10-10x4" = 10 reps per side, 4 sets -> "reps": "10+10", "sets": 4.
+- The time after the sets is the rest: 1'30" -> "restSeconds": 90, 30" -> 30.
+- A machine or a stretch with only a time next to it ("5' treadmill",
+  "Stretching 10'") is a duration exercise -> "durationSeconds": 300 / 600,
+  with no sets and no reps.
+- A superset is written with a joining word between two exercises on the same
+  line: "ss", "superserie" (it), "+", "superset", "SS". Produce one "superset"
+  block holding both exercises. The sets and the rest written at the end of
+  the line belong to the pair, not to the second exercise: "Curl EZ 10 ss
+  French press 10 x4 1'" -> a "superset" block with "rounds": 4 and
+  "restBetweenRoundsSeconds": 60, holding two exercises with "reps": "10" and
+  no "sets".
 
-Tipi di blocco e parametri ammessi (SOLO questi otto, non inventarne altri):
-- "standard": nessun parametro — esercizi eseguiti uno dopo l'altro
-- "superset": rounds, restBetweenRoundsSeconds — due o più esercizi alternati
-  senza recupero in mezzo, con il recupero alla fine di ogni giro
+Grouping into blocks (the most frequent mistake, read carefully):
+- A block is NOT a line of the plan: it is the GROUP of exercises performed
+  together or one after the other. The default container is "standard".
+- All consecutive classic exercises — each with its own sets, reps and rest —
+  go in the SAME "standard" block, as successive objects inside "exercises",
+  in the order of the plan.
+- A day with 5 classic exercises = 1 "standard" block with 5 objects in
+  "exercises". WRONG: 5 "standard" blocks with one exercise each.
+- Open a new "standard" block only where the plan marks a change of section
+  (e.g. "warm-up", "main part", "cool-down", "core", in whatever language the
+  plan uses): the section heading goes in the block's "notes".
+- Open a block of a type other than "standard" only where the plan explicitly
+  states that way of training (superset, circuit, EMOM, AMRAP, Tabata, for
+  time).
+- The block's "notes" describes the group; anything about a single exercise
+  goes in that exercise's "notes", never in the block's.
+- The number of blocks in a day is almost always 1 or 2, rarely more than 4.
+  If you end up with as many blocks as there are exercises, you got it wrong:
+  merge them into one.
+
+Block types and allowed parameters (ONLY these eight, do not invent others):
+- "standard": no parameters — exercises performed one after the other
+- "superset": rounds, restBetweenRoundsSeconds — two or more exercises
+  alternated with no rest in between, resting at the end of each round
 - "circuit": rounds, restBetweenRoundsSeconds
 - "emom": intervalSeconds, totalMinutes
 - "amrap": durationSeconds
 - "tabata": workSeconds, restSeconds, rounds
-- "forTime": timeCapSeconds (opzionale)
+- "forTime": timeCapSeconds (optional)
 - "freeText": content
-Un esercizio a sola durata (tapis, cyclette, stretching) NON è un tipo di
-blocco a parte e non merita un blocco tutto suo: è un normale esercizio con
-"durationSeconds" impostato e "reps"/"sets" assenti, dentro il blocco
-"standard" in cui compare (di solito quello di riscaldamento).
+A duration-only exercise (treadmill, bike, stretching) is NOT a block type of
+its own and does not deserve a block to itself: it is an ordinary exercise
+with "durationSeconds" set and no "reps"/"sets", inside the "standard" block
+where it appears (usually the warm-up one).
 
-Campi ammessi (non usarne altri, non rinominarli):
-- scheda: "name" (obbligatorio), "description", "notes", "days" (obbligatorio)
-- giorno: "label" (obbligatorio), "notes", "blocks"
-- blocco: "type" (obbligatorio), "notes", "exercises", più i parametri del suo
-  tipo elencati qui sopra
-- esercizio: "name" (obbligatorio), "sets" (numero intero), "reps" (stringa),
-  "load" (stringa), "restSeconds", "durationSeconds", "notes"
+Allowed fields (use no others, do not rename them):
+- plan: "name" (required), "description", "notes", "days" (required)
+- day: "label" (required), "notes", "blocks"
+- block: "type" (required), "notes", "exercises", plus the parameters of its
+  own type listed above
+- exercise: "name" (required), "sets" (integer), "reps" (string),
+  "load" (string), "restSeconds", "durationSeconds", "notes"
 
-Forma esatta del JSON (i nomi dei campi sono vincolanti, non usarne altri:
-niente "day" al posto di "label", niente campo "exercise" piatto sui blocchi —
-ogni esercizio è un oggetto dentro l'array "exercises" con proprietà "name").
-Nota come i quattro esercizi consecutivi stiano in un blocco solo:
+Exact shape of the JSON (the field names are binding, use no others: no "day"
+instead of "label", no flat "exercise" field on blocks — every exercise is an
+object inside the "exercises" array with a "name" property). Note how the four
+consecutive exercises sit in a single block, and how the content stays in the
+language of the plan while the field names stay English:
 ```json
 {
   "name": "Nome scheda",
@@ -156,14 +170,14 @@ Nota come i quattro esercizi consecutivi stiano in un blocco solo:
 /// sulla forma della risposta, scritto per un'API che espone lo structured
 /// output (e per il fallback prompt-based di chi lo rifiuta).
 const extractionSystemPrompt = '''
-Sei un assistente che digitalizza schede di allenamento in palestra.
-Ricevi il testo di una scheda — spesso la trascrizione di una foto — e
-restituisci la scheda in JSON conforme allo schema fornito.
+You are an assistant that digitises gym workout plans.
+You receive the text of a plan — often the transcription of a photo — and you
+return that plan as JSON conforming to the schema you were given.
 
-Regole vincolanti:
-- Rispondi SOLO con un oggetto JSON valido conforme allo schema, senza testo
-  prima o dopo. Se non puoi usare uno structured output, racchiudi il JSON in
-  un blocco ```json.
+Binding rules:
+- Reply with a valid JSON object conforming to the schema ONLY, with no text
+  before or after it. If you cannot use structured output, wrap the JSON in a
+  ```json block.
 $_extractionRules''';
 
 /// Il messaggio che l'utente copia negli appunti e incolla nella chat AI che
@@ -182,49 +196,45 @@ $_extractionRules''';
 /// schede lunghe arrivano tronche.
 String externalChatPrompt({required String text, String? userHint}) {
   final buffer = StringBuffer()
+    ..writeln('You are an assistant that digitises gym workout plans.')
     ..writeln(
-      'Sei un assistente che digitalizza schede di allenamento in '
-      'palestra.',
+      'At the bottom of this message, after the "=== WORKOUT PLAN ===" line, '
+      'you will find',
     )
-    ..writeln(
-      'In fondo a questo messaggio, dopo la riga "=== SCHEDA ===", '
-      'trovi il testo di',
-    )
-    ..writeln('una scheda di allenamento: convertilo in JSON.')
+    ..writeln('the text of a workout plan: convert it into JSON.')
     ..writeln()
+    ..writeln('How to answer (an application reads your reply, not a person):')
     ..writeln(
-      'Come devi rispondere (la risposta la legge un\'applicazione, '
-      'non una persona):',
+      '- Reply with ONE SINGLE ```json block and nothing else: no greeting, '
+      'no',
+    )
+    ..writeln('  explanation before or after, no questions.')
+    ..writeln(
+      '- Inside the block, one single valid JSON object: straight quotes ("),',
     )
     ..writeln(
-      '- Rispondi con UN SOLO blocco ```json e nient\'altro: niente '
-      'saluti, niente',
+      '  no comments, no trailing comma after the last element of an object '
+      'or of',
     )
-    ..writeln('  spiegazioni prima o dopo, nessuna domanda.')
+    ..writeln('  an array.')
     ..writeln(
-      '- Dentro il blocco un unico oggetto JSON valido: virgolette '
-      'dritte ("),',
+      '- Do not cut the answer short: if the plan is long, write it out in '
+      'full',
     )
-    ..writeln(
-      '  nessun commento, nessuna virgola dopo l\'ultimo elemento di '
-      'un oggetto o',
-    )
-    ..writeln('  di un array.')
-    ..writeln(
-      '- Non interrompere la risposta a metà: se la scheda è lunga, '
-      'riportala',
-    )
-    ..writeln('  tutta lo stesso.')
+    ..writeln('  anyway.')
     ..writeln()
-    ..writeln('Regole vincolanti:')
+    ..writeln('Binding rules:')
     ..writeln(_extractionRules)
-    ..writeln('=== SCHEDA ===')
+    ..writeln('=== WORKOUT PLAN ===')
     ..writeln(text.trim())
-    ..writeln('=== FINE SCHEDA ===');
+    ..writeln('=== END OF WORKOUT PLAN ===');
   if (userHint != null && userHint.trim().isNotEmpty) {
     buffer
       ..writeln()
-      ..writeln('Indicazioni di chi ti scrive:')
+      ..writeln(
+        'Notes from the person writing to you (they may be in another '
+        'language):',
+      )
       ..writeln(userHint.trim());
   }
   return buffer.toString().trim();
@@ -238,9 +248,9 @@ String externalChatPrompt({required String text, String? userHint}) {
 /// parsing resta l'informazione che fa correggere il modello: gliela facciamo
 /// arrivare per le mani dell'utente.
 String externalChatCorrection(String parseError) {
-  return 'La risposta precedente non è utilizzabile. Errore: $parseError\n'
-      'Rispondi di nuovo con il solo blocco ```json corretto e completo, '
-      'senza testo prima o dopo.';
+  return 'The previous answer cannot be used. Error: $parseError\n'
+      'Answer again with the corrected, complete ```json block only, with no '
+      'text before or after it, keeping the plan in its original language.';
 }
 
 /// Schema della scheda (§5.3), usato come structured output dai modelli che
@@ -275,10 +285,10 @@ const Map<String, dynamic> planJsonSchema = {
           'blocks': {
             'type': 'array',
             'description':
-                'Gruppi di esercizi del giorno, non righe della scheda. Gli '
-                'esercizi classici consecutivi stanno tutti in un unico '
-                'blocco "standard": un giorno ha di norma 1 o 2 blocchi, mai '
-                'uno per esercizio.',
+                'Groups of exercises for the day, not lines of the plan. '
+                'Consecutive classic exercises all sit in a single "standard" '
+                'block: a day normally has 1 or 2 blocks, never one per '
+                'exercise.',
             'items': {
               'type': 'object',
               'additionalProperties': false,
@@ -287,9 +297,9 @@ const Map<String, dynamic> planJsonSchema = {
                 'type': {
                   'type': 'string',
                   'description':
-                      'Modalità di esecuzione del gruppo. "standard" (default) '
-                      'per gli esercizi eseguiti uno dopo l\'altro; gli altri '
-                      'tipi solo se la scheda li indica esplicitamente.',
+                      'How the group is performed. "standard" (default) for '
+                      'exercises done one after the other; the other types '
+                      'only where the plan states them explicitly.',
                   'enum': [
                     'standard',
                     'superset',
@@ -304,9 +314,9 @@ const Map<String, dynamic> planJsonSchema = {
                 'notes': {
                   'type': ['string', 'null'],
                   'description':
-                      'Nota che vale per tutto il gruppo (es. il titolo di una '
-                      'sezione). Ciò che riguarda un solo esercizio va in '
-                      '"notes" dell\'esercizio.',
+                      'A note covering the whole group (e.g. a section '
+                      'heading), in the language of the plan. Anything about '
+                      'a single exercise goes in that exercise\'s "notes".',
                 },
                 'intervalSeconds': {
                   'type': ['integer', 'null'],
@@ -338,8 +348,9 @@ const Map<String, dynamic> planJsonSchema = {
                 'exercises': {
                   'type': 'array',
                   'description':
-                      'Tutti gli esercizi del gruppo, nell\'ordine della '
-                      'scheda: una voce per ogni riga di esercizio.',
+                      'Every exercise of the group, in the order of the '
+                      'plan: one entry per exercise line, named in the '
+                      'language of the plan.',
                   'items': {
                     'type': 'object',
                     'additionalProperties': false,
@@ -383,12 +394,12 @@ const Map<String, dynamic> planJsonSchema = {
 /// a ricostruire (o riassumere) quello che non vede.
 String transcriptionUserText({int? pageIndex, int? pageCount}) {
   if (pageIndex != null && pageCount != null && pageCount > 1) {
-    return 'Questa è la pagina $pageIndex di $pageCount della stessa scheda '
-        'di allenamento. Trascrivi integralmente solo ciò che vedi in questa '
-        'immagine, riga per riga, senza aggiungere le altre pagine.';
+    return 'This is page $pageIndex of $pageCount of the same workout plan. '
+        'Transcribe in full only what you see in this image, line by line, '
+        'without adding the other pages. Keep the original language.';
   }
-  return 'Trascrivi integralmente la scheda di allenamento in questa '
-      'immagine, riga per riga.';
+  return 'Transcribe in full the workout plan in this image, line by line, '
+      'keeping the original language.';
 }
 
 /// Testo del messaggio utente per la strutturazione in JSON.
@@ -405,20 +416,19 @@ String extractionUserText({
   final buffer = StringBuffer();
   if (pageIndex != null && pageCount != null && pageCount > 1) {
     buffer.writeln(
-      'Questo è il testo della pagina $pageIndex di $pageCount della stessa '
-      'scheda. Converti solo ciò che leggi qui: se la pagina inizia a metà di '
-      'un giorno, usa come "label" l\'etichetta di quel giorno così come '
-      'compare.',
+      'This is the text of page $pageIndex of $pageCount of the same plan. '
+      'Convert only what you read here: if the page starts halfway through a '
+      'day, use that day\'s heading as the "label", exactly as it appears.',
     );
   }
   if (text != null && text.trim().isNotEmpty) {
     buffer
-      ..writeln('Scheda di allenamento da convertire in JSON:')
+      ..writeln('Workout plan to convert into JSON:')
       ..writeln(text.trim());
   }
   if (userHint != null && userHint.trim().isNotEmpty) {
     buffer
-      ..writeln('Indicazioni dell\'utente:')
+      ..writeln('Notes from the user (they may be in another language):')
       ..writeln(userHint.trim());
   }
   return buffer.toString().trim();
@@ -427,8 +437,8 @@ String extractionUserText({
 /// Messaggio correttivo del retry automatico (§6.2, punto 4): l'errore di
 /// parsing torna al modello come istruzione.
 String retryUserText(String parseError) {
-  return 'La risposta precedente non era un JSON valido conforme allo schema. '
-      'Errore: $parseError\n'
-      'Rispondi di nuovo SOLO con l\'oggetto JSON corretto, senza alcun testo '
-      'prima o dopo.';
+  return 'The previous answer was not valid JSON conforming to the schema. '
+      'Error: $parseError\n'
+      'Answer again with the corrected JSON object ONLY, with no text before '
+      'or after it, keeping the plan in its original language.';
 }

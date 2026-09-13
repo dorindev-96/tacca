@@ -372,12 +372,16 @@ class FakeSettingsRepository implements SettingsRepository {
     String? apiKey,
     String? modelId,
     this.providerId,
+    this.localeCode,
     this.acceptedLegalNoticeVersion,
     this.defaultProviderId = 'openrouter',
   }) {
     if (apiKey != null) apiKeys[defaultProviderId] = apiKey;
     if (modelId != null) modelIds[defaultProviderId] = modelId;
   }
+
+  /// Lingua scelta a mano; null = si segue quella del sistema.
+  String? localeCode;
 
   /// Versione dell'informativa legale già accettata; null = primo avvio.
   int? acceptedLegalNoticeVersion;
@@ -388,6 +392,13 @@ class FakeSettingsRepository implements SettingsRepository {
   String? providerId;
   final Map<String, String> apiKeys = {};
   final Map<String, String> modelIds = {};
+
+  @override
+  Future<String?> getLocaleCode() async => localeCode;
+
+  @override
+  Future<void> setLocaleCode(String? languageCode) async =>
+      localeCode = languageCode;
 
   String? get apiKey => apiKeys[defaultProviderId];
 

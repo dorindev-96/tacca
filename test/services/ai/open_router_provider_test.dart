@@ -285,7 +285,7 @@ void main() {
         expect(
           (requests[2].data
               as Map<String, dynamic>)['messages'][1]['content'][0]['text'],
-          contains('pagina 2 di 2'),
+          contains('page 2 of 2'),
         );
         // La strutturazione lavora sulla trascrizione della sua pagina.
         expect(

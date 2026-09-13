@@ -265,7 +265,7 @@ void main() {
           isA<PlanParseException>().having(
             (e) => e.message,
             'message',
-            contains('in parte'),
+            contains('only in part'),
           ),
         ),
       );

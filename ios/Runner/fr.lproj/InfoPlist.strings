@@ -1,0 +1,3 @@
+/* Testi dei permessi di sistema (RF-03: foto e galleria per la digitalizzazione). */
+"NSCameraUsageDescription" = "L'appareil photo sert à photographier un programme d'entraînement papier pour le numériser.";
+"NSPhotoLibraryUsageDescription" = "La galerie sert à choisir les photos d'un programme d'entraînement à numériser.";

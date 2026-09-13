@@ -20,6 +20,7 @@ import '../features/history/pages/history_detail_page.dart';
 import '../features/history/pages/history_page.dart';
 import '../features/legal/pages/legal_notice_page.dart';
 import '../features/plans/cubit/plan_editor_cubit.dart';
+import '../features/plans/cubit/plan_editor_labels.dart';
 import '../features/plans/pages/plan_detail_page.dart';
 import '../features/plans/pages/plan_editor_page.dart';
 import '../features/plans/pages/plan_images_page.dart';
@@ -114,12 +115,18 @@ GoRouter createRouter() {
       ),
       GoRoute(
         path: '/plans/new',
-        builder: (context, state) => BlocProvider(
-          create: (context) => PlanEditorCubit.create(
-            repository: context.read<PlanRepository>(),
-          ),
-          child: const PlanEditorPage(),
-        ),
+        builder: (context, state) {
+          // Le etichette si leggono qui e non dentro `create`: quel callback
+          // non può dipendere da un InheritedWidget (e `Localizations` lo è).
+          final labels = PlanEditorLabels.of(AppLocalizations.of(context));
+          return BlocProvider(
+            create: (context) => PlanEditorCubit.create(
+              repository: context.read<PlanRepository>(),
+              labels: labels,
+            ),
+            child: const PlanEditorPage(),
+          );
+        },
       ),
       // Import AI da foto/galleria/testo (RF-03). Fuori dalla shell come le
       // altre pagine di lavoro a schermo intero.
@@ -157,9 +164,11 @@ GoRouter createRouter() {
         path: '/plans/new/review',
         builder: (context, state) {
           final args = state.extra! as AiImportReviewArgs;
+          final labels = PlanEditorLabels.of(AppLocalizations.of(context));
           return BlocProvider(
             create: (context) => PlanEditorCubit.draft(
               repository: context.read<PlanRepository>(),
+              labels: labels,
               draft: args.draft,
             ),
             child: const PlanEditorPage(),
@@ -179,13 +188,17 @@ GoRouter createRouter() {
       ),
       GoRoute(
         path: '/plans/:id/edit',
-        builder: (context, state) => BlocProvider(
-          create: (context) => PlanEditorCubit.edit(
-            repository: context.read<PlanRepository>(),
-            planId: int.parse(state.pathParameters['id']!),
-          ),
-          child: const PlanEditorPage(),
-        ),
+        builder: (context, state) {
+          final labels = PlanEditorLabels.of(AppLocalizations.of(context));
+          return BlocProvider(
+            create: (context) => PlanEditorCubit.edit(
+              repository: context.read<PlanRepository>(),
+              labels: labels,
+              planId: int.parse(state.pathParameters['id']!),
+            ),
+            child: const PlanEditorPage(),
+          );
+        },
       ),
       // Nuova sessione: il log non esiste ancora, lo crea il Bloc a partire
       // da scheda e giorno scelti (§5.1, evento SessionStarted).
