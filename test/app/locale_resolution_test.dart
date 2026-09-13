@@ -14,15 +14,21 @@ void main() {
   });
 
   test('sceglie la lingua del telefono quando è fra quelle tradotte', () {
-    for (final code in ['it', 'de', 'es', 'fr', 'sv']) {
+    for (final code in ['it', 'de', 'en', 'es', 'fr', 'sv']) {
       expect(App.resolveLocale([Locale(code)], supported).languageCode, code);
     }
   });
 
-  test('ignora il paese: de_AT legge app_de.arb', () {
+  test('ignora il paese: de_AT legge app_de.arb, en_US legge app_en.arb', () {
     expect(
       App.resolveLocale([const Locale('de', 'AT')], supported).languageCode,
       'de',
+    );
+    // Da quando l'inglese è tradotto, un telefono in inglese non ripiega più
+    // sull'italiano: legge la sua lingua.
+    expect(
+      App.resolveLocale([const Locale('en', 'US')], supported).languageCode,
+      'en',
     );
   });
 
@@ -33,7 +39,7 @@ void main() {
       AppConstants.fallbackLocale,
     );
     expect(
-      App.resolveLocale([const Locale('en', 'US')], supported),
+      App.resolveLocale([const Locale('pt', 'BR')], supported),
       AppConstants.fallbackLocale,
     );
     expect(App.resolveLocale(null, supported), AppConstants.fallbackLocale);
