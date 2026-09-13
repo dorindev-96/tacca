@@ -9,7 +9,18 @@ import 'package:flutter_test/flutter_test.dart';
 /// l'unico posto in cui quella dimenticanza fa rumore.
 void main() {
   const templateLocale = 'it';
-  const translatedLocales = ['de', 'es', 'fr', 'sv'];
+
+  /// Le traduzioni si scoprono dai file, non da un elenco scritto a mano:
+  /// un elenco a mano dimentica esattamente la lingua appena aggiunta, che è
+  /// l'unica che questo test avrebbe dovuto controllare.
+  final translatedLocales =
+      Directory('lib/l10n')
+          .listSync()
+          .map((e) => RegExp(r'app_(\w+)\.arb$').firstMatch(e.path)?.group(1))
+          .whereType<String>()
+          .where((locale) => locale != templateLocale)
+          .toList()
+        ..sort();
 
   Map<String, dynamic> readArb(String locale) =>
       jsonDecode(File('lib/l10n/app_$locale.arb').readAsStringSync())
@@ -29,6 +40,9 @@ void main() {
   test('il template dichiara le chiavi che il resto dei test verifica', () {
     expect(templateKeys, isNotEmpty);
     expect(template['@@locale'], templateLocale);
+    // Se la scoperta dei file si rompe, i gruppi qui sotto sparirebbero in
+    // silenzio e il test passerebbe senza controllare niente.
+    expect(translatedLocales, isNotEmpty);
   });
 
   for (final locale in translatedLocales) {

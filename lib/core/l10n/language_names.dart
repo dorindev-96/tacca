@@ -13,6 +13,7 @@ import 'package:flutter/widgets.dart';
 /// selettore il codice nudo. C'è un test che se ne accorge.
 const Map<String, String> languageEndonyms = {
   'it': 'Italiano',
+  'en': 'English',
   'de': 'Deutsch',
   'es': 'Español',
   'fr': 'Français',
