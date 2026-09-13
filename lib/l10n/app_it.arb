@@ -313,6 +313,13 @@
   "@planEditorNotesLabel": { "description": "Etichetta del campo note." },
   "planEditorDayLabel": "Etichetta giorno",
   "@planEditorDayLabel": { "description": "Etichetta del campo nome/etichetta di un giorno." },
+  "planEditorSingleDayLabel": "Giorno unico",
+  "@planEditorSingleDayLabel": { "description": "Etichetta del giorno implicito di una scheda a giorno singolo: finisce nei dati della scheda, non solo a schermo." },
+  "planEditorDayName": "Giorno {letter}",
+  "@planEditorDayName": {
+    "description": "Etichetta assegnata a un giorno appena aggiunto (A, B, C…). Finisce nei dati della scheda, non solo a schermo.",
+    "placeholders": { "letter": { "type": "String" } }
+  },
   "planEditorAddDay": "Aggiungi giorno",
   "@planEditorAddDay": { "description": "Azione per aggiungere un nuovo giorno." },
   "planEditorRemoveDay": "Rimuovi giorno",

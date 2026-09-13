@@ -1,6 +1,7 @@
 import 'package:tacca/data/entities/workout_plan.dart';
 import 'package:tacca/data/repositories/plan_repository.dart';
 import 'package:tacca/features/plans/cubit/plan_editor_cubit.dart';
+import 'package:tacca/features/plans/cubit/plan_editor_labels.dart';
 import 'package:tacca/features/plans/pages/plan_editor_page.dart';
 import 'package:tacca/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,10 @@ class _MockPlanRepository extends Mock implements PlanRepository {}
 
 void main() {
   late _MockPlanRepository repository;
+
+  final editorLabels = PlanEditorLabels.of(
+    lookupAppLocalizations(const Locale('it')),
+  );
 
   setUpAll(() {
     registerFallbackValue(
@@ -41,8 +46,15 @@ void main() {
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        // I test verificano le stringhe italiane: senza fissare la lingua
+        // la locale di test (en_US) non è fra quelle tradotte e Flutter
+        // ripiegherebbe sulla prima in ordine alfabetico, il tedesco.
+        locale: const Locale('it'),
         home: BlocProvider(
-          create: (context) => PlanEditorCubit.create(repository: repository),
+          create: (context) => PlanEditorCubit.create(
+            repository: repository,
+            labels: editorLabels,
+          ),
           child: const PlanEditorPage(),
         ),
       ),
@@ -178,9 +190,16 @@ void main() {
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          // I test verificano le stringhe italiane: senza fissare la lingua
+          // la locale di test (en_US) non è fra quelle tradotte e Flutter
+          // ripiegherebbe sulla prima in ordine alfabetico, il tedesco.
+          locale: const Locale('it'),
           home: BlocProvider(
-            create: (context) =>
-                PlanEditorCubit.draft(repository: repository, draft: draft),
+            create: (context) => PlanEditorCubit.draft(
+              repository: repository,
+              labels: editorLabels,
+              draft: draft,
+            ),
             child: const PlanEditorPage(),
           ),
         ),

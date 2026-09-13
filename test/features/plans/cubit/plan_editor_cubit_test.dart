@@ -3,6 +3,9 @@ import 'package:tacca/data/entities/workout_day.dart';
 import 'package:tacca/data/entities/workout_plan.dart';
 import 'package:tacca/data/repositories/plan_repository.dart';
 import 'package:tacca/features/plans/cubit/plan_editor_cubit.dart';
+import 'package:tacca/features/plans/cubit/plan_editor_labels.dart';
+import 'package:tacca/l10n/app_localizations.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -10,6 +13,12 @@ class _MockPlanRepository extends Mock implements PlanRepository {}
 
 void main() {
   late _MockPlanRepository repository;
+
+  // Le etichette vere, non un segnaposto: i test qui sotto verificano proprio
+  // i nomi che finiscono dentro la scheda ("Giorno unico", "Giorno C").
+  final editorLabels = PlanEditorLabels.of(
+    lookupAppLocalizations(const Locale('it')),
+  );
 
   setUpAll(() {
     registerFallbackValue(
@@ -27,7 +36,10 @@ void main() {
 
   group('PlanEditorCubit.create', () {
     test('parte con un giorno implicito nascosto e nessuna modifica', () {
-      final cubit = PlanEditorCubit.create(repository: repository);
+      final cubit = PlanEditorCubit.create(
+        repository: repository,
+        labels: editorLabels,
+      );
 
       expect(cubit.state.isNew, isTrue);
       expect(cubit.state.isDirty, isFalse);
@@ -36,7 +48,10 @@ void main() {
     });
 
     test('updateName imposta il nome e marca la bozza come modificata', () {
-      final cubit = PlanEditorCubit.create(repository: repository);
+      final cubit = PlanEditorCubit.create(
+        repository: repository,
+        labels: editorLabels,
+      );
 
       cubit.updateName('Upper / Lower');
 
@@ -45,7 +60,10 @@ void main() {
     });
 
     test('addDay aggiunge un giorno, lo seleziona e mostra i tab', () {
-      final cubit = PlanEditorCubit.create(repository: repository);
+      final cubit = PlanEditorCubit.create(
+        repository: repository,
+        labels: editorLabels,
+      );
 
       cubit.addDay();
 
@@ -55,7 +73,10 @@ void main() {
     });
 
     test('removeDay non ha effetto quando resta un solo giorno', () {
-      final cubit = PlanEditorCubit.create(repository: repository);
+      final cubit = PlanEditorCubit.create(
+        repository: repository,
+        labels: editorLabels,
+      );
 
       cubit.removeDay(0);
 
@@ -64,7 +85,10 @@ void main() {
     });
 
     test('removeDay rimuove e riassegna sortOrder in ordine', () {
-      final cubit = PlanEditorCubit.create(repository: repository);
+      final cubit = PlanEditorCubit.create(
+        repository: repository,
+        labels: editorLabels,
+      );
       cubit.addDay(); // 2 giorni: A(0), B(1)
       cubit.addDay(); // 3 giorni: A(0), B(1), C(2)
 
@@ -79,7 +103,10 @@ void main() {
     test(
       'removeDay di un giorno precedente al selezionato aggiorna selectedDayIndex sullo stesso giorno logico',
       () {
-        final cubit = PlanEditorCubit.create(repository: repository);
+        final cubit = PlanEditorCubit.create(
+          repository: repository,
+          labels: editorLabels,
+        );
         cubit.addDay(); // Giorno unico(0), Giorno B(1)
         cubit.addDay(); // Giorno unico(0), Giorno B(1), Giorno C(2)
         cubit.selectDay(2); // seleziona "Giorno C"
@@ -102,7 +129,10 @@ void main() {
     );
 
     test('reorderDays riordina e riassegna sortOrder', () {
-      final cubit = PlanEditorCubit.create(repository: repository);
+      final cubit = PlanEditorCubit.create(
+        repository: repository,
+        labels: editorLabels,
+      );
       cubit.addDay();
       cubit.addDay();
       final before = cubit.state.draft.days.map((d) => d.label).toList();
@@ -120,7 +150,10 @@ void main() {
     });
 
     test('addBlock applica i parametri di default del tipo scelto', () {
-      final cubit = PlanEditorCubit.create(repository: repository);
+      final cubit = PlanEditorCubit.create(
+        repository: repository,
+        labels: editorLabels,
+      );
 
       cubit.addBlock(0, BlockType.emom);
 
@@ -134,7 +167,10 @@ void main() {
     test(
       'changeBlockType pulisce i parametri del tipo precedente prima di applicare i nuovi',
       () {
-        final cubit = PlanEditorCubit.create(repository: repository);
+        final cubit = PlanEditorCubit.create(
+          repository: repository,
+          labels: editorLabels,
+        );
         cubit.addBlock(0, BlockType.emom);
 
         cubit.changeBlockType(0, 0, BlockType.tabata);
@@ -156,7 +192,10 @@ void main() {
     test(
       'changeBlockType verso freeText imposta contenuto vuoto editabile',
       () {
-        final cubit = PlanEditorCubit.create(repository: repository);
+        final cubit = PlanEditorCubit.create(
+          repository: repository,
+          labels: editorLabels,
+        );
         cubit.addBlock(0, BlockType.standard);
 
         cubit.changeBlockType(0, 0, BlockType.freeText);
@@ -166,7 +205,10 @@ void main() {
     );
 
     test('esercizi: add / update / remove / reorder aggiornano il blocco', () {
-      final cubit = PlanEditorCubit.create(repository: repository);
+      final cubit = PlanEditorCubit.create(
+        repository: repository,
+        labels: editorLabels,
+      );
       cubit.addBlock(0, BlockType.standard);
 
       cubit.addExercise(0, 0);
@@ -195,7 +237,10 @@ void main() {
     test(
       'save con nome vuoto imposta un errore e non chiama il repository',
       () async {
-        final cubit = PlanEditorCubit.create(repository: repository);
+        final cubit = PlanEditorCubit.create(
+          repository: repository,
+          labels: editorLabels,
+        );
 
         final ok = await cubit.save();
 
@@ -209,7 +254,10 @@ void main() {
       'save con nome valido chiama il repository e pulisce isDirty',
       () async {
         when(() => repository.savePlan(any())).thenReturn(42);
-        final cubit = PlanEditorCubit.create(repository: repository);
+        final cubit = PlanEditorCubit.create(
+          repository: repository,
+          labels: editorLabels,
+        );
         cubit.updateName('  Push Pull Legs  ');
 
         final ok = await cubit.save();
@@ -228,7 +276,10 @@ void main() {
         when(
           () => repository.savePlan(any()),
         ).thenThrow(StateError('disco pieno'));
-        final cubit = PlanEditorCubit.create(repository: repository);
+        final cubit = PlanEditorCubit.create(
+          repository: repository,
+          labels: editorLabels,
+        );
         cubit.updateName('Scheda');
 
         final ok = await cubit.save();
@@ -250,7 +301,11 @@ void main() {
       plan.days.add(WorkoutDay(label: 'Giorno A', sortOrder: 0));
       when(() => repository.getById(5)).thenReturn(plan);
 
-      final cubit = PlanEditorCubit.edit(repository: repository, planId: 5);
+      final cubit = PlanEditorCubit.edit(
+        repository: repository,
+        labels: editorLabels,
+        planId: 5,
+      );
 
       expect(cubit.state.isLoading, isFalse);
       expect(cubit.state.isNew, isFalse);
@@ -261,7 +316,11 @@ void main() {
     test('scheda non trovata imposta un messaggio di errore', () {
       when(() => repository.getById(99)).thenReturn(null);
 
-      final cubit = PlanEditorCubit.edit(repository: repository, planId: 99);
+      final cubit = PlanEditorCubit.edit(
+        repository: repository,
+        labels: editorLabels,
+        planId: 99,
+      );
 
       expect(cubit.state.isLoading, isFalse);
       expect(cubit.state.errorMessage, isNotNull);

@@ -63,7 +63,15 @@ Recurring pieces live in `lib/core/widgets/`: `AppScaffold` (page shell: header 
 
 Bottom sheets must open on the **root** navigator (`showAppSheet` does): the floating tab bar lives in the shell's `Stack`, so a sheet opened on the branch navigator renders underneath it.
 
-**Strings.** Every user-facing string goes through `lib/l10n/app_it.arb`. Never hardcode text in a widget, not even temporarily.
+**Strings.** Every user-facing string goes through the ARB files in `lib/l10n/`. Never hardcode text in a widget, not even temporarily.
+
+`app_it.arb` is the template: it is the only one carrying the `@key` description blocks, and a new key starts there. The translations — `app_de.arb`, `app_es.arb`, `app_fr.arb`, `app_sv.arb` — must carry the *same* keys with the *same* placeholders, so add the key to all five in the same commit; `flutter gen-l10n` warns about the ones you forget, and a missing key silently falls back to Italian at runtime. Keep the files in the same order as the template, it is what makes them reviewable side by side.
+
+Strings that end up *inside saved data* rather than only on screen — the label of a plan's day, for instance — still come from the ARB, but a Cubit has no `BuildContext` to read them from: they are passed in at construction from the router, as `PlanEditorLabels` and `LiveSessionLabels` do. Read them in the route `builder`, never inside a `BlocProvider`'s `create` callback, which may not depend on an `InheritedWidget`.
+
+The app follows the phone's language and falls back to `AppConstants.fallbackLocale` (Italian) when it is not one of the five. That fallback is explicit on purpose: Flutter's default is the *first* supported locale, and the generated list is alphabetical, so without it an unsupported phone language would land on German. Widget tests that assert Italian text must pin `locale: const Locale('it')` on their `MaterialApp` for the same reason.
+
+**Still Italian, whatever the UI language:** the AI prompts in `services/ai/prompts.dart` (including the one the keyless import copies to the user's clipboard) and the validation messages in `plan_parser.dart` that surface through `aiPasteParseFailed`. Translating them is not a presentation change — the parser's messages are fed back to the model as the corrective retry, and the extraction rules encode Italian plan notation — so it wants its own change with its own prompt-regression tests.
 
 **Legal notice.** The first-run disclaimer (`features/legal`) is a gate mounted above the router: nothing else is built until it is accepted, and acceptance is stored as a *version*, not a boolean. Its wording lives in exactly one widget and one ARB block, shown both by the gate and by *Impostazioni → Termini e responsabilità*; if the substance of the terms changes, bump `AppConstants.legalNoticeVersion` so everyone sees it again. The full terms open in the system browser through `LinkOpener` — there is no in-app WebView, and adding one would need a reason.
 

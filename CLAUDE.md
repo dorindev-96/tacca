@@ -11,7 +11,7 @@ Flutter app for managing gym workout plans ("schede di allenamento"). **M0–M2 
 
 `items/` is git-ignored on purpose: it exists only in the maintainer's working copy, not in the public repository. What the public sees is `README.md` (what the app is, setup, architecture), `CONTRIBUTING.md` (conventions, tests, PR checklist) and `SECURITY.md` (BYOK key handling, how to report) — keep those three in sync when behaviour changes, and never quote the private spec verbatim into them.
 
-**Read the technical analysis before implementing anything.** Decisions there are already made (ObjectBox as DB, flutter_bloc, go_router, dio, BYOK AI) and should not be re-litigated. The UI language is Italian; user-facing strings go through ARB files (`app_it.arb`), never hardcoded.
+**Read the technical analysis before implementing anything.** Decisions there are already made (ObjectBox as DB, flutter_bloc, go_router, dio, BYOK AI) and should not be re-litigated. User-facing strings go through the ARB files in `lib/l10n/`, never hardcoded — see *Localizzazione* below.
 
 ## Commands
 
@@ -48,6 +48,17 @@ Enforced rules:
 - DI is explicit composition in `app/di.dart` via `RepositoryProvider`/`BlocProvider` — no service locator, no `get_it`. The ObjectBox `Store` is opened in `main()` before `runApp`.
 
 **Folder layout** (feature-first presentation, shared `data/` layer): `app/`, `core/`, `data/` (db, entities, repositories), `services/` (ai, timer, notifications, live_session, images, share, clipboard), `features/` (plans, ai_import, workout, history, settings). No barrel files — use direct imports. Files `snake_case.dart`; suffixes `*Cubit`, `*Bloc`, `*Repository`, `*Page`, `*Dto`.
+
+### Localizzazione
+L'interfaccia esiste in cinque lingue: italiano, tedesco, spagnolo, francese e svedese, un `lib/l10n/app_<lingua>.arb` ciascuna. `app_it.arb` è il **template**: è l'unico che porta i blocchi `@chiave` con le descrizioni, ed è da lì che nasce ogni chiave nuova. Le altre quattro devono avere le stesse chiavi con gli stessi placeholder e nello stesso ordine — una chiave che manca non è un errore di compilazione, semplicemente a runtime ricade sull'italiano.
+
+Regole che mordono:
+- **il ripiego è esplicito** (`AppConstants.fallbackLocale`, usato da `App._resolveLocale`). Quello di Flutter è il primo elemento di `supportedLocales`, e la lista generata è in ordine alfabetico: senza, un telefono in giapponese finirebbe in tedesco. Per lo stesso motivo i widget test che cercano stringhe italiane devono fissare `locale: const Locale('it')` sul loro `MaterialApp`;
+- **il confronto è per lingua, non per paese**: gli ARB non hanno varianti regionali, `de_AT` deve leggere `app_de.arb`;
+- **le stringhe che finiscono nei dati** — l'etichetta di un giorno, che resta scritta dentro la scheda salvata — vengono comunque dall'ARB, ma un Cubit non ha `BuildContext`: gliele passa il router alla costruzione (`PlanEditorLabels`, come già `LiveSessionLabels`). Vanno lette nel `builder` della rotta e **mai** dentro il `create` di un `BlocProvider`, che non può dipendere da un `InheritedWidget`;
+- `initializeDateFormatting()` in `main()` va chiamata **senza argomento**: la versione locale di `intl` carica comunque tutte le lingue, e passargliene una sola faceva credere che ne bastasse una;
+- **restano in italiano, in qualunque lingua sia l'interfaccia**: i prompt in `services/ai/prompts.dart` (compreso quello che l'import senza key copia negli appunti dell'utente) e i messaggi di validazione di `plan_parser.dart`, che affiorano dentro `aiPasteParseFailed`. Non è una svista: quei messaggi tornano al modello come richiesta di correzione e le regole di estrazione codificano la notazione delle schede italiane, quindi tradurli è un lavoro di prompt engineering con i suoi test, non una traduzione;
+- i testi dei permessi iOS (fotocamera, galleria) sono tradotti in `ios/Runner/<lingua>.lproj/InfoPlist.strings` ma **inerti finché non li si registra in Xcode**: la procedura, una volta sola e a mano, sta in `docs/ios-live-activity.md`.
 
 ### Design system
 L'aspetto viene da un file di design ("Gym full figma"), non da un seed color Material, e vive in due posti soli — mai nelle pagine:

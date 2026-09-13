@@ -182,3 +182,27 @@ Worth walking through by hand at least once:
 - [ ] Finish the session: the banner disappears.
 - [ ] On an iPhone without Dynamic Island, and on iOS 16.x: banner yes, button
       only from 17.
+
+## Testi dei permessi in più lingue (una volta, a mano)
+
+Le traduzioni dei due permessi di sistema (fotocamera e galleria, RF-03) sono
+già scritte in `ios/Runner/<lingua>.lproj/InfoPlist.strings`, una cartella per
+`it`, `fr`, `es`, `de`, `sv`. **Finché non sono registrate nel progetto Xcode
+non le legge nessuno**: iOS continua a mostrare a tutti la stringa italiana
+scritta dentro `Info.plist`. La registrazione non si può fare da qui perché
+tocca `Runner.xcodeproj/project.pbxproj`, che la CI (runner Linux) non compila.
+
+In Xcode, una volta sola:
+
+1. seleziona il progetto *Runner* → *Info* → *Localizations*, e aggiungi
+   italiano, francese, spagnolo, tedesco e svedese;
+2. trascina `ios/Runner/it.lproj/InfoPlist.strings` dentro il gruppo *Runner*
+   (spuntando *Copy items if needed* → no, i file ci sono già);
+3. selezionalo e, nell'inspector a destra, premi *Localize…*: Xcode raggruppa
+   da solo le altre lingue che trova nelle `.lproj` accanto;
+4. verifica che il file compaia in *Build Phases* → *Copy Bundle Resources*;
+5. prova su device cambiando lingua di sistema: il pop-up del permesso
+   fotocamera deve arrivare tradotto.
+
+Le stringhe dell'interfaccia non c'entrano: quelle passano dagli ARB
+(`lib/l10n/`) e non richiedono niente lato Xcode.

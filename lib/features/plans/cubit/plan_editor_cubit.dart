@@ -5,6 +5,7 @@ import '../../../data/entities/exercise.dart';
 import '../../../data/entities/workout_day.dart';
 import '../../../data/entities/workout_plan.dart';
 import '../../../data/repositories/plan_repository.dart';
+import 'plan_editor_labels.dart';
 import 'plan_editor_state.dart';
 
 /// Bozza in editing di una scheda (RF-02): CRUD di giorni/blocchi/esercizi,
@@ -14,17 +15,22 @@ import 'plan_editor_state.dart';
 /// (vedi nota su `revision` in `plan_editor_state.dart`). Nessuna scrittura
 /// sul repository avviene prima di [save].
 class PlanEditorCubit extends Cubit<PlanEditorState> {
-  PlanEditorCubit.create({required PlanRepository repository})
-    : _repository = repository,
-      super(PlanEditorState(draft: _emptyDraft(), isNew: true));
+  PlanEditorCubit.create({
+    required PlanRepository repository,
+    required PlanEditorLabels labels,
+  }) : _repository = repository,
+       _labels = labels,
+       super(PlanEditorState(draft: _emptyDraft(labels), isNew: true));
 
   /// Revisione di una bozza non persistita (import AI, RF-03): l'editor parte
   /// già sporco così l'uscita senza salvare chiede conferma e la scheda non
   /// viene mai scritta senza conferma esplicita dell'utente.
   PlanEditorCubit.draft({
     required PlanRepository repository,
+    required PlanEditorLabels labels,
     required WorkoutPlan draft,
   }) : _repository = repository,
+       _labels = labels,
        super(
          PlanEditorState(
            draft: draft,
@@ -35,26 +41,33 @@ class PlanEditorCubit extends Cubit<PlanEditorState> {
        ) {
     // L'editor assume almeno un giorno (giorno implicito, §5.1).
     if (draft.days.isEmpty) {
-      draft.days.add(WorkoutDay(label: 'Giorno unico', sortOrder: 0));
+      draft.days.add(WorkoutDay(label: labels.singleDay, sortOrder: 0));
     }
   }
 
   PlanEditorCubit.edit({
     required PlanRepository repository,
+    required PlanEditorLabels labels,
     required int planId,
   }) : _repository = repository,
+       _labels = labels,
        super(
-         PlanEditorState(draft: _emptyDraft(), isNew: false, isLoading: true),
+         PlanEditorState(
+           draft: _emptyDraft(labels),
+           isNew: false,
+           isLoading: true,
+         ),
        ) {
     _load(planId);
   }
 
   final PlanRepository _repository;
+  final PlanEditorLabels _labels;
 
-  static WorkoutPlan _emptyDraft() {
+  static WorkoutPlan _emptyDraft(PlanEditorLabels labels) {
     final now = DateTime.now();
     final plan = WorkoutPlan(name: '', createdAt: now, updatedAt: now);
-    plan.days.add(WorkoutDay(label: 'Giorno unico', sortOrder: 0));
+    plan.days.add(WorkoutDay(label: labels.singleDay, sortOrder: 0));
     return plan;
   }
 
@@ -62,7 +75,7 @@ class PlanEditorCubit extends Cubit<PlanEditorState> {
     final plan = _repository.getById(planId);
     if (plan == null) {
       emit(
-        state.copyWith(isLoading: false, errorMessage: 'Scheda non trovata.'),
+        state.copyWith(isLoading: false, errorMessage: _labels.planNotFound),
       );
       return;
     }
@@ -85,7 +98,7 @@ class PlanEditorCubit extends Cubit<PlanEditorState> {
     _mutate((d) {
       final order = d.days.length;
       d.days.add(
-        WorkoutDay(label: 'Giorno ${_dayLabel(order)}', sortOrder: order),
+        WorkoutDay(label: _labels.dayName(_dayLetter(order)), sortOrder: order),
       );
     });
     selectDay(state.draft.days.length - 1);
@@ -326,9 +339,7 @@ class PlanEditorCubit extends Cubit<PlanEditorState> {
   Future<bool> save() async {
     final trimmedName = state.draft.name.trim();
     if (trimmedName.isEmpty) {
-      emit(
-        state.copyWith(errorMessage: 'Il nome della scheda è obbligatorio.'),
-      );
+      emit(state.copyWith(errorMessage: _labels.nameRequired));
       return false;
     }
 
@@ -434,7 +445,7 @@ class PlanEditorCubit extends Cubit<PlanEditorState> {
     }
   }
 
-  static String _dayLabel(int zeroBasedIndex) {
+  static String _dayLetter(int zeroBasedIndex) {
     // A, B, C, ... Z, poi AA, AB, ... (improbabile servano più di 26 giorni).
     var n = zeroBasedIndex;
     final buffer = StringBuffer();

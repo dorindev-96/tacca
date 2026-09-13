@@ -1,0 +1,3 @@
+/* Testi dei permessi di sistema (RF-03: foto e galleria per la digitalizzazione). */
+"NSCameraUsageDescription" = "Kameran används för att fotografera ett träningsprogram på papper och digitalisera det.";
+"NSPhotoLibraryUsageDescription" = "Galleriet används för att välja foton av ett träningsprogram som ska digitaliseras.";
