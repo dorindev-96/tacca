@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart' hide Block;
 
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_menu.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../../../core/widgets/confirm_dialog.dart';
@@ -123,7 +122,7 @@ class PlanDetailPage extends StatelessWidget {
           AppSpacing.actionClearance,
         ),
         children: [
-          Text(plan.name, style: AppTypography.screenTitle),
+          Text(plan.name, style: context.type.screenTitle),
           const SizedBox(height: AppSpacing.md),
           Wrap(
             spacing: AppSpacing.sm,
@@ -173,22 +172,22 @@ class PlanDetailPage extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const LinearIcon(
+                    LinearIcon(
                       AppIcons.gallery,
                       size: 20,
-                      color: AppColors.muted,
+                      color: context.colors.muted,
                     ),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
                         l10n.planDetailImagesLabel(plan.imagePaths.length),
-                        style: AppTypography.row,
+                        style: context.type.row,
                       ),
                     ),
-                    const LinearIcon(
+                    LinearIcon(
                       AppIcons.chevronRight,
                       size: 20,
-                      color: AppColors.muted,
+                      color: context.colors.muted,
                     ),
                   ],
                 ),
@@ -253,6 +252,7 @@ class PlanDetailPage extends StatelessWidget {
     final poster = PlanShareImage(
       plan: plan,
       locale: Localizations.localeOf(context),
+      brightness: Theme.of(context).brightness,
     );
     final box = context.findRenderObject() as RenderBox?;
     final origin = box != null && box.hasSize
@@ -335,7 +335,7 @@ class _TextCard extends StatelessWidget {
         horizontal: AppSpacing.card,
         vertical: AppSpacing.lg,
       ),
-      child: Text(text, style: AppTypography.paragraph),
+      child: Text(text, style: context.type.paragraph),
     );
   }
 }

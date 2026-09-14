@@ -3,10 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../design/app_chrome.dart';
-import '../design/app_colors.dart';
 import '../design/app_spacing.dart';
-import '../design/app_typography.dart';
+import '../design/theme_context.dart';
 import 'home_tab_bar.dart';
 import 'square_icon_button.dart';
 
@@ -65,9 +63,9 @@ class AppScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: AppChrome.systemOverlay,
+      value: context.chrome.systemOverlay,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.colors.background,
         // Il dock è disegnato dentro lo Stack, non da `bottomNavigationBar`:
         // deve galleggiare *sopra* la lista, che gli scorre sotto.
         resizeToAvoidBottomInset: true,
@@ -102,7 +100,7 @@ class AppScaffold extends StatelessWidget {
                         AppSpacing.xl,
                         AppSpacing.card,
                       ),
-                      child: Text(title!, style: AppTypography.screenTitle),
+                      child: Text(title!, style: context.type.screenTitle),
                     ),
                   if (header != null) header!,
                   Expanded(child: body),

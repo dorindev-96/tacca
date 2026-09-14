@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/extensions/duration_format.dart';
 import '../../../core/extensions/log_set_format.dart';
 import '../../../core/widgets/app_scaffold.dart';
@@ -51,7 +50,7 @@ class HistoryDetailPage extends StatelessWidget {
             SquareIconButton(
               icon: AppIcons.trash,
               tooltip: l10n.commonDelete,
-              foreground: AppColors.danger,
+              foreground: context.colors.danger,
               onPressed: () => _confirmDelete(context, l10n, log),
             ),
           ],
@@ -63,12 +62,12 @@ class HistoryDetailPage extends StatelessWidget {
               AppSpacing.xxl,
             ),
             children: [
-              Text(log.planNameSnapshot, style: AppTypography.screenTitle),
+              Text(log.planNameSnapshot, style: context.type.screenTitle),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 '${l10n.historySessionDate(log.startedAt)} '
                 '${l10n.historySessionTime(log.startedAt)}',
-                style: AppTypography.sectionLabel,
+                style: context.type.sectionLabel,
               ),
               const SizedBox(height: AppSpacing.md),
               Wrap(
@@ -102,7 +101,7 @@ class HistoryDetailPage extends StatelessWidget {
                       horizontal: AppSpacing.card,
                       vertical: AppSpacing.lg,
                     ),
-                    child: Text(log.notes!, style: AppTypography.paragraph),
+                    child: Text(log.notes!, style: context.type.paragraph),
                   ),
                 ),
               const SizedBox(height: AppSpacing.xl),
@@ -170,10 +169,10 @@ class _EntryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(entry.exerciseNameSnapshot, style: AppTypography.cardTitle),
+          Text(entry.exerciseNameSnapshot, style: context.type.cardTitle),
           const SizedBox(height: AppSpacing.md),
           if (sets.isEmpty)
-            Text(l10n.historyExerciseNotDone, style: AppTypography.meta)
+            Text(l10n.historyExerciseNotDone, style: context.type.meta)
           else
             for (final set in sets)
               Padding(
@@ -187,16 +186,13 @@ class _EntryCard extends StatelessWidget {
                           width: 84,
                           child: Text(
                             l10n.workoutSetLabel(set.setNumber),
-                            style: AppTypography.row.copyWith(
-                              color: AppColors.muted,
+                            style: context.type.row.copyWith(
+                              color: context.colors.muted,
                             ),
                           ),
                         ),
                         Expanded(
-                          child: Text(
-                            set.summary,
-                            style: AppTypography.numeric,
-                          ),
+                          child: Text(set.summary, style: context.type.numeric),
                         ),
                       ],
                     ),
@@ -208,7 +204,7 @@ class _EntryCard extends StatelessWidget {
                         ),
                         child: Text(
                           set.notes!,
-                          style: AppTypography.paragraphSmall.copyWith(
+                          style: context.type.paragraphSmall.copyWith(
                             fontStyle: FontStyle.italic,
                           ),
                         ),

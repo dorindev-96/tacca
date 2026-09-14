@@ -2,12 +2,10 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../design/app_chrome.dart';
-import '../design/app_colors.dart';
 import '../design/app_radius.dart';
 import '../design/app_spacing.dart';
-import '../design/app_typography.dart';
 import '../design/linear_icons.dart';
+import '../design/theme_context.dart';
 import 'linear_icon.dart';
 
 /// Una destinazione della [HomeTabBar].
@@ -18,12 +16,16 @@ class HomeTab {
   final String label;
 }
 
-/// Tab bar flottante: 340×56, raggio 32, fondo inchiostro, con la
-/// destinazione attiva in una pillola lime che porta anche l'etichetta.
+/// Tab bar flottante: 340×56, raggio 32, fondo pieno, con la destinazione
+/// attiva in una pillola lime che porta anche l'etichetta.
 ///
 /// Solo la tab attiva è etichettata: è quello che rende leggibile una barra
-/// scura alta 56 senza schiacciarci dentro tre testi. Le altre restano icone,
-/// e l'etichetta arriva comunque all'accessibilità via [Semantics].
+/// alta 56 senza schiacciarci dentro tre testi. Le altre restano icone, e
+/// l'etichetta arriva comunque all'accessibilità via [Semantics].
+///
+/// La barra è il motivo per cui `inkSurface` non si schiarisce nel tema
+/// scuro: la pillola attiva è lime, e il lime su un fondo quasi bianco non si
+/// distingue più (1,1:1). Vedi [AppPalette].
 class HomeTabBar extends StatelessWidget {
   const HomeTabBar({
     required this.tabs,
@@ -55,10 +57,10 @@ class HomeTabBar extends StatelessWidget {
             AppSpacing.xl + AppSpacing.xs,
             0,
           ),
-          decoration: const BoxDecoration(
-            color: AppColors.ink,
+          decoration: BoxDecoration(
+            color: context.colors.inkSurface,
             borderRadius: BorderRadius.all(Radius.circular(AppRadius.xl)),
-            boxShadow: AppChrome.floating,
+            boxShadow: context.chrome.floating,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -114,26 +116,28 @@ class _Tab extends StatelessWidget {
               0,
             ),
             decoration: BoxDecoration(
-              color: AppColors.lime,
+              color: context.colors.lime,
               borderRadius: BorderRadius.circular(AppRadius.chip),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                LinearIcon(tab.icon, color: AppColors.ink),
+                LinearIcon(tab.icon, color: context.colors.onLime),
                 const SizedBox(width: AppSpacing.lg),
                 Flexible(
                   child: Text(
                     tab.label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.meta.copyWith(color: AppColors.ink),
+                    style: context.type.meta.copyWith(
+                      color: context.colors.onLime,
+                    ),
                   ),
                 ),
               ],
             ),
           )
-        : LinearIcon(tab.icon, color: AppColors.surface);
+        : LinearIcon(tab.icon, color: context.colors.onInkSurface);
 
     return Semantics(
       button: true,

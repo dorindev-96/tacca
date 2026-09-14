@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../design/app_colors.dart';
 import '../design/app_spacing.dart';
-import '../design/app_typography.dart';
 import '../design/linear_icons.dart';
+import '../design/theme_context.dart';
 import 'linear_icon.dart';
 import 'square_icon_button.dart';
 import 'surface_card.dart';
@@ -36,8 +35,10 @@ class InfoBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final alert = tone == InfoBannerTone.alert;
-    final background = alert ? AppColors.dangerSurface : AppColors.surface;
-    final foreground = alert ? AppColors.danger : AppColors.muted;
+    final background = alert
+        ? context.colors.dangerSurface
+        : context.colors.surface;
+    final foreground = alert ? context.colors.danger : context.colors.muted;
 
     return SurfaceCard(
       color: background,
@@ -55,8 +56,8 @@ class InfoBanner extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: AppTypography.paragraph.copyWith(
-                color: alert ? AppColors.danger : AppColors.body,
+              style: context.type.paragraph.copyWith(
+                color: alert ? context.colors.danger : context.colors.body,
               ),
             ),
           ),

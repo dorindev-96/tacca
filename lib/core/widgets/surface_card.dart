@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../design/app_colors.dart';
 import '../design/app_radius.dart';
 import '../design/app_spacing.dart';
+import '../design/theme_context.dart';
 
-/// La forma dell'app: superficie bianca, raggio 26, nessun bordo e nessuna
+/// La forma dell'app: superficie piena, raggio 26, nessun bordo e nessuna
 /// ombra.
 ///
 /// Usarla ovunque serva "un pezzo di contenuto sopra il fondo" — card di un
@@ -16,7 +16,7 @@ class SurfaceCard extends StatelessWidget {
     required this.child,
     this.onTap,
     this.padding = const EdgeInsets.all(AppSpacing.card),
-    this.color = AppColors.surface,
+    this.color,
     this.radius = AppRadius.lg,
     super.key,
   });
@@ -25,9 +25,9 @@ class SurfaceCard extends StatelessWidget {
   final VoidCallback? onTap;
   final EdgeInsetsGeometry padding;
 
-  /// Lime per l'unico elemento in evidenza della schermata; [AppColors.fill]
-  /// per un riquadro *dentro* una card bianca.
-  final Color color;
+  /// Null = il colore delle card del tema. Lime per l'unico elemento in
+  /// evidenza della schermata, `fill` per un riquadro *dentro* una card.
+  final Color? color;
 
   final double radius;
 
@@ -38,7 +38,7 @@ class SurfaceCard extends StatelessWidget {
     );
 
     return Material(
-      color: color,
+      color: color ?? context.colors.surface,
       shape: shape,
       clipBehavior: Clip.antiAlias,
       child: onTap == null

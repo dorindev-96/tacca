@@ -1,6 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// Preferenze dell'utente: lingua dell'interfaccia, configurazione AI
+/// Preferenze dell'utente: lingua e tema dell'interfaccia, configurazione AI
 /// (RF-08) — provider scelto e, per ciascun provider, API key e modello — e
 /// accettazione dell'informativa legale mostrata al primo avvio.
 ///
@@ -11,9 +11,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// `services/ai/`.
 ///
 /// Le key vivono esclusivamente nel secure storage nativo (Keychain / Android
-/// Keystore), mai in log né negli export (RNF-03). Provider, modello e
-/// versione dell'informativa accettata stanno lì accanto: sono singoli valori
-/// e non giustificano un secondo meccanismo di persistenza.
+/// Keystore), mai in log né negli export (RNF-03). Lingua, tema, provider,
+/// modello e versione dell'informativa accettata stanno lì accanto: sono
+/// singoli valori e non giustificano un secondo meccanismo di persistenza.
 abstract interface class SettingsRepository {
   /// Codice della lingua scelta a mano per l'interfaccia (`it`, `de`, …);
   /// `null` quando l'utente non ha mai scelto e si segue quella del sistema.
@@ -24,6 +24,17 @@ abstract interface class SettingsRepository {
 
   /// `null` torna a seguire la lingua del sistema.
   Future<void> setLocaleCode(String? languageCode);
+
+  /// Tema scelto a mano (`light`, `dark`); `null` quando l'utente non ha mai
+  /// scelto e si segue quello del telefono.
+  ///
+  /// È il `name` dell'enum e non l'enum, per la stessa ragione per cui la
+  /// lingua è un codice: `ThemeMode` è un tipo di Flutter, e `data/` non lo
+  /// conosce.
+  Future<String?> getThemeModeName();
+
+  /// `null` torna a seguire il tema di sistema.
+  Future<void> setThemeModeName(String? name);
 
   /// Id del provider AI scelto; `null` se l'utente non ha mai scelto (si usa
   /// il default del catalogo).
@@ -61,6 +72,8 @@ class SecureSettingsRepository implements SettingsRepository {
 
   static const _localeKey = 'ui.locale';
 
+  static const _themeModeKey = 'ui.themeMode';
+
   static const _providerKey = 'ai.provider';
 
   static const _legalNoticeKey = 'legal.acceptedNoticeVersion';
@@ -79,6 +92,12 @@ class SecureSettingsRepository implements SettingsRepository {
   @override
   Future<void> setLocaleCode(String? languageCode) =>
       _write(_localeKey, languageCode);
+
+  @override
+  Future<String?> getThemeModeName() => _read(_themeModeKey);
+
+  @override
+  Future<void> setThemeModeName(String? name) => _write(_themeModeKey, name);
 
   @override
   Future<String?> getAiProviderId() => _read(_providerKey);

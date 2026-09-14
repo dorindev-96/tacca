@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/meta_chip.dart';
 import '../../../core/widgets/surface_card.dart';
 import '../../../data/entities/workout_plan.dart';
@@ -29,7 +28,12 @@ import 'plan_day_view.dart';
 ///   direbbe niente, quindi le chip di stato ("In uso", "Archiviata") qui non
 ///   compaiono: restano il numero di giorni e il contenuto della scheda.
 class PlanShareImage extends StatelessWidget {
-  const PlanShareImage({required this.plan, required this.locale, super.key});
+  const PlanShareImage({
+    required this.plan,
+    required this.locale,
+    required this.brightness,
+    super.key,
+  });
 
   final WorkoutPlan plan;
 
@@ -37,6 +41,14 @@ class PlanShareImage extends StatelessWidget {
   /// da cui ereditarla, quindi la passa il chiamante
   /// (`Localizations.localeOf`).
   final Locale locale;
+
+  /// Il tema con cui impaginare, per la stessa ragione della lingua: qui sopra
+  /// non c'è nessun `MaterialApp` da cui ereditarlo.
+  ///
+  /// Il chiamante passa quello in cui l'utente sta guardando la scheda: si
+  /// condivide ciò che si vede. Un'immagine sempre chiara sarebbe una
+  /// sorpresa per chi ha l'app scura, e sempre scura per chi non ce l'ha.
+  final Brightness brightness;
 
   /// Larghezza logica dell'immagine. Vicina a quella di un telefono, così le
   /// righe vanno a capo dove l'utente le ha viste andare a capo nell'app; il
@@ -53,7 +65,7 @@ class PlanShareImage extends StatelessWidget {
           locale: locale,
           delegates: AppLocalizations.localizationsDelegates,
           child: Theme(
-            data: AppTheme.theme,
+            data: AppTheme.of(brightness),
             child: Builder(builder: _buildSheet),
           ),
         ),
@@ -66,14 +78,14 @@ class PlanShareImage extends StatelessWidget {
     final showDayLabels = plan.days.length > 1;
 
     return ColoredBox(
-      color: AppColors.background,
+      color: context.colors.background,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(plan.name, style: AppTypography.screenTitle),
+            Text(plan.name, style: context.type.screenTitle),
             const SizedBox(height: AppSpacing.md),
             Align(
               alignment: Alignment.centerLeft,
@@ -118,14 +130,14 @@ class _TextSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(label, style: AppTypography.sectionLabel),
+          Text(label, style: context.type.sectionLabel),
           const SizedBox(height: AppSpacing.md),
           SurfaceCard(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.card,
               vertical: AppSpacing.lg,
             ),
-            child: Text(text, style: AppTypography.paragraph),
+            child: Text(text, style: context.type.paragraph),
           ),
         ],
       ),

@@ -40,14 +40,22 @@ void main() {
     return plan;
   }
 
-  Future<void> pumpPoster(WidgetTester tester, WorkoutPlan plan) async {
+  Future<void> pumpPoster(
+    WidgetTester tester,
+    WorkoutPlan plan, {
+    Brightness brightness = Brightness.light,
+  }) async {
     // Il manifesto è alto quanto serve: la finestra di test di default lo
     // taglierebbe e farebbe scattare l'overflow.
     tester.view.physicalSize = const Size(PlanShareImage.logicalWidth, 2400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
-      PlanShareImage(plan: plan, locale: const Locale('it')),
+      PlanShareImage(
+        plan: plan,
+        locale: const Locale('it'),
+        brightness: brightness,
+      ),
     );
     await tester.pumpAndSettle();
   }
@@ -86,7 +94,11 @@ void main() {
     final plan = seedPlan(days: 4);
     final Uint8List? bytes = await tester.runAsync(
       () => const WidgetImageRenderer().renderPng(
-        widget: PlanShareImage(plan: plan, locale: const Locale('it')),
+        widget: PlanShareImage(
+          plan: plan,
+          locale: const Locale('it'),
+          brightness: Brightness.light,
+        ),
         width: PlanShareImage.logicalWidth,
         pixelRatio: 2,
       ),

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/block_type_labels.dart';
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/meta_chip.dart';
 import '../../../core/widgets/surface_card.dart';
 import '../../../data/entities/block.dart';
@@ -37,15 +36,15 @@ class PlanDaySection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (showLabel) ...[
-            Text(day.label, style: AppTypography.subtitle),
+            Text(day.label, style: context.type.subtitle),
             if ((day.notes ?? '').isNotEmpty) ...[
               const SizedBox(height: AppSpacing.xs + 2),
-              Text(day.notes!, style: AppTypography.paragraphSmall),
+              Text(day.notes!, style: context.type.paragraphSmall),
             ],
             const SizedBox(height: AppSpacing.md),
           ],
           if (day.blocks.isEmpty)
-            Text(l10n.dayNoBlocks, style: AppTypography.paragraphSmall)
+            Text(l10n.dayNoBlocks, style: context.type.paragraphSmall)
           else
             for (final block in day.blocks)
               Padding(
@@ -80,20 +79,20 @@ class PlanBlockCard extends StatelessWidget {
             children: [
               Text(
                 blockTypeLabel(l10n, block.type),
-                style: AppTypography.blockType,
+                style: context.type.blockType,
               ),
               for (final param in _params(l10n)) MetaChip(label: param),
             ],
           ),
           if ((block.notes ?? '').isNotEmpty) ...[
             const SizedBox(height: AppSpacing.sm),
-            Text(block.notes!, style: AppTypography.paragraphSmall),
+            Text(block.notes!, style: context.type.paragraphSmall),
           ],
           const SizedBox(height: AppSpacing.lg),
           if (block.type == BlockType.freeText)
-            Text(block.freeTextContent ?? '', style: AppTypography.paragraph)
+            Text(block.freeTextContent ?? '', style: context.type.paragraph)
           else if (exercises.isEmpty)
-            Text(l10n.blockNoExercises, style: AppTypography.paragraphSmall)
+            Text(l10n.blockNoExercises, style: context.type.paragraphSmall)
           else
             for (var i = 0; i < exercises.length; i++) ...[
               if (i > 0) const SizedBox(height: AppSpacing.lg),
@@ -173,16 +172,16 @@ class PlanExerciseRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(exercise.name, style: AppTypography.row),
+              Text(exercise.name, style: context.type.row),
               if (details.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.xs),
-                Text(details.join(' · '), style: AppTypography.meta),
+                Text(details.join(' · '), style: context.type.meta),
               ],
               if ((exercise.notes ?? '').isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   exercise.notes!,
-                  style: AppTypography.paragraphSmall.copyWith(
+                  style: context.type.paragraphSmall.copyWith(
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -192,7 +191,7 @@ class PlanExerciseRow extends StatelessWidget {
         ),
         if (volume.isNotEmpty) ...[
           const SizedBox(width: AppSpacing.sm),
-          Text(volume, style: AppTypography.metaStrong.copyWith(fontSize: 14)),
+          Text(volume, style: context.type.metaStrong.copyWith(fontSize: 14)),
         ],
       ],
     );
@@ -212,10 +211,10 @@ class ExercisePosition extends StatelessWidget {
       width: 26,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: AppColors.fill,
+        color: context.colors.fill,
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
-      child: Text('$position', style: AppTypography.chip),
+      child: Text('$position', style: context.type.chip),
     );
   }
 }

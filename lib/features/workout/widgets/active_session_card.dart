@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/linear_icon.dart';
 import '../../../core/widgets/meta_chip.dart';
 import '../../../core/widgets/surface_card.dart';
@@ -51,12 +50,16 @@ class ActiveSessionCard extends StatelessWidget {
           Container(
             height: 40,
             width: 40,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.fill,
+              color: context.colors.fill,
             ),
-            child: const Center(
-              child: LinearIcon(AppIcons.play, size: 20, color: AppColors.ink),
+            child: Center(
+              child: LinearIcon(
+                AppIcons.play,
+                size: 20,
+                color: context.colors.ink,
+              ),
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -64,11 +67,11 @@ class ActiveSessionCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l10n.workoutActiveSessionLabel, style: AppTypography.meta),
+                Text(l10n.workoutActiveSessionLabel, style: context.type.meta),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   log.planNameSnapshot,
-                  style: AppTypography.rowStrong,
+                  style: context.type.rowStrong,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -88,10 +91,10 @@ class ActiveSessionCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          const LinearIcon(
+          LinearIcon(
             AppIcons.chevronRight,
             size: 20,
-            color: AppColors.muted,
+            color: context.colors.muted,
           ),
         ],
       ),

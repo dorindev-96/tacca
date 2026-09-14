@@ -17,6 +17,12 @@
   "settingsLanguageSystem": "Como el sistema",
   "settingsLanguageSheetTitle": "Idioma de la app",
   "settingsLanguageSystemSubtitle": "Sigue el idioma del teléfono",
+  "settingsThemeTile": "Tema",
+  "settingsThemeSheetTitle": "Tema de la app",
+  "settingsThemeSystem": "Como el sistema",
+  "settingsThemeSystemSubtitle": "Sigue la apariencia del teléfono",
+  "settingsThemeLight": "Claro",
+  "settingsThemeDark": "Oscuro",
   "settingsLegalTile": "Términos y responsabilidad",
   "settingsLegalTileSubtitle": "El aviso aceptado al abrir la app por primera vez",
 

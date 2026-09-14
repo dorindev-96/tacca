@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_field.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../../../core/widgets/confirm_dialog.dart';
@@ -162,15 +161,15 @@ class _SavedKeyTile extends StatelessWidget {
               Container(
                 height: 32,
                 width: 32,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.lime,
+                  color: context.colors.lime,
                 ),
-                child: const Center(
+                child: Center(
                   child: LinearIcon(
                     AppIcons.check,
                     size: 18,
-                    color: AppColors.ink,
+                    color: context.colors.onLime,
                   ),
                 ),
               ),
@@ -178,7 +177,7 @@ class _SavedKeyTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   l10n.aiSettingsKeySaved,
-                  style: AppTypography.paragraph,
+                  style: context.type.paragraph,
                 ),
               ),
             ],
@@ -247,17 +246,18 @@ class _KeyEditorState extends State<_KeyEditor> {
           obscureText: _obscured,
           autocorrect: false,
           enableSuggestions: false,
-          style: AppTypography.row,
+          style: context.type.row,
           decoration: AppField.onBackground(
+            context,
             hintText: widget.hintText,
-            prefixIcon: const LinearIcon(
+            prefixIcon: LinearIcon(
               AppIcons.lock,
               size: 20,
-              color: AppColors.muted,
+              color: context.colors.muted,
             ),
             suffixIcon: GhostIconButton(
               icon: AppIcons.eye,
-              foreground: AppColors.muted,
+              foreground: context.colors.muted,
               tooltip: l10n.aiSettingsKeyReveal,
               onPressed: () => setState(() => _obscured = !_obscured),
             ),
@@ -301,12 +301,12 @@ class _TestConnectionSection extends StatelessWidget {
           ),
           AiConnectionTestStatus.success => Row(
             children: [
-              const LinearIcon(AppIcons.check, size: 20, color: AppColors.ink),
+              LinearIcon(AppIcons.check, size: 20, color: context.colors.ink),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
                   l10n.aiSettingsTestSuccess,
-                  style: AppTypography.paragraph,
+                  style: context.type.paragraph,
                 ),
               ),
             ],
@@ -348,16 +348,21 @@ class _Dropdown<T> extends StatelessWidget {
     return DropdownButtonFormField<T>(
       initialValue: value,
       isExpanded: true,
-      style: AppTypography.row,
+      style: context.type.row,
       borderRadius: BorderRadius.circular(AppSpacing.card),
-      icon: const LinearIcon(
+      icon: LinearIcon(
         AppIcons.chevronDown,
         size: 20,
-        color: AppColors.muted,
+        color: context.colors.muted,
       ),
       decoration: AppField.onBackground(
+        context,
         prefixIcon: switch (icon) {
-          final glyph? => LinearIcon(glyph, size: 20, color: AppColors.muted),
+          final glyph? => LinearIcon(
+            glyph,
+            size: 20,
+            color: context.colors.muted,
+          ),
           null => null,
         },
       ),

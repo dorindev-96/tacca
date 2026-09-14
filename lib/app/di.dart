@@ -9,6 +9,7 @@ import '../features/history/cubit/history_cubit.dart';
 import '../features/legal/cubit/legal_notice_cubit.dart';
 import '../features/plans/cubit/plans_cubit.dart';
 import '../features/settings/cubit/locale_cubit.dart';
+import '../features/settings/cubit/theme_mode_cubit.dart';
 import '../features/workout/cubit/active_session_cubit.dart';
 import '../services/ai/ai_provider.dart';
 import '../services/ai/ai_selection.dart';
@@ -50,9 +51,10 @@ import '../services/wakelock/screen_wake.dart';
 /// piattaforma (player audio, canale notifiche, Live Activity) e una sola
 /// sessione può essere attiva per volta.
 ///
-/// [LegalNoticeCubit] e [LocaleCubit] vivono qui perché stanno sopra al
-/// router: la manleva del primo avvio deve poter decidere prima di ogni
-/// schermata, e la lingua la legge `MaterialApp`, che il router lo contiene.
+/// [LegalNoticeCubit], [LocaleCubit] e [ThemeModeCubit] vivono qui perché
+/// stanno sopra al router: la manleva del primo avvio deve poter decidere
+/// prima di ogni schermata, e lingua e tema li legge `MaterialApp`, che il
+/// router lo contiene.
 class AppProviders extends StatelessWidget {
   const AppProviders({
     required this.objectBox,
@@ -170,6 +172,12 @@ class AppProviders extends StatelessWidget {
           BlocProvider<LocaleCubit>(
             create: (context) =>
                 LocaleCubit(settings: context.read<SettingsRepository>()),
+          ),
+          // Il tema sta accanto alla lingua per la stessa ragione: lo legge
+          // `MaterialApp`.
+          BlocProvider<ThemeModeCubit>(
+            create: (context) =>
+                ThemeModeCubit(settings: context.read<SettingsRepository>()),
           ),
           // Il gate legale sta sopra al router (vedi App): il suo stato deve
           // esistere prima che venga costruita qualsiasi schermata.

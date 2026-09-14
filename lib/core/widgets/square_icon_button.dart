@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../design/app_colors.dart';
 import '../design/app_radius.dart';
 import '../design/linear_icons.dart';
+import '../design/theme_context.dart';
 import 'linear_icon.dart';
 
 /// Il solo *disegno* del pulsante icona quadrato: 40×40, raggio 12, contorno
@@ -15,7 +15,7 @@ class SquareIconSurface extends StatelessWidget {
     required this.icon,
     this.filled = false,
     this.enabled = true,
-    this.foreground = AppColors.ink,
+    this.foreground,
     super.key,
   });
 
@@ -26,7 +26,10 @@ class SquareIconSurface extends StatelessWidget {
   final bool filled;
 
   final bool enabled;
-  final Color foreground;
+
+  /// Null = l'inchiostro del tema. Un default non può leggerlo: `context` non
+  /// esiste ancora quando si costruisce il widget, solo quando si disegna.
+  final Color? foreground;
 
   static const double tapSize = 48;
   static const double boxSize = 40;
@@ -40,18 +43,20 @@ class SquareIconSurface extends StatelessWidget {
           height: boxSize,
           width: boxSize,
           decoration: BoxDecoration(
-            color: filled ? AppColors.surface : null,
+            color: filled ? context.colors.surface : null,
             borderRadius: BorderRadius.circular(AppRadius.sm),
             border: filled
                 ? null
-                : const Border.fromBorderSide(
-                    BorderSide(color: AppColors.stroke),
+                : Border.fromBorderSide(
+                    BorderSide(color: context.colors.stroke),
                   ),
           ),
           child: Center(
             child: LinearIcon(
               icon,
-              color: enabled ? foreground : AppColors.muted,
+              color: enabled
+                  ? (foreground ?? context.colors.ink)
+                  : context.colors.muted,
             ),
           ),
         ),
@@ -72,7 +77,7 @@ class SquareIconButton extends StatelessWidget {
     required this.onPressed,
     this.tooltip,
     this.filled = false,
-    this.foreground = AppColors.ink,
+    this.foreground,
     super.key,
   });
 
@@ -83,7 +88,9 @@ class SquareIconButton extends StatelessWidget {
 
   final String? tooltip;
   final bool filled;
-  final Color foreground;
+
+  /// Null = l'inchiostro del tema.
+  final Color? foreground;
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +138,7 @@ class GhostIconButton extends StatelessWidget {
     required this.icon,
     required this.onPressed,
     this.tooltip,
-    this.foreground = AppColors.ink,
+    this.foreground,
     this.size = 20,
     super.key,
   });
@@ -139,7 +146,10 @@ class GhostIconButton extends StatelessWidget {
   final LinearIconData icon;
   final VoidCallback? onPressed;
   final String? tooltip;
-  final Color foreground;
+
+  /// Null = l'inchiostro del tema.
+  final Color? foreground;
+
   final double size;
 
   static const double tapSize = 44;
@@ -151,7 +161,7 @@ class GhostIconButton extends StatelessWidget {
       radius: 24,
       child: GhostIconSurface(
         icon: icon,
-        foreground: onPressed == null ? AppColors.muted : foreground,
+        foreground: onPressed == null ? context.colors.muted : foreground,
         size: size,
       ),
     );
@@ -166,13 +176,16 @@ class GhostIconButton extends StatelessWidget {
 class GhostIconSurface extends StatelessWidget {
   const GhostIconSurface({
     required this.icon,
-    this.foreground = AppColors.ink,
+    this.foreground,
     this.size = 20,
     super.key,
   });
 
   final LinearIconData icon;
-  final Color foreground;
+
+  /// Null = l'inchiostro del tema.
+  final Color? foreground;
+
   final double size;
 
   @override
@@ -180,7 +193,11 @@ class GhostIconSurface extends StatelessWidget {
     return SizedBox.square(
       dimension: GhostIconButton.tapSize,
       child: Center(
-        child: LinearIcon(icon, size: size, color: foreground),
+        child: LinearIcon(
+          icon,
+          size: size,
+          color: foreground ?? context.colors.ink,
+        ),
       ),
     );
   }
