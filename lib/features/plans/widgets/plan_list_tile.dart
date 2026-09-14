@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_field.dart';
 import '../../../core/widgets/app_menu.dart';
 import '../../../core/widgets/confirm_dialog.dart';
@@ -81,7 +80,7 @@ class PlanListTile extends StatelessWidget {
 
     if (highlighted) {
       return SurfaceCard(
-        color: AppColors.lime,
+        color: context.colors.lime,
         onTap: onOpen,
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.card,
@@ -94,15 +93,18 @@ class PlanListTile extends StatelessWidget {
             Container(
               height: 32,
               width: 32,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.surface,
+                // Il pallino sta sul lime, e il lime è uguale nei due temi:
+                // resta chiaro anche al buio, o la stessa card sembrerebbe
+                // due card diverse.
+                color: context.colors.onLimeSurface,
               ),
-              child: const Center(
+              child: Center(
                 child: LinearIcon(
                   AppIcons.check,
                   size: 20,
-                  color: AppColors.ink,
+                  color: context.colors.onLime,
                 ),
               ),
             ),
@@ -113,14 +115,18 @@ class PlanListTile extends StatelessWidget {
                 children: [
                   Text(
                     plan.name,
-                    style: AppTypography.rowStrong,
+                    style: context.type.rowStrong.copyWith(
+                      color: context.colors.onLime,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     days,
-                    style: AppTypography.chip.copyWith(color: AppColors.ink),
+                    style: context.type.chip.copyWith(
+                      color: context.colors.onLime,
+                    ),
                   ),
                 ],
               ),
@@ -146,13 +152,13 @@ class PlanListTile extends StatelessWidget {
             Expanded(
               child: Text(
                 plan.name,
-                style: AppTypography.row,
+                style: context.type.row,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
-            Text(days, style: AppTypography.meta),
+            Text(days, style: context.type.meta),
             menu,
           ],
         ),
@@ -206,13 +212,14 @@ class PlanSearchField extends StatelessWidget {
     return TextField(
       onChanged: onChanged,
       textInputAction: TextInputAction.search,
-      style: AppTypography.row,
+      style: context.type.row,
       decoration: AppField.onBackground(
+        context,
         hintText: l10n.plansSearchHint,
-        prefixIcon: const LinearIcon(
+        prefixIcon: LinearIcon(
           AppIcons.search,
           size: 20,
-          color: AppColors.muted,
+          color: context.colors.muted,
         ),
       ),
     );

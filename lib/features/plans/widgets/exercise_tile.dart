@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_field.dart';
 import '../../../core/widgets/square_icon_button.dart';
 import '../../../data/entities/exercise.dart';
@@ -63,8 +62,8 @@ class ExerciseTile extends StatelessWidget {
           child: TextFormField(
             key: ValueKey('ex-$tag-$instanceKey'),
             initialValue: value?.toString() ?? '',
-            style: AppTypography.row,
-            decoration: AppField.onBackground(),
+            style: context.type.row,
+            decoration: AppField.onBackground(context),
             keyboardType: TextInputType.number,
             onChanged: (v) => onChanged(int.tryParse(v)),
           ),
@@ -86,8 +85,8 @@ class ExerciseTile extends StatelessWidget {
           child: TextFormField(
             key: ValueKey('ex-$tag-$instanceKey'),
             initialValue: value,
-            style: AppTypography.row,
-            decoration: AppField.onBackground(),
+            style: context.type.row,
+            decoration: AppField.onBackground(context),
             onChanged: onChanged,
           ),
         ),
@@ -103,7 +102,7 @@ class ExerciseTile extends StatelessWidget {
         AppSpacing.lg,
       ),
       decoration: BoxDecoration(
-        color: AppColors.fill,
+        color: context.colors.fill,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
@@ -113,9 +112,9 @@ class ExerciseTile extends StatelessWidget {
             children: [
               ReorderableDragStartListener(
                 index: index,
-                child: const GhostIconSurface(
+                child: GhostIconSurface(
                   icon: AppIcons.lines,
-                  foreground: AppColors.muted,
+                  foreground: context.colors.muted,
                 ),
               ),
               Expanded(
@@ -124,8 +123,8 @@ class ExerciseTile extends StatelessWidget {
                   child: TextFormField(
                     key: ValueKey('ex-name-$instanceKey'),
                     initialValue: exercise.name,
-                    style: AppTypography.row,
-                    decoration: AppField.onBackground(),
+                    style: context.type.row,
+                    decoration: AppField.onBackground(context),
                     textCapitalization: TextCapitalization.sentences,
                     onChanged: onNameChanged,
                   ),
@@ -134,7 +133,7 @@ class ExerciseTile extends StatelessWidget {
               GhostIconButton(
                 icon: AppIcons.trash,
                 tooltip: l10n.planEditorRemoveExercise,
-                foreground: AppColors.muted,
+                foreground: context.colors.muted,
                 onPressed: onRemove,
               ),
             ],
@@ -188,8 +187,10 @@ class ExerciseTile extends StatelessWidget {
               child: TextFormField(
                 key: ValueKey('ex-notes-$instanceKey'),
                 initialValue: exercise.notes ?? '',
-                style: AppTypography.paragraph.copyWith(color: AppColors.ink),
-                decoration: AppField.onBackground(),
+                style: context.type.paragraph.copyWith(
+                  color: context.colors.ink,
+                ),
+                decoration: AppField.onBackground(context),
                 onChanged: onNotesChanged,
               ),
             ),

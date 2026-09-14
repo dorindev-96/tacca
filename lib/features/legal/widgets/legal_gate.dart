@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/design/app_colors.dart';
+import '../../../core/design/theme_context.dart';
 import '../cubit/legal_notice_cubit.dart';
 import '../pages/legal_gate_page.dart';
 
@@ -26,8 +26,8 @@ class LegalGate extends StatelessWidget {
       builder: (context, status) {
         switch (status) {
           case LegalNoticeStatus.unknown:
-            return const ColoredBox(
-              color: AppColors.background,
+            return ColoredBox(
+              color: context.colors.background,
               child: SizedBox.expand(),
             );
           case LegalNoticeStatus.pending:

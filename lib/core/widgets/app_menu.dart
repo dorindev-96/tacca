@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../design/app_colors.dart';
 import '../design/app_spacing.dart';
-import '../design/app_typography.dart';
 import '../design/linear_icons.dart';
+import '../design/theme_context.dart';
 import 'linear_icon.dart';
 import 'square_icon_button.dart';
 
@@ -12,6 +11,12 @@ import 'square_icon_button.dart';
 /// Nel design le voci sono **solo testo**: l'icona compare unicamente su
 /// "Elimina", ed è lì che serve — è l'unica voce da cui non si torna
 /// indietro.
+///
+/// Il contenuto passa da un [Builder] perché questa è una funzione, non un
+/// widget: il contesto in cui leggere i colori è quello in cui la voce viene
+/// *disegnata* (l'overlay del menu, che porta con sé il tema di chi l'ha
+/// aperto), non quello di chi la costruisce. Tenerla una funzione significa
+/// che i chiamanti non cambiano.
 PopupMenuItem<T> appMenuItem<T>({
   required T value,
   required String label,
@@ -19,27 +24,31 @@ PopupMenuItem<T> appMenuItem<T>({
   bool destructive = false,
   bool enabled = true,
 }) {
-  final color = destructive ? AppColors.danger : AppColors.ink;
-
   return PopupMenuItem<T>(
     value: value,
     enabled: enabled,
     height: 48,
     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.card),
-    child: Row(
-      children: [
-        if (icon != null) ...[
-          LinearIcon(icon, size: 20, color: color),
-          const SizedBox(width: AppSpacing.sm),
-        ],
-        Flexible(
-          child: Text(
-            label,
-            style: AppTypography.row.copyWith(color: color),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
+    child: Builder(
+      builder: (context) {
+        final color = destructive ? context.colors.danger : context.colors.ink;
+
+        return Row(
+          children: [
+            if (icon != null) ...[
+              LinearIcon(icon, size: 20, color: color),
+              const SizedBox(width: AppSpacing.sm),
+            ],
+            Flexible(
+              child: Text(
+                label,
+                style: context.type.row.copyWith(color: color),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        );
+      },
     ),
   );
 }
@@ -55,33 +64,36 @@ PopupMenuItem<T> appMenuCheckItem<T>({
     value: value,
     height: 56,
     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.card),
-    child: Row(
-      children: [
-        Container(
-          height: 24,
-          width: 24,
-          decoration: BoxDecoration(
-            color: checked ? AppColors.lime : null,
-            borderRadius: BorderRadius.circular(AppSpacing.sm),
-            border: checked
-                ? null
-                : const Border.fromBorderSide(
-                    BorderSide(color: AppColors.stroke),
-                  ),
+    child: Builder(
+      builder: (context) => Row(
+        children: [
+          Container(
+            height: 24,
+            width: 24,
+            decoration: BoxDecoration(
+              color: checked ? context.colors.lime : null,
+              borderRadius: BorderRadius.circular(AppSpacing.sm),
+              border: checked
+                  ? null
+                  : Border.fromBorderSide(
+                      BorderSide(color: context.colors.stroke),
+                    ),
+            ),
+            // La spunta sta sopra il lime: inchiostro che non si capovolge.
+            child: checked
+                ? Center(
+                    child: LinearIcon(
+                      AppIcons.check,
+                      size: 16,
+                      color: context.colors.onLime,
+                    ),
+                  )
+                : null,
           ),
-          child: checked
-              ? const Center(
-                  child: LinearIcon(
-                    AppIcons.check,
-                    size: 16,
-                    color: AppColors.ink,
-                  ),
-                )
-              : null,
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(child: Text(label, style: AppTypography.row)),
-      ],
+          const SizedBox(width: AppSpacing.md),
+          Expanded(child: Text(label, style: context.type.row)),
+        ],
+      ),
     ),
   );
 }
@@ -102,7 +114,7 @@ class AppMenuButton<T> extends StatelessWidget {
     required this.itemBuilder,
     required this.onSelected,
     this.shape = MenuButtonShape.square,
-    this.foreground = AppColors.ink,
+    this.foreground,
     this.tooltip,
     super.key,
   });
@@ -110,7 +122,10 @@ class AppMenuButton<T> extends StatelessWidget {
   final PopupMenuItemBuilder<T> itemBuilder;
   final PopupMenuItemSelected<T> onSelected;
   final MenuButtonShape shape;
-  final Color foreground;
+
+  /// Null = l'inchiostro del tema.
+  final Color? foreground;
+
   final String? tooltip;
 
   @override

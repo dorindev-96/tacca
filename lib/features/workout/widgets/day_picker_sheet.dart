@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/linear_icon.dart';
 import '../../../data/entities/workout_day.dart';
@@ -49,7 +48,7 @@ class _DayRow extends StatelessWidget {
     final notes = day.notes ?? '';
 
     return Material(
-      color: AppColors.fill,
+      color: context.colors.fill,
       borderRadius: BorderRadius.circular(AppRadius.lg),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -68,24 +67,24 @@ class _DayRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(day.label, style: AppTypography.row),
+                    Text(day.label, style: context.type.row),
                     if (notes.isNotEmpty) ...[
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         notes,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTypography.paragraphSmall,
+                        style: context.type.paragraphSmall,
                       ),
                     ],
                   ],
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              const LinearIcon(
+              LinearIcon(
                 AppIcons.chevronRight,
                 size: 20,
-                color: AppColors.muted,
+                color: context.colors.muted,
               ),
             ],
           ),
@@ -115,11 +114,11 @@ class _DayInitial extends StatelessWidget {
       height: 36,
       width: 36,
       alignment: Alignment.center,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.surface,
+        color: context.colors.surface,
       ),
-      child: Text(_initial, style: AppTypography.rowStrong),
+      child: Text(_initial, style: context.type.rowStrong),
     );
   }
 }

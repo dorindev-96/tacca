@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_field.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../../../core/widgets/confirm_dialog.dart';
@@ -97,18 +96,15 @@ void _showImportInfoDialog(BuildContext context) {
     title: l10n.aiImportInfoTitle,
     message: l10n.aiImportInfoBody,
     child: SurfaceCard(
-      color: AppColors.fill,
+      color: context.colors.fill,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            l10n.aiImportInfoExampleLabel,
-            style: AppTypography.sectionLabel,
-          ),
+          Text(l10n.aiImportInfoExampleLabel, style: context.type.sectionLabel),
           const SizedBox(height: AppSpacing.sm),
           Text(
             l10n.aiImportInfoExampleText,
-            style: AppTypography.paragraphSmall,
+            style: context.type.paragraphSmall,
           ),
         ],
       ),
@@ -173,7 +169,7 @@ class _ProcessingView extends StatelessWidget {
         children: [
           const CircularProgressIndicator(),
           const SizedBox(height: AppSpacing.xl),
-          Text(l10n.aiImportProcessing, style: AppTypography.sectionLabel),
+          Text(l10n.aiImportProcessing, style: context.type.sectionLabel),
         ],
       ),
     );
@@ -257,8 +253,11 @@ class _InputView extends StatelessWidget {
           child: TextFormField(
             key: const ValueKey('import-text'),
             initialValue: state.text,
-            style: AppTypography.paragraph.copyWith(color: AppColors.ink),
-            decoration: AppField.onBackground(hintText: l10n.aiImportTextHint),
+            style: context.type.paragraph.copyWith(color: context.colors.ink),
+            decoration: AppField.onBackground(
+              context,
+              hintText: l10n.aiImportTextHint,
+            ),
             minLines: 4,
             maxLines: 12,
             onChanged: cubit.updateText,
@@ -270,14 +269,14 @@ class _InputView extends StatelessWidget {
           child: TextFormField(
             key: const ValueKey('import-hint'),
             initialValue: state.hint,
-            style: AppTypography.row,
-            decoration: AppField.onBackground(),
+            style: context.type.row,
+            decoration: AppField.onBackground(context),
             onChanged: cubit.updateHint,
           ),
         ),
         if (!state.hasInput) ...[
           const SizedBox(height: AppSpacing.card),
-          Center(child: Text(l10n.aiImportNoInput, style: AppTypography.meta)),
+          Center(child: Text(l10n.aiImportNoInput, style: context.type.meta)),
         ],
       ],
     );

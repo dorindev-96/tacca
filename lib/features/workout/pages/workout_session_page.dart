@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart' hide Block;
 
 import '../../../core/block_type_labels.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_menu.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../../../core/widgets/confirm_dialog.dart';
@@ -210,13 +210,13 @@ class _SessionScaffold extends StatelessWidget {
             children: [
               Text(
                 log?.dayLabelSnapshot ?? '',
-                style: AppTypography.screenTitle,
+                style: context.type.screenTitle,
               ),
               if (items.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   l10n.workoutProgress(state.completedExercises, items.length),
-                  style: AppTypography.sectionLabel.copyWith(fontSize: 14),
+                  style: context.type.sectionLabel.copyWith(fontSize: 14),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 ProgressLine(value: state.completedExercises / items.length),
@@ -275,7 +275,7 @@ class _SessionScaffold extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: AppSpacing.xl),
               child: Text(
                 block.freeTextContent ?? '',
-                style: AppTypography.paragraph,
+                style: context.type.paragraph,
               ),
             ),
           );
@@ -501,7 +501,7 @@ class _BlockHeader extends StatelessWidget {
             children: [
               Text(
                 blockTypeLabel(l10n, block.type),
-                style: AppTypography.blockType,
+                style: context.type.blockType,
               ),
               for (final param in params)
                 MetaChip(label: param, tone: ChipTone.onBackground),
@@ -519,11 +519,11 @@ class _BlockHeader extends StatelessWidget {
           ],
           if (hint != null) ...[
             const SizedBox(height: AppSpacing.sm),
-            Text(hint, style: AppTypography.paragraphSmall),
+            Text(hint, style: context.type.paragraphSmall),
           ],
           if ((block.notes ?? '').isNotEmpty) ...[
             const SizedBox(height: AppSpacing.sm),
-            Text(block.notes!, style: AppTypography.paragraphSmall),
+            Text(block.notes!, style: context.type.paragraphSmall),
           ],
         ],
       ),

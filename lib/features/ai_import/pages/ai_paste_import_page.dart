@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_field.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../../../core/widgets/info_banner.dart';
@@ -215,7 +214,7 @@ class _ComposeStepState extends State<_ComposeStep> {
           Center(
             child: Text(
               l10n.aiPasteReadingImages,
-              style: AppTypography.sectionLabel,
+              style: context.type.sectionLabel,
             ),
           ),
         ],
@@ -229,8 +228,11 @@ class _ComposeStepState extends State<_ComposeStep> {
           child: TextField(
             key: const ValueKey('paste-text'),
             controller: _text,
-            style: AppTypography.paragraph.copyWith(color: AppColors.ink),
-            decoration: AppField.onBackground(hintText: l10n.aiPasteTextHint),
+            style: context.type.paragraph.copyWith(color: context.colors.ink),
+            decoration: AppField.onBackground(
+              context,
+              hintText: l10n.aiPasteTextHint,
+            ),
             minLines: 6,
             maxLines: 16,
             onChanged: cubit.updateText,
@@ -242,14 +244,14 @@ class _ComposeStepState extends State<_ComposeStep> {
           child: TextFormField(
             key: const ValueKey('paste-hint'),
             initialValue: state.hint,
-            style: AppTypography.row,
-            decoration: AppField.onBackground(),
+            style: context.type.row,
+            decoration: AppField.onBackground(context),
             onChanged: cubit.updateHint,
           ),
         ),
         if (!state.canContinue && !state.isReadingImages) ...[
           const SizedBox(height: AppSpacing.card),
-          Center(child: Text(l10n.aiPasteNoText, style: AppTypography.meta)),
+          Center(child: Text(l10n.aiPasteNoText, style: context.type.meta)),
         ],
       ],
     );
@@ -348,8 +350,9 @@ class _PasteStepState extends State<_PasteStep> {
           child: TextField(
             key: const ValueKey('paste-response'),
             controller: _response,
-            style: AppTypography.paragraph.copyWith(color: AppColors.ink),
+            style: context.type.paragraph.copyWith(color: context.colors.ink),
             decoration: AppField.onBackground(
+              context,
               hintText: l10n.aiPasteResponseHint,
             ),
             minLines: 8,

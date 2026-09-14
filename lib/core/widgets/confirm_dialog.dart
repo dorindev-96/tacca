@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../design/app_colors.dart';
 import '../design/app_radius.dart';
 import '../design/app_spacing.dart';
-import '../design/app_typography.dart';
+import '../design/theme_context.dart';
 import 'pill_button.dart';
 
 /// Conferma unica per tutta l'app: stessa struttura (titolo, spiegazione di
@@ -25,7 +24,7 @@ Future<bool> showConfirmDialog(
 
   final confirmed = await showDialog<bool>(
     context: context,
-    barrierColor: AppColors.scrim,
+    barrierColor: context.colors.scrim,
     builder: (context) => Dialog(
       insetPadding: const EdgeInsets.all(AppSpacing.xl),
       child: Padding(
@@ -34,9 +33,9 @@ Future<bool> showConfirmDialog(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(title, style: AppTypography.sheetTitleLong),
+            Text(title, style: context.type.sheetTitleLong),
             const SizedBox(height: AppSpacing.md),
-            Text(message, style: AppTypography.paragraph),
+            Text(message, style: context.type.paragraph),
             const SizedBox(height: AppSpacing.card),
             Row(
               children: [
@@ -80,7 +79,7 @@ Future<void> showInfoDialog(
 
   return showDialog<void>(
     context: context,
-    barrierColor: AppColors.scrim,
+    barrierColor: context.colors.scrim,
     builder: (context) => Dialog(
       insetPadding: const EdgeInsets.all(AppSpacing.xl),
       child: Padding(
@@ -89,14 +88,14 @@ Future<void> showInfoDialog(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(title, style: AppTypography.sheetTitleLong),
+            Text(title, style: context.type.sheetTitleLong),
             const SizedBox(height: AppSpacing.md),
             Flexible(
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(message, style: AppTypography.paragraph),
+                    Text(message, style: context.type.paragraph),
                     if (child != null) ...[
                       const SizedBox(height: AppSpacing.card),
                       child,
@@ -128,7 +127,7 @@ Future<String?> showTextInputDialog(
 }) {
   return showDialog<String>(
     context: context,
-    barrierColor: AppColors.scrim,
+    barrierColor: context.colors.scrim,
     builder: (context) => _TextInputDialog(
       title: title,
       label: label,
@@ -183,7 +182,7 @@ class _TextInputDialogState extends State<_TextInputDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(widget.title, style: AppTypography.sheetTitleLong),
+            Text(widget.title, style: context.type.sheetTitleLong),
             const SizedBox(height: AppSpacing.card),
             TextField(
               controller: _controller,
@@ -191,7 +190,7 @@ class _TextInputDialogState extends State<_TextInputDialog> {
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
                 labelText: widget.label,
-                fillColor: AppColors.fill,
+                fillColor: context.colors.fill,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   borderSide: BorderSide.none,

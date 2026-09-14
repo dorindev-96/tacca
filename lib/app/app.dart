@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../core/constants.dart';
 import '../features/legal/widgets/legal_gate.dart';
 import '../features/settings/cubit/locale_cubit.dart';
+import '../features/settings/cubit/theme_mode_cubit.dart';
 import '../l10n/app_localizations.dart';
 import 'router.dart';
 import 'theme.dart';
@@ -48,15 +49,17 @@ class _AppState extends State<App> {
     // una lingua scelta a mano passa da lì.
     final locale = context.watch<LocaleCubit>().state;
 
+    // Come la lingua: `ThemeMode.system` — il default — lascia decidere al
+    // telefono, e la scelta fatta a mano vince.
+    final themeMode = context.watch<ThemeModeCubit>().state;
+
     return MaterialApp.router(
       locale: locale,
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: kDebugMode,
-      // Un tema solo: il restyling ha una palette sola (vedi AppTheme). Il
-      // blocco su ThemeMode.light serve a non mostrare, su un telefono in
-      // dark mode, un'interfaccia che nessuno ha disegnato.
-      theme: AppTheme.theme,
-      themeMode: ThemeMode.light,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: themeMode,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       localeListResolutionCallback: App.resolveLocale,

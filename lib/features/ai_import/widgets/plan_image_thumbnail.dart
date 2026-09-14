@@ -2,9 +2,9 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/linear_icon.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -41,20 +41,20 @@ class PlanImageThumbnail extends StatelessWidget {
           top: 0,
           right: 0,
           child: Material(
-            color: AppColors.surface.withValues(alpha: 0.9),
+            color: context.colors.surface.withValues(alpha: 0.9),
             shape: const CircleBorder(),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: onRemove,
               child: Tooltip(
                 message: l10n.aiImportRemoveImage,
-                child: const SizedBox.square(
+                child: SizedBox.square(
                   dimension: 32,
                   child: Center(
                     child: LinearIcon(
                       AppIcons.close,
                       size: 16,
-                      color: AppColors.ink,
+                      color: context.colors.ink,
                     ),
                   ),
                 ),

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../design/app_colors.dart';
 import '../design/app_radius.dart';
 import '../design/app_spacing.dart';
-import '../design/app_typography.dart';
 import '../design/linear_icons.dart';
+import '../design/theme_context.dart';
 import 'linear_icon.dart';
 import 'square_icon_button.dart';
 
@@ -58,7 +57,7 @@ class AppSheet extends StatelessWidget {
     final header = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: Text(title, style: AppTypography.sheetTitle)),
+        Expanded(child: Text(title, style: context.type.sheetTitle)),
         const SizedBox(width: AppSpacing.md),
         SquareIconButton(
           icon: AppIcons.close,
@@ -131,7 +130,11 @@ class SheetOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final background = highlighted ? AppColors.lime : AppColors.fill;
+    final colors = context.colors;
+    final background = highlighted ? colors.lime : colors.fill;
+    // Evidenziata, la riga è una superficie lime: icona e testo non possono
+    // seguire il tema, o al buio diventerebbero quasi bianchi sul lime.
+    final foreground = highlighted ? colors.onLime : colors.ink;
 
     return Material(
       color: background,
@@ -146,7 +149,7 @@ class SheetOption extends StatelessWidget {
           ),
           child: Row(
             children: [
-              LinearIcon(icon, size: 20, color: AppColors.ink),
+              LinearIcon(icon, size: 20, color: foreground),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
@@ -155,18 +158,20 @@ class SheetOption extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: highlighted
-                          ? AppTypography.rowStrong
-                          : AppTypography.row,
+                      style:
+                          (highlighted
+                                  ? context.type.rowStrong
+                                  : context.type.row)
+                              .copyWith(color: foreground),
                     ),
                     if (subtitle != null) ...[
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         subtitle!,
-                        style: AppTypography.paragraph.copyWith(
+                        style: context.type.paragraph.copyWith(
                           color: highlighted
-                              ? AppColors.ink.withValues(alpha: 0.72)
-                              : AppColors.muted,
+                              ? colors.onLime.withValues(alpha: 0.72)
+                              : colors.muted,
                         ),
                       ),
                     ],

@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/block_type_labels.dart';
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_field.dart';
 import '../../../core/widgets/linear_icon.dart';
 import '../../../core/widgets/pill_button.dart';
@@ -49,14 +48,14 @@ class BlockCard extends StatelessWidget {
           key: PageStorageKey('block-tile-$instanceKey'),
           leading: ReorderableDragStartListener(
             index: index,
-            child: const GhostIconSurface(
+            child: GhostIconSurface(
               icon: AppIcons.lines,
-              foreground: AppColors.muted,
+              foreground: context.colors.muted,
             ),
           ),
           title: Text(
             blockTypeLabel(l10n, block.type),
-            style: AppTypography.cardTitle,
+            style: context.type.cardTitle,
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: AppSpacing.xs),
@@ -64,13 +63,13 @@ class BlockCard extends StatelessWidget {
               _summary(l10n),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: AppTypography.paragraphSmall,
+              style: context.type.paragraphSmall,
             ),
           ),
           trailing: GhostIconButton(
             icon: AppIcons.trash,
             tooltip: l10n.planEditorRemoveBlock,
-            foreground: AppColors.muted,
+            foreground: context.colors.muted,
             onPressed: () => cubit.removeBlock(dayIndex, index),
           ),
           children: [
@@ -95,14 +94,14 @@ class BlockCard extends StatelessWidget {
                       child: DropdownButtonFormField<BlockType>(
                         initialValue: block.type,
                         isExpanded: true,
-                        style: AppTypography.row,
+                        style: context.type.row,
                         borderRadius: BorderRadius.circular(AppRadius.md),
-                        icon: const LinearIcon(
+                        icon: LinearIcon(
                           AppIcons.chevronDown,
                           size: 20,
-                          color: AppColors.muted,
+                          color: context.colors.muted,
                         ),
-                        decoration: AppField.inset(),
+                        decoration: AppField.inset(context),
                         items: [
                           for (final type in BlockType.values)
                             DropdownMenuItem(
@@ -131,10 +130,10 @@ class BlockCard extends StatelessWidget {
                         child: TextFormField(
                           key: ValueKey('block-notes-$instanceKey'),
                           initialValue: block.notes ?? '',
-                          style: AppTypography.paragraph.copyWith(
-                            color: AppColors.ink,
+                          style: context.type.paragraph.copyWith(
+                            color: context.colors.ink,
                           ),
-                          decoration: AppField.inset(),
+                          decoration: AppField.inset(context),
                           onChanged: (v) =>
                               cubit.updateBlockNotes(dayIndex, index, v),
                         ),
@@ -197,7 +196,7 @@ class _ExerciseList extends StatelessWidget {
     if (exercises.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        child: Text(l10n.blockNoExercises, style: AppTypography.sectionLabel),
+        child: Text(l10n.blockNoExercises, style: context.type.sectionLabel),
       );
     }
 

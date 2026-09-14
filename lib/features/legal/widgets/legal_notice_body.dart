@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/constants.dart';
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/linear_icon.dart';
 import '../../../core/widgets/surface_card.dart';
 import '../../../l10n/app_localizations.dart';
@@ -35,22 +34,23 @@ class LegalNoticeBody extends StatelessWidget {
       children: [
         if (highlightIntro)
           SurfaceCard(
-            color: AppColors.lime,
+            color: context.colors.lime,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const LinearIcon(
+                LinearIcon(
                   AppIcons.shield,
                   size: 20,
-                  color: AppColors.ink,
+                  color: context.colors.onLime,
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Text(
                     l10n.legalNoticeIntro,
-                    // Sopra il lime il testo è sempre inchiostro.
-                    style: AppTypography.paragraph.copyWith(
-                      color: AppColors.ink,
+                    // Sopra il lime il testo è sempre `onLime`, che nei due
+                    // temi è lo stesso inchiostro.
+                    style: context.type.paragraph.copyWith(
+                      color: context.colors.onLime,
                     ),
                   ),
                 ),
@@ -58,7 +58,7 @@ class LegalNoticeBody extends StatelessWidget {
             ),
           )
         else
-          Text(l10n.legalNoticeIntro, style: AppTypography.paragraph),
+          Text(l10n.legalNoticeIntro, style: context.type.paragraph),
         const SizedBox(height: AppSpacing.card),
         _LegalPoint(
           title: l10n.legalNoticeMedicalTitle,
@@ -104,9 +104,9 @@ class _LegalPoint extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTypography.cardTitle),
+          Text(title, style: context.type.cardTitle),
           const SizedBox(height: AppSpacing.sm),
-          Text(body, style: AppTypography.paragraph),
+          Text(body, style: context.type.paragraph),
         ],
       ),
     );
@@ -136,26 +136,26 @@ class TermsLinkCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const LinearIcon(AppIcons.shield, size: 20, color: AppColors.muted),
+          LinearIcon(AppIcons.shield, size: 20, color: context.colors.muted),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l10n.legalTermsLinkTitle, style: AppTypography.rowStrong),
+                Text(l10n.legalTermsLinkTitle, style: context.type.rowStrong),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   l10n.legalTermsLinkSubtitle,
-                  style: AppTypography.paragraphSmall,
+                  style: context.type.paragraphSmall,
                 ),
               ],
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          const LinearIcon(
+          LinearIcon(
             AppIcons.chevronRight,
             size: 20,
-            color: AppColors.muted,
+            color: context.colors.muted,
           ),
         ],
       ),

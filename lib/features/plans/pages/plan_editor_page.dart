@@ -3,10 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/block_type_labels.dart';
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_field.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../../../core/widgets/app_sheet.dart';
@@ -107,8 +106,9 @@ class PlanEditorPage extends StatelessWidget {
                   child: TextFormField(
                     key: const ValueKey('plan-name'),
                     initialValue: state.draft.name,
-                    style: AppTypography.row,
+                    style: context.type.row,
                     decoration: AppField.onBackground(
+                      context,
                       hintText: l10n.planEditorNameHint,
                     ),
                     textCapitalization: TextCapitalization.sentences,
@@ -121,10 +121,10 @@ class PlanEditorPage extends StatelessWidget {
                   child: TextFormField(
                     key: const ValueKey('plan-description'),
                     initialValue: state.draft.description ?? '',
-                    style: AppTypography.paragraph.copyWith(
-                      color: AppColors.ink,
+                    style: context.type.paragraph.copyWith(
+                      color: context.colors.ink,
                     ),
-                    decoration: AppField.onBackground(),
+                    decoration: AppField.onBackground(context),
                     onChanged: cubit.updateDescription,
                   ),
                 ),
@@ -134,10 +134,10 @@ class PlanEditorPage extends StatelessWidget {
                   child: TextFormField(
                     key: const ValueKey('plan-notes'),
                     initialValue: state.draft.notes ?? '',
-                    style: AppTypography.paragraph.copyWith(
-                      color: AppColors.ink,
+                    style: context.type.paragraph.copyWith(
+                      color: context.colors.ink,
                     ),
-                    decoration: AppField.onBackground(),
+                    decoration: AppField.onBackground(context),
                     minLines: 1,
                     maxLines: 4,
                     onChanged: cubit.updatePlanNotes,
@@ -217,8 +217,8 @@ class _DayBlocksSection extends StatelessWidget {
             child: TextFormField(
               key: ValueKey('day-notes-${identityHashCode(day)}'),
               initialValue: day.notes ?? '',
-              style: AppTypography.paragraph.copyWith(color: AppColors.ink),
-              decoration: AppField.onBackground(),
+              style: context.type.paragraph.copyWith(color: context.colors.ink),
+              decoration: AppField.onBackground(context),
               onChanged: (v) => cubit.updateDayNotes(dayIndex, v),
             ),
           ),
@@ -228,7 +228,7 @@ class _DayBlocksSection extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
             child: Center(
-              child: Text(l10n.dayNoBlocks, style: AppTypography.sectionLabel),
+              child: Text(l10n.dayNoBlocks, style: context.type.sectionLabel),
             ),
           )
         else

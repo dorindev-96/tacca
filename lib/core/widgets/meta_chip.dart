@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 
-import '../design/app_colors.dart';
 import '../design/app_radius.dart';
 import '../design/app_spacing.dart';
-import '../design/app_typography.dart';
 import '../design/linear_icons.dart';
+import '../design/theme_context.dart';
 import 'linear_icon.dart';
 
 /// Tono di una [MetaChip].
 enum ChipTone {
-  /// Grigia su bianco: il dato secondario dentro una card.
+  /// Incavo neutro: il dato secondario dentro una card.
   neutral,
 
-  /// Bianca su grigio: lo stesso dato quando la chip sta sul fondo pagina.
+  /// Colore delle card: lo stesso dato quando la chip sta sul fondo pagina.
   onBackground,
 
   /// Lime: l'unico dato in evidenza della schermata ("In uso").
@@ -49,22 +48,27 @@ class MetaChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    // I due toni che stanno *sopra* il lime prendono l'inchiostro che non si
+    // capovolge: `ink` qui diventerebbe quasi bianco su lime.
     final (background, foreground, strong) = switch (tone) {
-      ChipTone.neutral => (AppColors.fill, AppColors.muted, false),
-      ChipTone.onBackground => (AppColors.surface, AppColors.ink, false),
-      ChipTone.accent => (AppColors.lime, AppColors.ink, true),
+      ChipTone.neutral => (colors.fill, colors.muted, false),
+      ChipTone.onBackground => (colors.surface, colors.ink, false),
+      ChipTone.accent => (colors.lime, colors.onLime, true),
       ChipTone.onAccent => (
-        AppColors.ink.withValues(alpha: 0.16),
-        AppColors.ink,
+        colors.onLime.withValues(alpha: 0.16),
+        colors.onLime,
         true,
       ),
-      ChipTone.danger => (AppColors.dangerSurface, AppColors.danger, true),
+      ChipTone.danger => (colors.dangerSurface, colors.danger, true),
     };
 
+    final type = context.type;
     final style =
         (small
-                ? (strong ? AppTypography.chipStrong : AppTypography.chip)
-                : (strong ? AppTypography.metaStrong : AppTypography.meta))
+                ? (strong ? type.chipStrong : type.chip)
+                : (strong ? type.metaStrong : type.meta))
             .copyWith(color: foreground);
 
     return Container(

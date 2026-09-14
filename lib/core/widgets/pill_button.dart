@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
 
-import '../design/app_colors.dart';
 import '../design/app_radius.dart';
 import '../design/app_spacing.dart';
-import '../design/app_typography.dart';
 import '../design/linear_icons.dart';
+import '../design/theme_context.dart';
 import 'linear_icon.dart';
 
-/// Il colore di un [PillButton]. Ogni schermata ha **una** pillola scura
+/// Il colore di un [PillButton]. Ogni schermata ha **una** pillola piena
 /// ([PillTone.primary]): è l'azione che la schermata esiste per far fare.
 enum PillTone {
-  /// Inchiostro pieno, testo bianco. L'azione principale.
+  /// Il pieno che spicca (`inkSurface`), testo a contrasto. L'azione
+  /// principale.
   primary,
 
   /// Lime, testo inchiostro. L'azione principale quando sta sopra una
   /// superficie già scura (es. "Ferma" dentro la barra del timer).
   accent,
 
-  /// Bianca su fondo grigio: azione secondaria in testata ("Termina").
+  /// Colore delle card sul fondo pagina: azione secondaria in testata
+  /// ("Termina").
   surface,
 
-  /// Solo contorno: azione secondaria dentro una card bianca.
+  /// Solo contorno: azione secondaria dentro una card.
   outline,
 
   /// Solo contorno, testo rosa: azione distruttiva non finale.
@@ -86,21 +87,18 @@ class PillButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null;
+    final colors = context.colors;
     final (background, foreground, border) = switch (tone) {
-      PillTone.primary => (AppColors.ink, AppColors.surface, null),
-      PillTone.accent => (AppColors.lime, AppColors.ink, null),
-      PillTone.surface => (AppColors.surface, AppColors.ink, null),
-      PillTone.outline => (Colors.transparent, AppColors.ink, AppColors.stroke),
-      PillTone.danger => (
-        Colors.transparent,
-        AppColors.danger,
-        AppColors.stroke,
-      ),
-      PillTone.dangerFilled => (AppColors.danger, AppColors.ink, null),
+      PillTone.primary => (colors.inkSurface, colors.onInkSurface, null),
+      PillTone.accent => (colors.lime, colors.onLime, null),
+      PillTone.surface => (colors.surface, colors.ink, null),
+      PillTone.outline => (Colors.transparent, colors.ink, colors.stroke),
+      PillTone.danger => (Colors.transparent, colors.danger, colors.stroke),
+      PillTone.dangerFilled => (colors.danger, colors.onDanger, null),
     };
 
-    final style = (_compact ? AppTypography.buttonSmall : AppTypography.button)
-        .copyWith(color: enabled ? foreground : AppColors.muted);
+    final style = (_compact ? context.type.buttonSmall : context.type.button)
+        .copyWith(color: enabled ? foreground : colors.muted);
 
     final content = Row(
       mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
@@ -113,7 +111,7 @@ class PillButton extends StatelessWidget {
           LinearIcon(
             icon!,
             size: _compact ? 18 : 20,
-            color: enabled ? (iconColor ?? foreground) : AppColors.muted,
+            color: enabled ? (iconColor ?? foreground) : colors.muted,
           ),
           const SizedBox(width: AppSpacing.sm),
         ],
@@ -129,7 +127,7 @@ class PillButton extends StatelessWidget {
     );
 
     return Material(
-      color: enabled ? background : AppColors.stroke.withValues(alpha: 0.4),
+      color: enabled ? background : colors.stroke.withValues(alpha: 0.4),
       shape: border == null
           ? const StadiumBorder()
           : StadiumBorder(side: BorderSide(color: border)),
@@ -154,17 +152,17 @@ class PillButton extends StatelessWidget {
 /// Riquadro con il raggio della pillola usato quando serve la forma senza il
 /// comportamento (barra di avanzamento, indicatori).
 class ProgressLine extends StatelessWidget {
-  const ProgressLine({
-    required this.value,
-    this.track = AppColors.stroke,
-    this.color = AppColors.ink,
-    super.key,
-  });
+  const ProgressLine({required this.value, this.track, this.color, super.key});
 
   /// 0…1.
   final double value;
-  final Color track;
-  final Color color;
+
+  /// Null = i contorni del tema. Chi la disegna sopra una superficie piena
+  /// (la barra del timer) passa un colore suo: lì il contrasto è un altro.
+  final Color? track;
+
+  /// Null = l'inchiostro del tema.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -173,8 +171,8 @@ class ProgressLine extends StatelessWidget {
       child: LinearProgressIndicator(
         value: value.clamp(0, 1),
         minHeight: 4,
-        backgroundColor: track,
-        color: color,
+        backgroundColor: track ?? context.colors.stroke,
+        color: color ?? context.colors.ink,
       ),
     );
   }

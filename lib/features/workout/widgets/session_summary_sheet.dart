@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/extensions/duration_format.dart';
 import '../../../core/extensions/log_set_format.dart';
 import '../../../core/widgets/app_field.dart';
@@ -116,13 +115,13 @@ class _SessionSummarySheetState extends State<_SessionSummarySheet> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: Text(item.name, style: AppTypography.row)),
+                Expanded(child: Text(item.name, style: context.type.row)),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Text(
                     item.completedSets.map((set) => set.summary).join(' · '),
                     textAlign: TextAlign.end,
-                    style: AppTypography.meta,
+                    style: context.type.meta,
                   ),
                 ),
               ],
@@ -135,8 +134,8 @@ class _SessionSummarySheetState extends State<_SessionSummarySheet> {
           controller: _notes,
           minLines: 1,
           maxLines: 3,
-          style: AppTypography.paragraph.copyWith(color: AppColors.ink),
-          decoration: AppField.inset(),
+          style: context.type.paragraph.copyWith(color: context.colors.ink),
+          decoration: AppField.inset(context),
         ),
         const SizedBox(height: AppSpacing.card),
         Row(
@@ -181,17 +180,17 @@ class _Stat extends StatelessWidget {
           vertical: AppSpacing.lg,
         ),
         decoration: BoxDecoration(
-          color: AppColors.fill,
+          color: context.colors.fill,
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Column(
           children: [
-            Text(value, style: AppTypography.numericField),
+            Text(value, style: context.type.numericField),
             const SizedBox(height: AppSpacing.xs),
             Text(
               label,
               textAlign: TextAlign.center,
-              style: AppTypography.caption,
+              style: context.type.caption,
             ),
           ],
         ),

@@ -1,25 +1,26 @@
 import 'package:flutter/material.dart';
 
 import '../core/design/app_chrome.dart';
-import '../core/design/app_colors.dart';
+import '../core/design/app_palette.dart';
 import '../core/design/app_radius.dart';
 import '../core/design/app_spacing.dart';
 import '../core/design/app_typography.dart';
 
 /// Tema dell'app: il restyling sul linguaggio visivo del file Figma
-/// "Gym full figma" — fondo `#F4F4F6`, superfici bianche a raggio 26,
-/// inchiostro `#192126`, un solo accento lime `#BBF246`.
+/// "Gym full figma" — un solo accento lime `#BBF246`, superfici a raggio 26,
+/// niente ombre sulle card.
 ///
 /// Qui vive **tutto** ciò che deve restare identico ovunque: colori, raggi,
 /// altezze minime dei controlli, stile di card, campi, sheet e menu. Le
 /// pagine non ridefiniscono questi valori — così una card dell'archivio e una
 /// della sessione sono la stessa card.
 ///
-/// **Un solo tema, non due.** Il design definisce una palette sola; una
-/// versione scura sarebbe una seconda interfaccia inventata qui e non
-/// disegnata da nessuna parte. [App] blocca quindi `themeMode` su chiaro: un
-/// telefono in dark mode vede comunque l'app come è stata disegnata, non una
-/// sua approssimazione.
+/// **Due temi, un solo impaginato.** [light] è la palette disegnata; [dark] è
+/// la stessa, letta al buio (vedi [AppPalette]). Non sono due interfacce: sono
+/// lo stesso albero di component theme costruito due volte da [_build], perché
+/// una differenza fra i due che non sia un colore sarebbe un bug. Qualunque
+/// cosa si aggiunga qui nasce quindi dentro [_build] e prende i valori da
+/// `palette`/`type`, mai da un esadecimale scritto sul posto.
 ///
 /// Nota tecnica: gli stili dei component theme vanno costruiti da
 /// [AppTypography] e mai ripresi da `ThemeData(...).textTheme`, perché
@@ -30,75 +31,106 @@ abstract final class AppTheme {
   /// con una mano sola e senza guardare (RNF-04).
   static const Size _minTapSize = Size(64, 48);
 
-  static ThemeData get theme => _build();
+  /// Il tema chiaro: i valori del file di design.
+  ///
+  /// `final` e non un getter: `MaterialApp` si ricostruisce a ogni cambio di
+  /// lingua o di tema e rileggerebbe entrambi, ricostruendo ogni volta tutti i
+  /// component theme.
+  static final ThemeData light = _build(Brightness.light);
 
-  static ThemeData _build() {
-    const scheme = ColorScheme(
-      brightness: Brightness.light,
-      primary: AppColors.ink,
-      onPrimary: AppColors.surface,
-      primaryContainer: AppColors.lime,
-      onPrimaryContainer: AppColors.ink,
-      secondary: AppColors.lime,
-      onSecondary: AppColors.ink,
-      secondaryContainer: AppColors.lime,
-      onSecondaryContainer: AppColors.ink,
-      tertiary: AppColors.ink,
-      onTertiary: AppColors.surface,
-      tertiaryContainer: AppColors.lime,
-      onTertiaryContainer: AppColors.ink,
-      error: AppColors.danger,
-      onError: AppColors.ink,
-      errorContainer: AppColors.dangerSurface,
-      onErrorContainer: AppColors.ink,
-      surface: AppColors.background,
-      onSurface: AppColors.ink,
-      onSurfaceVariant: AppColors.muted,
-      surfaceContainerLowest: AppColors.surface,
-      surfaceContainerLow: AppColors.surface,
-      surfaceContainer: AppColors.surface,
-      surfaceContainerHigh: AppColors.fill,
-      surfaceContainerHighest: AppColors.fill,
-      outline: AppColors.stroke,
-      outlineVariant: AppColors.stroke,
-      inverseSurface: AppColors.ink,
-      onInverseSurface: AppColors.surface,
-      inversePrimary: AppColors.lime,
-      shadow: Color(0xFF000000),
-      scrim: AppColors.scrim,
+  /// Il tema scuro.
+  static final ThemeData dark = _build(Brightness.dark);
+
+  /// Il tema di una luminosità. Serve a chi disegna **fuori** dall'albero
+  /// dell'app e deve portarsi il tema addosso: l'immagine da condividere.
+  static ThemeData of(Brightness brightness) =>
+      brightness == Brightness.dark ? dark : light;
+
+  static ThemeData _build(Brightness brightness) {
+    final palette = AppPalette.of(brightness);
+    final type = AppTypography.of(brightness);
+    final chrome = AppChrome.of(brightness);
+
+    // `primary` è la superficie che spicca, non il colore del testo: il
+    // cursore e la selezione dei campi se li prende `textSelectionTheme` qui
+    // sotto, altrimenti al buio il cursore sarebbe grigio scuro su fondo
+    // scuro. Le coppie `on*` del lime e del rosa passano da `onLime`/
+    // `onDanger` perché quei due colori non si capovolgono col tema.
+    final scheme = ColorScheme(
+      brightness: brightness,
+      primary: palette.inkSurface,
+      onPrimary: palette.onInkSurface,
+      primaryContainer: palette.lime,
+      onPrimaryContainer: palette.onLime,
+      secondary: palette.lime,
+      onSecondary: palette.onLime,
+      secondaryContainer: palette.lime,
+      onSecondaryContainer: palette.onLime,
+      tertiary: palette.inkSurface,
+      onTertiary: palette.onInkSurface,
+      tertiaryContainer: palette.lime,
+      onTertiaryContainer: palette.onLime,
+      error: palette.danger,
+      onError: palette.onDanger,
+      errorContainer: palette.dangerSurface,
+      onErrorContainer: palette.danger,
+      surface: palette.background,
+      onSurface: palette.ink,
+      onSurfaceVariant: palette.muted,
+      surfaceContainerLowest: palette.surface,
+      surfaceContainerLow: palette.surface,
+      surfaceContainer: palette.surface,
+      surfaceContainerHigh: palette.fill,
+      surfaceContainerHighest: palette.fill,
+      outline: palette.stroke,
+      outlineVariant: palette.stroke,
+      inverseSurface: palette.inkSurface,
+      onInverseSurface: palette.onInkSurface,
+      inversePrimary: palette.lime,
+      shadow: const Color(0xFF000000),
+      scrim: palette.scrim,
     );
 
     return ThemeData(
       useMaterial3: true,
+      brightness: brightness,
       colorScheme: scheme,
-      textTheme: _textTheme,
-      scaffoldBackgroundColor: AppColors.background,
-      canvasColor: AppColors.surface,
+      textTheme: _textTheme(type),
+      scaffoldBackgroundColor: palette.background,
+      canvasColor: palette.surface,
       splashFactory: InkSparkle.splashFactory,
-      iconTheme: const IconThemeData(color: AppColors.ink, size: 24),
+      iconTheme: IconThemeData(color: palette.ink, size: 24),
+
+      // Cursore e selezione seguono il *testo*, non `primary`: sono l'unico
+      // punto in cui la differenza si vedrebbe subito.
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: palette.ink,
+        selectionHandleColor: palette.ink,
+        selectionColor: palette.ink.withValues(alpha: 0.24),
+      ),
 
       // Le pagine disegnano la propria intestazione (pulsanti icona quadrati
       // + titolo Lato Black nel corpo): l'AppBar resta configurata per le
       // poche schermate di servizio che la usano ancora.
-      appBarTheme: const AppBarThemeData(
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.ink,
+      appBarTheme: AppBarThemeData(
+        backgroundColor: palette.background,
+        foregroundColor: palette.ink,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
         toolbarHeight: 64,
-        titleTextStyle: AppTypography.screenTitle,
-        iconTheme: IconThemeData(color: AppColors.ink),
-        actionsIconTheme: IconThemeData(color: AppColors.ink),
-        systemOverlayStyle: AppChrome.systemOverlay,
+        titleTextStyle: type.screenTitle,
+        iconTheme: IconThemeData(color: palette.ink),
+        actionsIconTheme: IconThemeData(color: palette.ink),
+        systemOverlayStyle: chrome.systemOverlay,
       ),
 
-      // La forma dell'app: bianca, raggio 26, senza bordo e senza ombra. Si
-      // stacca dal fondo per luminosità, non per contorno.
+      // La forma dell'app: superficie piena, raggio 26, senza bordo e senza
+      // ombra. Si stacca dal fondo per luminosità, non per contorno.
       cardTheme: CardThemeData(
         elevation: 0,
-        color: AppColors.surface,
+        color: palette.surface,
         surfaceTintColor: Colors.transparent,
         shadowColor: Colors.transparent,
         margin: EdgeInsets.zero,
@@ -117,16 +149,16 @@ abstract final class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
-        iconColor: AppColors.muted,
-        titleTextStyle: AppTypography.row,
-        subtitleTextStyle: AppTypography.paragraphSmall,
+        iconColor: palette.muted,
+        titleTextStyle: type.row,
+        subtitleTextStyle: type.paragraphSmall,
       ),
 
       // Campi pieni, senza contorno: il contorno lo fa il colore della
       // superficie. Il focus è l'unico stato che disegna un bordo.
       inputDecorationTheme: InputDecorationThemeData(
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: palette.surface,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.card,
           vertical: AppSpacing.lg,
@@ -134,86 +166,86 @@ abstract final class AppTheme {
         border: _fieldBorder(Colors.transparent),
         enabledBorder: _fieldBorder(Colors.transparent),
         disabledBorder: _fieldBorder(Colors.transparent),
-        focusedBorder: _fieldBorder(AppColors.ink, width: 1.5),
-        errorBorder: _fieldBorder(AppColors.danger),
-        focusedErrorBorder: _fieldBorder(AppColors.danger, width: 1.5),
-        labelStyle: AppTypography.sectionLabel,
-        floatingLabelStyle: AppTypography.meta,
-        hintStyle: AppTypography.row.copyWith(color: AppColors.muted),
-        helperStyle: AppTypography.meta,
-        errorStyle: AppTypography.meta.copyWith(color: AppColors.danger),
-        prefixIconColor: AppColors.muted,
-        suffixIconColor: AppColors.muted,
+        focusedBorder: _fieldBorder(palette.ink, width: 1.5),
+        errorBorder: _fieldBorder(palette.danger),
+        focusedErrorBorder: _fieldBorder(palette.danger, width: 1.5),
+        labelStyle: type.sectionLabel,
+        floatingLabelStyle: type.meta,
+        hintStyle: type.row.copyWith(color: palette.muted),
+        helperStyle: type.meta,
+        errorStyle: type.meta.copyWith(color: palette.danger),
+        prefixIconColor: palette.muted,
+        suffixIconColor: palette.muted,
       ),
 
-      // Pillola scura: l'azione principale di ogni schermata.
+      // Pillola piena: l'azione principale di ogni schermata.
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.ink,
-          foregroundColor: AppColors.surface,
-          disabledBackgroundColor: AppColors.stroke,
-          disabledForegroundColor: AppColors.muted,
+          backgroundColor: palette.inkSurface,
+          foregroundColor: palette.onInkSurface,
+          disabledBackgroundColor: palette.stroke,
+          disabledForegroundColor: palette.muted,
           minimumSize: _minTapSize,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
           elevation: 0,
           shape: const StadiumBorder(),
-          textStyle: AppTypography.button,
+          textStyle: type.button,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.ink,
+          foregroundColor: palette.ink,
           minimumSize: _minTapSize,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.card),
-          side: const BorderSide(color: AppColors.stroke),
+          side: BorderSide(color: palette.stroke),
           shape: const StadiumBorder(),
-          textStyle: AppTypography.button,
+          textStyle: type.button,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.ink,
+          foregroundColor: palette.ink,
           minimumSize: const Size(48, 48),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           shape: const StadiumBorder(),
-          textStyle: AppTypography.buttonSmall,
+          textStyle: type.buttonSmall,
         ),
       ),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
-          foregroundColor: AppColors.ink,
+          foregroundColor: palette.ink,
           minimumSize: const Size.square(44),
           shape: const CircleBorder(),
         ),
       ),
 
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.fill,
-        selectedColor: AppColors.lime,
+        backgroundColor: palette.fill,
+        selectedColor: palette.lime,
         side: BorderSide.none,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.chip),
         ),
-        labelStyle: AppTypography.chip,
-        secondaryLabelStyle: AppTypography.chipStrong,
+        labelStyle: type.chip,
+        secondaryLabelStyle: type.chipStrong,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: AppSpacing.sm,
         ),
-        iconTheme: const IconThemeData(color: AppColors.muted, size: 16),
+        iconTheme: IconThemeData(color: palette.muted, size: 16),
       ),
 
       // I pannelli modali coprono la pagina: raggio 24 in alto e chiusura
       // con la X in testata (niente maniglia — nel design non c'è).
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: AppColors.surface,
-        modalBackgroundColor: AppColors.surface,
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: palette.surface,
+        modalBackgroundColor: palette.surface,
         surfaceTintColor: Colors.transparent,
-        modalBarrierColor: AppColors.scrim,
+        modalBarrierColor: palette.scrim,
         showDragHandle: false,
         elevation: 0,
         clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(AppRadius.sheet),
           ),
@@ -221,28 +253,30 @@ abstract final class AppTheme {
       ),
 
       dialogTheme: DialogThemeData(
-        backgroundColor: AppColors.surface,
+        backgroundColor: palette.surface,
         surfaceTintColor: Colors.transparent,
-        barrierColor: AppColors.scrim,
+        barrierColor: palette.scrim,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
         insetPadding: const EdgeInsets.all(AppSpacing.xl),
-        titleTextStyle: AppTypography.sheetTitle,
-        contentTextStyle: AppTypography.paragraph,
+        titleTextStyle: type.sheetTitle,
+        contentTextStyle: type.paragraph,
       ),
 
       popupMenuTheme: PopupMenuThemeData(
-        color: AppColors.surface,
+        color: palette.surface,
         surfaceTintColor: Colors.transparent,
-        shadowColor: const Color(0x26000000),
+        // La stessa ombra dei livelli flottanti, che al buio è più coprente:
+        // il menu è uno di quelli.
+        shadowColor: chrome.floating.first.color,
         elevation: 8,
         menuPadding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
-        textStyle: AppTypography.row,
+        textStyle: type.row,
       ),
 
       // Il margine in basso è quello del dock più alto (pillola + tab bar
@@ -251,11 +285,9 @@ abstract final class AppTheme {
       // pillola più bassa che esiste piuttosto che finirci sopra.
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.ink,
-        contentTextStyle: AppTypography.paragraph.copyWith(
-          color: AppColors.surface,
-        ),
-        actionTextColor: AppColors.lime,
+        backgroundColor: palette.inkSurface,
+        contentTextStyle: type.paragraph.copyWith(color: palette.onInkSurface),
+        actionTextColor: palette.lime,
         insetPadding: const EdgeInsets.fromLTRB(
           AppSpacing.xl,
           AppSpacing.xl,
@@ -270,26 +302,26 @@ abstract final class AppTheme {
 
       // Dentro una card la tile espandibile non deve disegnare le proprie
       // linee di separazione: il contenitore è già la card.
-      expansionTileTheme: const ExpansionTileThemeData(
-        shape: RoundedRectangleBorder(side: BorderSide.none),
-        collapsedShape: RoundedRectangleBorder(side: BorderSide.none),
-        tilePadding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      expansionTileTheme: ExpansionTileThemeData(
+        shape: const RoundedRectangleBorder(side: BorderSide.none),
+        collapsedShape: const RoundedRectangleBorder(side: BorderSide.none),
+        tilePadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         childrenPadding: EdgeInsets.zero,
-        iconColor: AppColors.ink,
-        collapsedIconColor: AppColors.muted,
-        backgroundColor: AppColors.surface,
-        collapsedBackgroundColor: AppColors.surface,
+        iconColor: palette.ink,
+        collapsedIconColor: palette.muted,
+        backgroundColor: palette.surface,
+        collapsedBackgroundColor: palette.surface,
       ),
 
-      dividerTheme: const DividerThemeData(
-        color: AppColors.stroke,
+      dividerTheme: DividerThemeData(
+        color: palette.stroke,
         thickness: 1,
         space: AppSpacing.xl,
       ),
 
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.ink,
-        linearTrackColor: AppColors.stroke,
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: palette.ink,
+        linearTrackColor: palette.stroke,
         circularTrackColor: Colors.transparent,
         linearMinHeight: 4,
       ),
@@ -304,23 +336,23 @@ abstract final class AppTheme {
   }
 
   /// I ruoli Material mappati sui token del design. Le pagine usano
-  /// [AppTypography] direttamente; questo serve ai widget di framework che
+  /// `context.type` direttamente; questo serve ai widget di framework che
   /// pescano dal `TextTheme` (dialog, snackbar, `ListTile`, `DropdownMenu`).
-  static const TextTheme _textTheme = TextTheme(
-    displayLarge: AppTypography.clock,
-    displayMedium: AppTypography.clock,
-    displaySmall: AppTypography.clock,
-    headlineLarge: AppTypography.screenTitle,
-    headlineMedium: AppTypography.screenTitle,
-    headlineSmall: AppTypography.sheetTitleLong,
-    titleLarge: AppTypography.subtitle,
-    titleMedium: AppTypography.cardTitle,
-    titleSmall: AppTypography.blockType,
-    bodyLarge: AppTypography.row,
-    bodyMedium: AppTypography.paragraph,
-    bodySmall: AppTypography.paragraphSmall,
-    labelLarge: AppTypography.button,
-    labelMedium: AppTypography.meta,
-    labelSmall: AppTypography.chip,
+  static TextTheme _textTheme(AppTypography type) => TextTheme(
+    displayLarge: type.clock,
+    displayMedium: type.clock,
+    displaySmall: type.clock,
+    headlineLarge: type.screenTitle,
+    headlineMedium: type.screenTitle,
+    headlineSmall: type.sheetTitleLong,
+    titleLarge: type.subtitle,
+    titleMedium: type.cardTitle,
+    titleSmall: type.blockType,
+    bodyLarge: type.row,
+    bodyMedium: type.paragraph,
+    bodySmall: type.paragraphSmall,
+    labelLarge: type.button,
+    labelMedium: type.meta,
+    labelSmall: type.chip,
   );
 }

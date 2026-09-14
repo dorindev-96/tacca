@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../core/design/app_colors.dart';
 import '../core/design/linear_icons.dart';
+import '../core/design/theme_context.dart';
 import '../core/widgets/app_scaffold.dart';
 import '../core/widgets/confirm_dialog.dart';
 import '../core/widgets/home_tab_bar.dart';
@@ -318,7 +318,7 @@ class _HomeShellState extends State<_HomeShell> {
     // Stack della shell, non in `bottomNavigationBar`, e le pagine le
     // lasciano spazio in fondo alle liste (AppSpacing.tabBarClearance).
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colors.background,
       body: Stack(
         children: [
           BlocListener<ActiveSessionCubit, ActiveSessionState>(

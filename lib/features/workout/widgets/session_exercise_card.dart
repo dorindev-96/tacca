@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/design/app_colors.dart';
+import '../../../core/design/app_palette.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/extensions/log_set_format.dart';
 import '../../../core/widgets/linear_icon.dart';
 import '../../../core/widgets/pill_button.dart';
@@ -15,7 +15,8 @@ import '../../../l10n/app_localizations.dart';
 import '../bloc/session_item.dart';
 
 /// I colori di una card di sessione. L'esercizio corrente è lime, tutti gli
-/// altri bianchi: un solo esercizio in evidenza, quello che si sta facendo.
+/// altri hanno il colore delle card: un solo esercizio in evidenza, quello che
+/// si sta facendo.
 class _CardPalette {
   const _CardPalette({
     required this.background,
@@ -25,22 +26,26 @@ class _CardPalette {
     required this.ring,
   });
 
-  /// Card corrente: lime, con i toni ricavati per trasparenza
-  /// dall'inchiostro — così restano leggibili sopra l'accento.
-  static const current = _CardPalette(
-    background: AppColors.lime,
-    secondary: Color(0xB8192126),
-    inset: Color(0x1A192126),
-    marker: Color(0x29192126),
-    ring: Color(0x66192126),
+  /// Card corrente: lime, con i toni ricavati per trasparenza dall'inchiostro
+  /// — così restano leggibili sopra l'accento.
+  ///
+  /// Non dipende dal tema, e non è una dimenticanza: il lime è lo stesso al
+  /// chiaro e al buio, quindi anche quello che ci sta sopra deve esserlo. È
+  /// per questo che parte da [AppPalette.onLime] e non da `ink`.
+  factory _CardPalette.current(AppPalette colors) => _CardPalette(
+    background: colors.lime,
+    secondary: colors.onLime.withValues(alpha: 0.72),
+    inset: colors.onLime.withValues(alpha: 0.10),
+    marker: colors.onLime.withValues(alpha: 0.16),
+    ring: colors.onLime.withValues(alpha: 0.40),
   );
 
-  static const normal = _CardPalette(
-    background: AppColors.surface,
-    secondary: AppColors.muted,
-    inset: AppColors.fill,
-    marker: AppColors.fill,
-    ring: AppColors.stroke,
+  factory _CardPalette.normal(AppPalette colors) => _CardPalette(
+    background: colors.surface,
+    secondary: colors.muted,
+    inset: colors.fill,
+    marker: colors.fill,
+    ring: colors.stroke,
   );
 
   final Color background;
@@ -93,7 +98,9 @@ class SessionExerciseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final palette = isCurrent ? _CardPalette.current : _CardPalette.normal;
+    final palette = isCurrent
+        ? _CardPalette.current(context.colors)
+        : _CardPalette.normal(context.colors);
     final sets = item.displayedSets;
 
     // Nei blocchi a giri una "serie" è un giro del gruppo: chiamarla col suo
@@ -123,8 +130,8 @@ class SessionExerciseCard extends StatelessWidget {
                 child: Text(
                   item.name,
                   style: isCurrent
-                      ? AppTypography.subtitle
-                      : AppTypography.cardTitle,
+                      ? context.type.subtitle
+                      : context.type.cardTitle,
                 ),
               ),
               if (sets > 0) ...[
@@ -139,13 +146,13 @@ class SessionExerciseCard extends StatelessWidget {
           ),
           if (_prescription.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
-            Text(_prescription, style: AppTypography.row),
+            Text(_prescription, style: context.type.row),
           ],
           if ((item.exercise?.notes ?? '').isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
             Text(
               item.exercise!.notes!,
-              style: AppTypography.paragraphSmall.copyWith(
+              style: context.type.paragraphSmall.copyWith(
                 color: palette.secondary,
                 fontStyle: FontStyle.italic,
               ),
@@ -181,7 +188,7 @@ class SessionExerciseCard extends StatelessWidget {
                   ? l10n.workoutStartRoundRest
                   : l10n.workoutStartRestTimer,
               icon: AppIcons.play,
-              iconColor: isCurrent ? AppColors.lime : null,
+              iconColor: isCurrent ? context.colors.lime : null,
               expand: true,
               tone: isCurrent ? PillTone.primary : PillTone.outline,
               onPressed: onStartRest,
@@ -226,7 +233,7 @@ class _GroupMarker extends StatelessWidget {
         color: background,
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
-      child: Text(label, style: AppTypography.buttonSmall.copyWith(height: 1)),
+      child: Text(label, style: context.type.buttonSmall.copyWith(height: 1)),
     );
   }
 }
@@ -255,7 +262,7 @@ class _CountChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: strong ? AppTypography.chipStrong : AppTypography.chip,
+        style: strong ? context.type.chipStrong : context.type.chip,
       ),
     );
   }
@@ -270,7 +277,7 @@ class _LastTimeLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final style = AppTypography.caption.copyWith(color: color);
+    final style = context.type.caption.copyWith(color: color);
 
     final performance = last;
     if (performance == null) {
@@ -335,7 +342,7 @@ class _SetRow extends StatelessWidget {
                     Expanded(
                       child: Text(
                         label,
-                        style: AppTypography.row.copyWith(
+                        style: context.type.row.copyWith(
                           color: palette.secondary,
                         ),
                         maxLines: 1,
@@ -345,7 +352,7 @@ class _SetRow extends StatelessWidget {
                     const SizedBox(width: AppSpacing.sm),
                     Text(
                       done ? set!.summary : '—',
-                      style: AppTypography.numeric,
+                      style: context.type.numeric,
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     LinearIcon(
@@ -397,15 +404,15 @@ class _SetToggle extends StatelessWidget {
               width: 30,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: done ? AppColors.ink : null,
+                color: done ? context.colors.inkSurface : null,
                 border: done ? null : Border.all(color: ring, width: 2),
               ),
               child: done
-                  ? const Center(
+                  ? Center(
                       child: LinearIcon(
                         AppIcons.check,
                         size: 18,
-                        color: AppColors.lime,
+                        color: context.colors.lime,
                       ),
                     )
                   : null,

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/linear_icon.dart';
@@ -149,10 +148,11 @@ class _DayChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = selected ? AppColors.surface : AppColors.ink;
+    final colors = context.colors;
+    final foreground = selected ? colors.onInkSurface : colors.ink;
 
     return Material(
-      color: selected ? AppColors.ink : AppColors.surface,
+      color: selected ? colors.inkSurface : colors.surface,
       borderRadius: BorderRadius.circular(AppRadius.chip),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -169,7 +169,7 @@ class _DayChip extends StatelessWidget {
               ],
               Text(
                 label,
-                style: AppTypography.buttonSmall.copyWith(color: foreground),
+                style: context.type.buttonSmall.copyWith(color: foreground),
               ),
             ],
           ),

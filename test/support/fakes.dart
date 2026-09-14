@@ -373,6 +373,7 @@ class FakeSettingsRepository implements SettingsRepository {
     String? modelId,
     this.providerId,
     this.localeCode,
+    this.themeModeName,
     this.acceptedLegalNoticeVersion,
     this.defaultProviderId = 'openrouter',
   }) {
@@ -382,6 +383,9 @@ class FakeSettingsRepository implements SettingsRepository {
 
   /// Lingua scelta a mano; null = si segue quella del sistema.
   String? localeCode;
+
+  /// Tema scelto a mano (`light`/`dark`); null = si segue quello del sistema.
+  String? themeModeName;
 
   /// Versione dell'informativa legale già accettata; null = primo avvio.
   int? acceptedLegalNoticeVersion;
@@ -399,6 +403,12 @@ class FakeSettingsRepository implements SettingsRepository {
   @override
   Future<void> setLocaleCode(String? languageCode) async =>
       localeCode = languageCode;
+
+  @override
+  Future<String?> getThemeModeName() async => themeModeName;
+
+  @override
+  Future<void> setThemeModeName(String? name) async => themeModeName = name;
 
   String? get apiKey => apiKeys[defaultProviderId];
 

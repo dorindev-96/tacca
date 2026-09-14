@@ -17,6 +17,12 @@
   "settingsLanguageSystem": "Som systemet",
   "settingsLanguageSheetTitle": "Appens språk",
   "settingsLanguageSystemSubtitle": "Följer telefonens språk",
+  "settingsThemeTile": "Tema",
+  "settingsThemeSheetTitle": "Appens tema",
+  "settingsThemeSystem": "Som systemet",
+  "settingsThemeSystemSubtitle": "Följer telefonens utseende",
+  "settingsThemeLight": "Ljust",
+  "settingsThemeDark": "Mörkt",
   "settingsLegalTile": "Villkor och ansvar",
   "settingsLegalTileSubtitle": "Informationen du godkände vid första starten",
 

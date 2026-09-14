@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../design/app_colors.dart';
 import '../design/app_spacing.dart';
-import '../design/app_typography.dart';
 import '../design/linear_icons.dart';
+import '../design/theme_context.dart';
 import 'linear_icon.dart';
 
 /// Stato vuoto uniforme: disco bianco con l'icona, messaggio e — quando
@@ -38,17 +37,19 @@ class EmptyState extends StatelessWidget {
             Container(
               height: 64,
               width: 64,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.surface,
+                color: context.colors.surface,
               ),
-              child: Center(child: LinearIcon(icon, color: AppColors.muted)),
+              child: Center(
+                child: LinearIcon(icon, color: context.colors.muted),
+              ),
             ),
             const SizedBox(height: AppSpacing.card),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: AppTypography.sectionLabel,
+              style: context.type.sectionLabel,
             ),
             if (action != null) ...[
               const SizedBox(height: AppSpacing.xl),

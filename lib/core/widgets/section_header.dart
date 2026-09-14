@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../design/app_spacing.dart';
-import '../design/app_typography.dart';
+import '../design/theme_context.dart';
 
 /// Etichetta di sezione ("In uso", "Schede", "Archiviate", "Descrizione").
 ///
@@ -29,7 +29,7 @@ class SectionHeader extends StatelessWidget {
       padding: padding,
       child: Row(
         children: [
-          Expanded(child: Text(label, style: AppTypography.sectionLabel)),
+          Expanded(child: Text(label, style: context.type.sectionLabel)),
           if (trailing != null) trailing!,
         ],
       ),

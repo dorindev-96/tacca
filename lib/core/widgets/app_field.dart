@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 
-import '../design/app_colors.dart';
 import '../design/app_radius.dart';
 import '../design/app_spacing.dart';
-import '../design/app_typography.dart';
+import '../design/theme_context.dart';
 
 /// Le due forme di campo del restyling.
 ///
 /// Non ce ne sono altre, e nessuna delle due ha un contorno: la forma la fa
 /// il colore del riempimento.
 abstract final class AppField {
-  /// Campo che sta **sul fondo pagina**: pillola bianca a raggio 26, come il
-  /// campo di ricerca dell'archivio.
-  static InputDecoration onBackground({
+  /// Campo che sta **sul fondo pagina**: pillola al colore delle card, raggio
+  /// 26, come il campo di ricerca dell'archivio.
+  ///
+  /// Prende il [context] perché i suoi colori vengono dal tema: è una
+  /// decorazione, non un widget, quindi non ha un `build` da cui leggerli.
+  static InputDecoration onBackground(
+    BuildContext context, {
     String? hintText,
     Widget? prefixIcon,
     Widget? suffixIcon,
@@ -21,7 +24,7 @@ abstract final class AppField {
       hintText: hintText,
       isDense: true,
       filled: true,
-      fillColor: AppColors.surface,
+      fillColor: context.colors.surface,
       contentPadding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.card,
         vertical: AppSpacing.lg,
@@ -37,16 +40,17 @@ abstract final class AppField {
             ),
       prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
       suffixIcon: suffixIcon,
-      hintStyle: AppTypography.row.copyWith(color: AppColors.muted),
+      hintStyle: context.type.row.copyWith(color: context.colors.muted),
       border: _border(AppRadius.lg),
       enabledBorder: _border(AppRadius.lg),
       focusedBorder: _border(AppRadius.lg),
     );
   }
 
-  /// Campo "scavato" **dentro una superficie bianca**: fondo grigio, raggio
-  /// 20. È la forma dei campi degli sheet.
-  static InputDecoration inset({
+  /// Campo "scavato" **dentro una superficie**: riempimento dell'incavo,
+  /// raggio 20. È la forma dei campi degli sheet.
+  static InputDecoration inset(
+    BuildContext context, {
     String? hintText,
     String? labelText,
     EdgeInsetsGeometry? contentPadding,
@@ -55,19 +59,19 @@ abstract final class AppField {
       hintText: hintText,
       labelText: labelText,
       filled: true,
-      fillColor: AppColors.fill,
+      fillColor: context.colors.fill,
       contentPadding:
           contentPadding ??
           const EdgeInsets.symmetric(
             horizontal: AppSpacing.card,
             vertical: AppSpacing.lg,
           ),
-      hintStyle: AppTypography.row.copyWith(color: AppColors.muted),
+      hintStyle: context.type.row.copyWith(color: context.colors.muted),
       border: _border(AppRadius.md),
       enabledBorder: _border(AppRadius.md),
       focusedBorder: _border(AppRadius.md),
-      errorBorder: _border(AppRadius.md, color: AppColors.danger),
-      focusedErrorBorder: _border(AppRadius.md, color: AppColors.danger),
+      errorBorder: _border(AppRadius.md, color: context.colors.danger),
+      focusedErrorBorder: _border(AppRadius.md, color: context.colors.danger),
     );
   }
 
@@ -92,7 +96,7 @@ class FieldLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Text(
         text,
-        style: AppTypography.sectionLabel.copyWith(fontSize: 14),
+        style: context.type.sectionLabel.copyWith(fontSize: 14),
       ),
     );
   }

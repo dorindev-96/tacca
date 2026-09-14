@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../../l10n/app_localizations.dart';
@@ -33,7 +33,7 @@ class LegalGatePage extends StatelessWidget {
         children: [
           const LegalNoticeBody(highlightIntro: true),
           const SizedBox(height: AppSpacing.card),
-          Text(l10n.legalNoticeAcceptExplainer, style: AppTypography.caption),
+          Text(l10n.legalNoticeAcceptExplainer, style: context.type.caption),
         ],
       ),
       dock: PillButton(label: l10n.legalNoticeAccept, onPressed: onAccept),

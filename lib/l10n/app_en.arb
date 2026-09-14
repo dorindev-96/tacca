@@ -17,6 +17,12 @@
   "settingsLanguageSystem": "Same as system",
   "settingsLanguageSheetTitle": "App language",
   "settingsLanguageSystemSubtitle": "Follows the phone's language",
+  "settingsThemeTile": "Theme",
+  "settingsThemeSheetTitle": "App theme",
+  "settingsThemeSystem": "Match system",
+  "settingsThemeSystemSubtitle": "Follows your phone's appearance",
+  "settingsThemeLight": "Light",
+  "settingsThemeDark": "Dark",
   "settingsLegalTile": "Terms and liability",
   "settingsLegalTileSubtitle": "The notice accepted on first launch",
 

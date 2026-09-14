@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/extensions/duration_format.dart';
 import '../../../core/widgets/app_field.dart';
 import '../../../core/widgets/app_scaffold.dart';
@@ -99,18 +98,19 @@ class _PlanFilter extends StatelessWidget {
       child: DropdownButtonFormField<String?>(
         initialValue: state.planFilter,
         isExpanded: true,
-        style: AppTypography.row,
+        style: context.type.row,
         borderRadius: BorderRadius.circular(AppSpacing.card),
-        icon: const LinearIcon(
+        icon: LinearIcon(
           AppIcons.chevronDown,
           size: 20,
-          color: AppColors.muted,
+          color: context.colors.muted,
         ),
         decoration: AppField.onBackground(
-          prefixIcon: const LinearIcon(
+          context,
+          prefixIcon: LinearIcon(
             AppIcons.lines,
             size: 20,
-            color: AppColors.muted,
+            color: context.colors.muted,
           ),
         ),
         items: [
@@ -155,15 +155,15 @@ class _HistoryTile extends StatelessWidget {
           Container(
             height: 32,
             width: 32,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.fill,
+              color: context.colors.fill,
             ),
             child: Center(
               child: LinearIcon(
                 aborted ? AppIcons.close : AppIcons.check,
                 size: 18,
-                color: aborted ? AppColors.danger : AppColors.ink,
+                color: aborted ? context.colors.danger : context.colors.ink,
               ),
             ),
           ),
@@ -174,7 +174,7 @@ class _HistoryTile extends StatelessWidget {
               children: [
                 Text(
                   log.planNameSnapshot,
-                  style: AppTypography.rowStrong,
+                  style: context.type.rowStrong,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -184,7 +184,7 @@ class _HistoryTile extends StatelessWidget {
                 Text(
                   '${l10n.historySessionDate(log.startedAt)} · '
                   '${l10n.historySessionTime(log.startedAt)}',
-                  style: AppTypography.meta,
+                  style: context.type.meta,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Wrap(
@@ -210,7 +210,7 @@ class _HistoryTile extends StatelessWidget {
           GhostIconButton(
             icon: AppIcons.trash,
             tooltip: l10n.commonDelete,
-            foreground: AppColors.muted,
+            foreground: context.colors.muted,
             onPressed: () => _confirmDelete(context, l10n),
           ),
         ],

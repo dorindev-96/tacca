@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
 import '../../../core/design/linear_icons.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_field.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/linear_icon.dart';
@@ -165,8 +164,8 @@ class _SetLogSheetState extends State<_SetLogSheet> {
         TextField(
           key: const ValueKey('set-notes'),
           controller: _notes,
-          style: AppTypography.paragraph.copyWith(color: AppColors.ink),
-          decoration: AppField.inset(),
+          style: context.type.paragraph.copyWith(color: context.colors.ink),
+          decoration: AppField.inset(context),
         ),
         const SizedBox(height: AppSpacing.card),
         Row(
@@ -229,10 +228,10 @@ class _NumberField extends StatelessWidget {
         controller: controller,
         autofocus: autofocus,
         textAlign: TextAlign.center,
-        style: AppTypography.numericField,
+        style: context.type.numericField,
         keyboardType: keyboardType,
         inputFormatters: inputFormatters,
-        decoration: AppField.inset(contentPadding: EdgeInsets.zero),
+        decoration: AppField.inset(context, contentPadding: EdgeInsets.zero),
       ),
     );
   }
@@ -256,7 +255,7 @@ class _StepButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: AppColors.fill,
+        color: context.colors.fill,
         borderRadius: BorderRadius.circular(AppRadius.md),
         clipBehavior: Clip.antiAlias,
         child: InkWell(

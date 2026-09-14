@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/design/app_colors.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_field.dart';
 import '../../../data/entities/block.dart';
 import '../../../l10n/app_localizations.dart';
@@ -43,8 +42,8 @@ class BlockParamsFields extends StatelessWidget {
           child: TextFormField(
             key: ValueKey('blk-$tag-$instanceKey'),
             initialValue: value?.toString() ?? '',
-            style: AppTypography.row,
-            decoration: AppField.inset(),
+            style: context.type.row,
+            decoration: AppField.inset(context),
             keyboardType: TextInputType.number,
             onChanged: (v) => onChanged(int.tryParse(v)),
           ),
@@ -142,8 +141,11 @@ class BlockParamsFields extends StatelessWidget {
             initialValue: block.freeTextContent ?? '',
             minLines: 3,
             maxLines: 8,
-            style: AppTypography.paragraph.copyWith(color: AppColors.ink),
-            decoration: AppField.inset(hintText: l10n.planEditorFreeTextHint),
+            style: context.type.paragraph.copyWith(color: context.colors.ink),
+            decoration: AppField.inset(
+              context,
+              hintText: l10n.planEditorFreeTextHint,
+            ),
             onChanged: (v) => cubit.setBlockFreeText(dayIndex, blockIndex, v),
           ),
         );

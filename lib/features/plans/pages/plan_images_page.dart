@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
-import '../../../core/design/app_typography.dart';
+import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../../../core/widgets/square_icon_button.dart';
 import '../../../l10n/app_localizations.dart';
@@ -52,7 +52,7 @@ class PlanImagesPage extends StatelessWidget {
                     errorBuilder: (context, error, stackTrace) => Center(
                       child: Text(
                         l10n.planImagesMissing,
-                        style: AppTypography.sectionLabel,
+                        style: context.type.sectionLabel,
                       ),
                     ),
                   ),
