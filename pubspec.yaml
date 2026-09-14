@@ -3,7 +3,7 @@ description: "Gym workout plans: manual editor, guided session with timers, hist
 repository: https://github.com/dorex96/tacca
 issue_tracker: https://github.com/dorex96/tacca/issues
 publish_to: 'none'
-version: 0.1.0+7
+version: 0.1.0+8
 
 environment:
   sdk: ^3.9.0
