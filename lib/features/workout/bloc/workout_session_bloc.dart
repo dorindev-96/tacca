@@ -101,6 +101,18 @@ class WorkoutSessionBloc
   /// stream e dalla coda drenata al rientro in primo piano.
   final Set<String> _appliedLiveActions = {};
 
+  /// Se le notifiche dei segnali sono già state programmate per questo
+  /// passaggio in background. Scendendo, iOS manda `hidden` **e** `paused`, e
+  /// risalendo passa di nuovo da `hidden`: senza questo, ognuno rifarebbe gli
+  /// undici `cancel` più i dieci `zonedSchedule`, proprio nei millisecondi in
+  /// cui iOS sta sospendendo il processo (spike S-01).
+  ///
+  /// Solo il verso "in background" si diserta: il rientro resta sempre
+  /// attivo perché è anche l'unico momento in cui si ripulisce ciò che ha
+  /// programmato un *altro* processo (il beep di fine recupero dell'isolate
+  /// Android), e lì il Bloc nasce da zero senza sapere di essere stato via.
+  bool _signalsScheduled = false;
+
   // --- apertura della sessione ---
 
   Future<void> _onSessionStarted(
@@ -447,6 +459,8 @@ class WorkoutSessionBloc
     Emitter<WorkoutSessionState> emit,
   ) async {
     if (event.toBackground) {
+      if (_signalsScheduled) return;
+      _signalsScheduled = true;
       final times = _timerEngine.upcomingSignalTimes(max: kMaxScheduledSignals);
       await _notifier.scheduleSignals(
         times,
@@ -456,6 +470,7 @@ class WorkoutSessionBloc
       return;
     }
 
+    _signalsScheduled = false;
     await _notifier.cancelPending();
     // Al rientro i tick sono stati sospesi dal sistema ma il tempo è passato:
     // lo stato si ricalcola dall'orologio (§7).

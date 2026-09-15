@@ -71,7 +71,11 @@ void main() {
     await logs.dispose();
   });
 
-  Future<void> pumpSession(WidgetTester tester, {int dayId = 10}) async {
+  Future<void> pumpSession(
+    WidgetTester tester, {
+    int dayId = 10,
+    RecordingSessionNotifier? notifier,
+  }) async {
     // Le card della sessione sono alte quanto quelle del design: sulla
     // finestra di default (800×600) la lista non costruirebbe il secondo
     // esercizio di un superset e le asserzioni non lo troverebbero.
@@ -98,7 +102,7 @@ void main() {
                   logRepository: logs,
                   timerEngine: timerEngine,
                   feedback: RecordingSessionFeedback(),
-                  notifier: RecordingSessionNotifier(),
+                  notifier: notifier ?? RecordingSessionNotifier(),
                   screenWake: RecordingScreenWake(),
                   liveSession: RecordingLiveSession(),
                   liveLabels: kTestLiveLabels,
@@ -119,6 +123,40 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('`inactive` non è un passaggio in background (spike S-01)', (
+    tester,
+  ) async {
+    // iOS manda `inactive` anche con l'app in primo piano e visibile: centro
+    // di controllo, banner di chiamata, selettore delle app. Lì il beep lo
+    // suona già il motore, e programmare le notifiche lo farebbe sentire due
+    // volte, perché su iOS vengono presentate anche in primo piano.
+    final notifier = RecordingSessionNotifier();
+    await pumpSession(tester, notifier: notifier);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pumpAndSettle();
+
+    expect(notifier.scheduled, isEmpty);
+    expect(notifier.cancelCount, 0);
+  });
+
+  testWidgets('`hidden` programma i segnali, `paused` non li rifà', (
+    tester,
+  ) async {
+    final notifier = RecordingSessionNotifier();
+    await pumpSession(tester, notifier: notifier);
+
+    // La sequenza vera di un passaggio in background su iOS.
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pumpAndSettle();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    await tester.pumpAndSettle();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pumpAndSettle();
+
+    expect(notifier.scheduled, hasLength(1));
+  });
 
   testWidgets('mostra gli esercizi del giorno con la prescrizione', (
     tester,

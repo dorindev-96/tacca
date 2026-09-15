@@ -466,6 +466,60 @@ void main() {
 
       await bloc.close();
     });
+
+    test('scendere in background programma una volta sola', () async {
+      // iOS annuncia il passaggio due volte (`hidden` poi `paused`) e ripassa
+      // da `hidden` risalendo: riprogrammare a ogni annuncio vuol dire
+      // rifare undici `cancel` piu dieci `zonedSchedule` proprio mentre il
+      // sistema sta sospendendo il processo (spike S-01).
+      final bloc = await startedSession();
+      bloc.add(TimerRequested(TimerSpec.rest(const Duration(seconds: 90))));
+      await pumpEventQueue();
+
+      bloc.add(const AppLifecycleChanged(toBackground: true));
+      bloc.add(const AppLifecycleChanged(toBackground: true));
+      await pumpEventQueue();
+
+      expect(notifier.scheduled, hasLength(1));
+
+      await bloc.close();
+    });
+
+    test('dopo un rientro il background successivo riprogramma', () async {
+      // La diserzione vale per un solo passaggio: il secondo e un'altra cosa.
+      final bloc = await startedSession();
+      bloc.add(TimerRequested(TimerSpec.rest(const Duration(seconds: 90))));
+      await pumpEventQueue();
+
+      bloc.add(const AppLifecycleChanged(toBackground: true));
+      await pumpEventQueue();
+      bloc.add(const AppLifecycleChanged(toBackground: false));
+      await pumpEventQueue();
+      bloc.add(const AppLifecycleChanged(toBackground: true));
+      await pumpEventQueue();
+
+      expect(notifier.scheduled, hasLength(2));
+
+      await bloc.close();
+    });
+
+    test(
+      'il rientro ripulisce anche quando il Bloc non sa di essere stato via',
+      () async {
+        // A processo ucciso il Bloc nasce da zero, ma le notifiche programmate
+        // prima — e il beep di fine recupero dell'isolate Android — sono
+        // ancora armate: il rientro non si diserta mai.
+        final bloc = await startedSession();
+        final prima = notifier.cancelCount;
+
+        bloc.add(const AppLifecycleChanged(toBackground: false));
+        await pumpEventQueue();
+
+        expect(notifier.cancelCount, greaterThan(prima));
+
+        await bloc.close();
+      },
+    );
   });
 
   group('chiusura', () {
