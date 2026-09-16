@@ -68,7 +68,26 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!mounted) return;
-    final toBackground = state != AppLifecycleState.resumed;
+    // `inactive` **non** è background (spike S-01): iOS lo manda anche quando
+    // l'app resta in primo piano e visibile — centro di controllo, centro
+    // notifiche, banner di chiamata, selettore delle app, richiesta Face ID.
+    // Lì il motore continua a battere e il beep lo suona l'app: programmare
+    // anche le notifiche vorrebbe dire sentire il segnale due volte, perché
+    // `kTimerSignalDetails` le fa presentare pure in primo piano.
+    // Il passaggio vero è `resumed → inactive → hidden → paused`: si
+    // programma da `hidden`, il primo istante in cui l'app non si vede più e
+    // c'è ancora tempo prima che iOS sospenda il processo.
+    final toBackground = switch (state) {
+      AppLifecycleState.resumed => false,
+      AppLifecycleState.hidden ||
+      AppLifecycleState.paused ||
+      AppLifecycleState.detached => true,
+      // Né andata né ritorno: non c'è niente da programmare e niente da
+      // annullare, e il rientro vero lo annuncia `resumed` subito dopo.
+      AppLifecycleState.inactive => null,
+    };
+    if (toBackground == null) return;
+
     context.read<WorkoutSessionBloc>().add(
       AppLifecycleChanged(
         toBackground: toBackground,

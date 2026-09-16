@@ -57,12 +57,38 @@ abstract interface class SessionNotifier {
   Future<void> cancelPending();
 }
 
+/// Istante effettivamente programmabile per [when], arrotondato **in avanti**
+/// al secondo intero (spike S-01).
+///
+/// Né iOS né Android sanno programmare una notifica con precisione
+/// sotto il secondo, e nessuno dei due arrotonda: **troncano**.
+/// Su iOS il plugin costruisce un `UNCalendarNotificationTrigger` dai soli
+/// componenti fino a `NSCalendarUnitSecond`, che scatta all'inizio di quel
+/// secondo; su Android passa ad `AlarmManager` un ISO8601 già tagliato ai
+/// millisecondi (`split('.')[0]`). Siccome `startedAt` è l'istante in cui
+/// l'utente ha toccato — con una frazione di secondo qualsiasi — lasciar
+/// fare al sistema vuol dire suonare **in anticipo**, fino a un secondo
+/// pieno: su un recupero è la direzione che fa male, perché dice "vai"
+/// mentre il recupero non è ancora finito.
+///
+/// Arrotondando in avanti il segnale non arriva mai prima del dovuto: al
+/// massimo arriva fino a un secondo dopo, che su un recupero non si sente.
+DateTime scheduledInstantFor(DateTime when) {
+  final fraction = when.millisecond * 1000 + when.microsecond;
+  if (fraction == 0) return when;
+  return when.add(
+    Duration(microseconds: Duration.microsecondsPerSecond - fraction),
+  );
+}
+
 /// Implementazione su `flutter_local_notifications`.
 ///
 /// ⚠️ Limite noto (spike S-01, §11): il suono è quello della notifica di
-/// sistema, non un audio custom continuo. La puntualità dipende dal sistema
-/// operativo — su iOS in particolare — e va verificata su device reale. La
-/// modalità primaria resta lo schermo acceso con wake lock.
+/// sistema, non un audio custom continuo. La puntualità entro il secondo la
+/// garantisce [scheduledInstantFor]; quella *oltre* il secondo dipende dal
+/// sistema operativo — su iOS in particolare — e va verificata su device
+/// reale (checklist in `docs/ios-timer-punctuality.md`). La modalità
+/// primaria resta lo schermo acceso con wake lock.
 class LocalSessionNotifier implements SessionNotifier {
   LocalSessionNotifier({NotificationHost? host})
     : _host = host ?? NotificationHost();
@@ -91,7 +117,10 @@ class LocalSessionNotifier implements SessionNotifier {
       try {
         await _host.plugin.zonedSchedule(
           id: kFirstSignalId + i,
-          scheduledDate: tz.TZDateTime.from(capped[i], tz.local),
+          scheduledDate: tz.TZDateTime.from(
+            scheduledInstantFor(capped[i]),
+            tz.local,
+          ),
           title: title,
           body: body,
           notificationDetails: kTimerSignalDetails,
