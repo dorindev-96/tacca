@@ -50,7 +50,10 @@ void main() {
       expect(scheduledInstantFor(intero), intero);
       // Anche i microsecondi contano: 1µs oltre il secondo è già "non intero".
       final quasi = intero.add(const Duration(microseconds: 1));
-      expect(scheduledInstantFor(quasi), intero.add(const Duration(seconds: 1)));
+      expect(
+        scheduledInstantFor(quasi),
+        intero.add(const Duration(seconds: 1)),
+      );
     });
 
     test('nessun segnale di un EMOM viene anticipato', () {
