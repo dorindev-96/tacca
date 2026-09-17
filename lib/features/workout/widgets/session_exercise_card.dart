@@ -17,9 +17,16 @@ import '../bloc/session_item.dart';
 /// I colori di una card di sessione. L'esercizio corrente è lime, tutti gli
 /// altri hanno il colore delle card: un solo esercizio in evidenza, quello che
 /// si sta facendo.
+///
+/// **Anche il testo sta qui.** Gli stili di `context.type` portano addosso il
+/// colore del tema, e al buio `ink` è quasi bianco: su una card lime — che il
+/// tema scuro non capovolge — il nome dell'esercizio spariva (1,1:1). Perciò
+/// ogni testo della card prende il colore da [foreground] o da [secondary],
+/// mai dallo stile così com'è.
 class _CardPalette {
   const _CardPalette({
     required this.background,
+    required this.foreground,
     required this.secondary,
     required this.inset,
     required this.marker,
@@ -34,6 +41,7 @@ class _CardPalette {
   /// per questo che parte da [AppPalette.onLime] e non da `ink`.
   factory _CardPalette.current(AppPalette colors) => _CardPalette(
     background: colors.lime,
+    foreground: colors.onLime,
     secondary: colors.onLime.withValues(alpha: 0.72),
     inset: colors.onLime.withValues(alpha: 0.10),
     marker: colors.onLime.withValues(alpha: 0.16),
@@ -42,6 +50,7 @@ class _CardPalette {
 
   factory _CardPalette.normal(AppPalette colors) => _CardPalette(
     background: colors.surface,
+    foreground: colors.ink,
     secondary: colors.muted,
     inset: colors.fill,
     marker: colors.fill,
@@ -49,6 +58,11 @@ class _CardPalette {
   );
 
   final Color background;
+
+  /// Nome dell'esercizio, prescrizione, valori delle serie: il testo che nel
+  /// tema segue `ink`, e sopra il lime no.
+  final Color foreground;
+
   final Color secondary;
 
   /// Fondo delle righe delle serie e degli altri riquadri interni.
@@ -123,30 +137,31 @@ class SessionExerciseCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (groupMarker != null) ...[
-                _GroupMarker(label: groupMarker!, background: palette.marker),
+                _GroupMarker(label: groupMarker!, palette: palette),
                 const SizedBox(width: AppSpacing.md),
               ],
               Expanded(
                 child: Text(
                   item.name,
-                  style: isCurrent
-                      ? context.type.subtitle
-                      : context.type.cardTitle,
+                  style:
+                      (isCurrent
+                              ? context.type.subtitle
+                              : context.type.cardTitle)
+                          .copyWith(color: palette.foreground),
                 ),
               ),
               if (sets > 0) ...[
                 const SizedBox(width: AppSpacing.md),
-                _CountChip(
-                  label: counter,
-                  background: palette.marker,
-                  strong: isCurrent,
-                ),
+                _CountChip(label: counter, palette: palette, strong: isCurrent),
               ],
             ],
           ),
           if (_prescription.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
-            Text(_prescription, style: context.type.row),
+            Text(
+              _prescription,
+              style: context.type.row.copyWith(color: palette.foreground),
+            ),
           ],
           if ((item.exercise?.notes ?? '').isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
@@ -161,26 +176,20 @@ class SessionExerciseCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           _LastTimeLine(last: lastPerformance, color: palette.secondary),
           const SizedBox(height: AppSpacing.md),
-          if (sets == 0)
+          // `checkableSets` e non `sets`: senza serie prescritte si registra
+          // comunque la prima. La chip del conteggio invece resta legata a
+          // quelle prescritte, che lì sono zero e non ci sarebbe niente da
+          // contare.
+          for (var number = 1; number <= item.checkableSets; number++) ...[
+            if (number > 1) const SizedBox(height: AppSpacing.sm),
             _SetRow(
-              // Senza serie prescritte si registra comunque la prima.
-              label: setLabel(1),
-              set: item.setNumbered(1),
+              label: setLabel(number),
+              set: item.setNumbered(number),
               palette: palette,
-              onToggle: () => onToggleSet(1),
-              onEdit: () => onEditSet(1),
-            )
-          else
-            for (var number = 1; number <= sets; number++) ...[
-              if (number > 1) const SizedBox(height: AppSpacing.sm),
-              _SetRow(
-                label: setLabel(number),
-                set: item.setNumbered(number),
-                palette: palette,
-                onToggle: () => onToggleSet(number),
-                onEdit: () => onEditSet(number),
-              ),
-            ],
+              onToggle: () => onToggleSet(number),
+              onEdit: () => onEditSet(number),
+            ),
+          ],
           if (onStartRest != null) ...[
             const SizedBox(height: AppSpacing.md),
             PillButton.compact(
@@ -218,10 +227,10 @@ class SessionExerciseCard extends StatelessWidget {
 /// Lettera dell'esercizio dentro un gruppo a giri: la stessa notazione della
 /// scheda ("A ss B"), così l'abbinamento si legge senza spiegazioni.
 class _GroupMarker extends StatelessWidget {
-  const _GroupMarker({required this.label, required this.background});
+  const _GroupMarker({required this.label, required this.palette});
 
   final String label;
-  final Color background;
+  final _CardPalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -230,10 +239,16 @@ class _GroupMarker extends StatelessWidget {
       width: 28,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: background,
+        color: palette.marker,
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
-      child: Text(label, style: context.type.buttonSmall.copyWith(height: 1)),
+      child: Text(
+        label,
+        style: context.type.buttonSmall.copyWith(
+          height: 1,
+          color: palette.foreground,
+        ),
+      ),
     );
   }
 }
@@ -242,12 +257,12 @@ class _GroupMarker extends StatelessWidget {
 class _CountChip extends StatelessWidget {
   const _CountChip({
     required this.label,
-    required this.background,
+    required this.palette,
     required this.strong,
   });
 
   final String label;
-  final Color background;
+  final _CardPalette palette;
   final bool strong;
 
   @override
@@ -257,12 +272,14 @@ class _CountChip extends StatelessWidget {
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm + 2),
       decoration: BoxDecoration(
-        color: background,
+        color: palette.marker,
         borderRadius: BorderRadius.circular(AppRadius.chip),
       ),
       child: Text(
         label,
-        style: strong ? context.type.chipStrong : context.type.chip,
+        style: (strong ? context.type.chipStrong : context.type.chip).copyWith(
+          color: strong ? palette.foreground : palette.secondary,
+        ),
       ),
     );
   }
@@ -352,7 +369,9 @@ class _SetRow extends StatelessWidget {
                     const SizedBox(width: AppSpacing.sm),
                     Text(
                       done ? set!.summary : '—',
-                      style: context.type.numeric,
+                      style: context.type.numeric.copyWith(
+                        color: palette.foreground,
+                      ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     LinearIcon(

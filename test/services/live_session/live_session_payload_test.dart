@@ -228,6 +228,35 @@ void main() {
       expect(next.countdownLabel, isNull);
     });
 
+    test('un esercizio a serie unica passa subito a quello dopo', () {
+      // Riscaldamento a tempo: nessuna serie prescritta, quindi `totalSets` è
+      // zero e non c'è nessun "1 di quante" da contare avanti. Il gemello in
+      // `CompleteSetIntent.swift` deve fare lo stesso salto.
+      final aTempo = LiveSessionSnapshot(
+        logId: 3,
+        exerciseName: 'Camminata in salita',
+        entryIndex: 0,
+        setNumber: 1,
+        totalSets: 0,
+        canCompleteSet: true,
+        restSecondsOnComplete: 0,
+        nextExerciseName: 'Back squat',
+        nextEntryIndex: 1,
+        nextSetNumber: 1,
+        nextTotalSets: 3,
+        nextRestSecondsOnComplete: 120,
+        labels: labels,
+      );
+
+      final next = aTempo.afterSetCompleted(tap);
+
+      expect(next.exerciseName, 'Back squat');
+      expect(next.entryIndex, 1);
+      expect(next.setNumber, 1);
+      expect(next.totalSets, 3);
+      expect(next.canCompleteSet, isTrue);
+    });
+
     test('senza recupero configurato non nasce nessun countdown', () {
       final senzaRecupero = LiveSessionSnapshot(
         logId: 3,

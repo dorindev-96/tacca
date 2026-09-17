@@ -640,7 +640,10 @@ class WorkoutSessionBloc
     final start = state.currentIndex.clamp(0, all.length - 1);
     for (var offset = 0; offset < all.length; offset++) {
       final item = all[(start + offset) % all.length];
-      final total = item.displayedSets;
+      // `checkableSets`, non `displayedSets`: un esercizio senza serie
+      // prescritte ne ha comunque una da spuntare, e saltarlo qui lo faceva
+      // sparire dal banner della schermata di blocco.
+      final total = item.checkableSets;
       for (var setNumber = 1; setNumber <= total; setNumber++) {
         if (!item.isSetDone(setNumber)) {
           yield (item: item, setNumber: setNumber);

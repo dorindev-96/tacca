@@ -56,6 +56,24 @@ void main() {
     ]);
     supersetDay.blocks.add(superset);
     plan.days.add(supersetDay);
+
+    // Giorno che apre con un riscaldamento a tempo: nessuna serie prescritta,
+    // solo una durata. È la forma con cui arriva una scheda vera, e la riga
+    // che la card disegna comunque.
+    final warmupDay = WorkoutDay(label: 'Giorno C', sortOrder: 2)..id = 12;
+    final warmupBlock = Block.ofType(BlockType.standard)..id = 102;
+    warmupBlock.exercises.addAll([
+      Exercise(name: 'Camminata in salita', durationSeconds: 300)..id = 1004,
+      Exercise(
+        name: 'Back squat',
+        sets: 3,
+        reps: '8-10',
+        restSeconds: 120,
+        sortOrder: 1,
+      )..id = 1005,
+    ]);
+    warmupDay.blocks.add(warmupBlock);
+    plan.days.add(warmupDay);
     return plan;
   }
 
@@ -607,6 +625,47 @@ void main() {
 
       await bloc.close();
     });
+
+    test(
+      'un esercizio senza serie prescritte arriva comunque sulla superficie',
+      () async {
+        // Il riscaldamento a tempo non prescrive serie: contando solo quelle
+        // prescritte spariva dal banner, che partiva già dall'esercizio dopo
+        // mentre l'app evidenziava ancora questo.
+        final bloc = await startedSession(dayId: 12);
+
+        final snapshot = live.started.single;
+        expect(snapshot.exerciseName, 'Camminata in salita');
+        expect(snapshot.entryIndex, 0);
+        expect(snapshot.setNumber, 1);
+        // Zero, non uno: il nativo scrive "Serie 1" senza denominatore, come
+        // la card non disegna nessuna chip del conteggio.
+        expect(snapshot.totalSets, 0);
+        expect(snapshot.canCompleteSet, isTrue);
+        expect(snapshot.nextExerciseName, 'Back squat');
+        expect(snapshot.nextSetNumber, 1);
+        expect(snapshot.nextTotalSets, 3);
+
+        await bloc.close();
+      },
+    );
+
+    test(
+      'confermata la sua unica serie, la superficie passa al successivo',
+      () async {
+        final bloc = await startedSession(dayId: 12);
+
+        live.deliver(setConfirmed(bloc, at: _now));
+        await pumpEventQueue();
+
+        expect(bloc.state.items.first.entry.sets, hasLength(1));
+        expect(live.last!.exerciseName, 'Back squat');
+        expect(live.last!.setNumber, 1);
+        expect(live.last!.totalSets, 3);
+
+        await bloc.close();
+      },
+    );
 
     test('sull\'ultimo esercizio rimasto non c\'è nessun "dopo"', () async {
       final bloc = await startedSession();

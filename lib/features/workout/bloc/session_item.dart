@@ -70,6 +70,16 @@ class SessionItem {
     return planned > logged ? planned : logged;
   }
 
+  /// Serie che si possono spuntare: [displayedSets], ma mai meno di una.
+  ///
+  /// Un esercizio senza serie prescritte — un riscaldamento a tempo, una
+  /// corsa — ne ha comunque una da confermare, ed è la riga che la card
+  /// disegna. La regola sta qui e non nella card perché la stessa serie deve
+  /// esistere anche per la schermata di blocco: quando la contava solo la
+  /// card, quell'esercizio sulla superficie di sistema non compariva affatto
+  /// e il banner saltava direttamente a quello dopo.
+  int get checkableSets => displayedSets > 0 ? displayedSets : 1;
+
   /// Serie registrate, ordinate per numero.
   List<LogSet> get completedSets =>
       entry.sets.toList()..sort((a, b) => a.setNumber.compareTo(b.setNumber));
