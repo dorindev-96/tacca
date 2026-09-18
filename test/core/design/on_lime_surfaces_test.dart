@@ -7,8 +7,13 @@ import 'package:tacca/core/widgets/app_sheet.dart';
 import 'package:tacca/core/widgets/linear_icon.dart';
 import 'package:tacca/core/widgets/meta_chip.dart';
 import 'package:tacca/core/widgets/pill_button.dart';
+import 'package:tacca/data/entities/block.dart';
+import 'package:tacca/data/entities/exercise.dart';
+import 'package:tacca/data/entities/log_entry.dart';
 import 'package:tacca/data/entities/workout_plan.dart';
 import 'package:tacca/features/plans/widgets/plan_list_tile.dart';
+import 'package:tacca/features/workout/bloc/session_item.dart';
+import 'package:tacca/features/workout/widgets/session_exercise_card.dart';
 import 'package:tacca/l10n/app_localizations.dart';
 
 /// Le superfici lime, disegnate nei **due** temi.
@@ -69,6 +74,32 @@ void main() {
     onDelete: () {},
   );
 
+  /// L'esercizio corrente della sessione: l'altra card lime dell'app, quella
+  /// che si guarda col telefono per terra a metà serie.
+  Widget sessionCard() {
+    final block = Block.ofType(BlockType.standard);
+    final exercise = Exercise(
+      name: 'Back Squat',
+      sets: 3,
+      reps: '8-10',
+      restSeconds: 120,
+    );
+    block.exercises.add(exercise);
+    return SessionExerciseCard(
+      item: SessionItem(
+        index: 0,
+        entry: LogEntry(exerciseNameSnapshot: 'Back Squat'),
+        block: block,
+        exercise: exercise,
+      ),
+      isCurrent: true,
+      lastPerformance: null,
+      onToggleSet: (_) {},
+      onEditSet: (_) {},
+      onFocus: () {},
+    );
+  }
+
   for (final brightness in Brightness.values) {
     final label = brightness == Brightness.dark ? 'scuro' : 'chiaro';
 
@@ -103,6 +134,23 @@ void main() {
       );
 
       expect(colorOf(tester, 'Ferma'), AppPalette.light.onLime);
+    });
+
+    testWidgets('tema $label: la card dell\'esercizio corrente resta '
+        'leggibile', (tester) async {
+      await pump(tester, sessionCard(), brightness: brightness);
+
+      // Nome, prescrizione, conteggio e valore della serie: tutto quello che
+      // nel tema segue `ink` e sopra il lime non può.
+      expect(colorOf(tester, 'Back Squat'), AppPalette.light.onLime);
+      expect(colorOf(tester, '3×8-10 · rec 120s'), AppPalette.light.onLime);
+      expect(colorOf(tester, '0/3 serie'), AppPalette.light.onLime);
+      // Tre serie, tre trattini: nessuno dei tre può restare inchiostro.
+      final dashes = tester
+          .widgetList<Text>(find.text('—'))
+          .map((text) => text.style!.color)
+          .toSet();
+      expect(dashes, {AppPalette.light.onLime});
     });
 
     testWidgets('tema $label: l\'opzione consigliata di uno sheet resta '

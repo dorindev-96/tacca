@@ -20,6 +20,7 @@ void main() {
     setNumber: 2,
     totalSets: 4,
     canCompleteSet: true,
+    advancesToNext: false,
     restSecondsOnComplete: 90,
     countdownStartsAt: DateTime(2026, 8, 15, 18),
     countdownEndsAt: DateTime(2026, 8, 15, 18, 1, 30),
@@ -54,6 +55,7 @@ void main() {
         setNumber: 1,
         totalSets: 3,
         canCompleteSet: true,
+        advancesToNext: false,
         restSecondsOnComplete: 0,
         labels: labels,
       ).toMap();
@@ -149,6 +151,35 @@ void main() {
       expect(LiveSessionSnapshot.tryParse(snapshot.toMap()), snapshot);
     });
 
+    test('anche i flag dei blocchi a giri fanno andata e ritorno', () {
+      // L'isolate di background di Android ricostruisce lo stato solo da
+      // qui: se `advancesToNext` non sopravvive al viaggio, il tap a schermo
+      // bloccato rimette il banner a contare i giri sullo stesso esercizio.
+      // Lo snapshot condiviso qui sopra li ha entrambi falsi, quindi da solo
+      // non direbbe niente.
+      final giro = LiveSessionSnapshot(
+        logId: 3,
+        exerciseName: 'Curl EZ',
+        entryIndex: 0,
+        setNumber: 1,
+        totalSets: 4,
+        canCompleteSet: true,
+        advancesToNext: true,
+        restSecondsOnComplete: 0,
+        nextExerciseName: 'French press',
+        nextEntryIndex: 1,
+        nextSetNumber: 1,
+        nextTotalSets: 4,
+        nextRestSecondsOnComplete: 60,
+        nextAdvancesToNext: true,
+        labels: labels,
+      );
+
+      expect(giro.toMap()['advancesToNext'], isTrue);
+      expect(giro.toMap()['nextAdvancesToNext'], isTrue);
+      expect(LiveSessionSnapshot.tryParse(giro.toMap()), giro);
+    });
+
     test('rifiuta una mappa senza stato o senza etichette', () {
       expect(LiveSessionSnapshot.tryParse(null), isNull);
       expect(LiveSessionSnapshot.tryParse({'logId': 3}), isNull);
@@ -184,6 +215,7 @@ void main() {
         setNumber: 4,
         totalSets: 4,
         canCompleteSet: true,
+        advancesToNext: false,
         restSecondsOnComplete: 90,
         nextExerciseName: 'Rematore',
         nextEntryIndex: 2,
@@ -216,6 +248,7 @@ void main() {
         setNumber: 3,
         totalSets: 3,
         canCompleteSet: true,
+        advancesToNext: false,
         restSecondsOnComplete: 0,
         labels: labels,
       );
@@ -228,6 +261,96 @@ void main() {
       expect(next.countdownLabel, isNull);
     });
 
+    test('un esercizio a serie unica passa subito a quello dopo', () {
+      // Riscaldamento a tempo: nessuna serie prescritta, quindi `totalSets` è
+      // zero e non c'è nessun "1 di quante" da contare avanti. Il gemello in
+      // `CompleteSetIntent.swift` deve fare lo stesso salto.
+      final aTempo = LiveSessionSnapshot(
+        logId: 3,
+        exerciseName: 'Camminata in salita',
+        entryIndex: 0,
+        setNumber: 1,
+        totalSets: 0,
+        canCompleteSet: true,
+        advancesToNext: false,
+        restSecondsOnComplete: 0,
+        nextExerciseName: 'Back squat',
+        nextEntryIndex: 1,
+        nextSetNumber: 1,
+        nextTotalSets: 3,
+        nextRestSecondsOnComplete: 120,
+        labels: labels,
+      );
+
+      final next = aTempo.afterSetCompleted(tap);
+
+      expect(next.exerciseName, 'Back squat');
+      expect(next.entryIndex, 1);
+      expect(next.setNumber, 1);
+      expect(next.totalSets, 3);
+      expect(next.canCompleteSet, isTrue);
+    });
+
+    test('in un blocco a giri si passa all\'altro esercizio, non alla serie '
+        'dopo', () {
+      // `advancesToNext`: restano giri di questo esercizio (1 di 4), ma il
+      // prossimo da fare è l'altro del superset. Contare avanti qui
+      // registrerebbe un giro che l'utente non ha fatto. Il gemello in
+      // `CompleteSetIntent.swift` ha lo stesso ramo.
+      final giro = LiveSessionSnapshot(
+        logId: 3,
+        exerciseName: 'Curl EZ',
+        entryIndex: 0,
+        setNumber: 1,
+        totalSets: 4,
+        canCompleteSet: true,
+        advancesToNext: true,
+        restSecondsOnComplete: 0,
+        nextExerciseName: 'French press',
+        nextEntryIndex: 1,
+        nextSetNumber: 1,
+        nextTotalSets: 4,
+        nextRestSecondsOnComplete: 60,
+        nextAdvancesToNext: true,
+        labels: labels,
+      );
+
+      final next = giro.afterSetCompleted(tap);
+
+      expect(next.exerciseName, 'French press');
+      expect(next.entryIndex, 1);
+      expect(next.setNumber, 1);
+      expect(next.restSecondsOnComplete, 60);
+      // Anche di là la serie dopo è di un altro: senza lookahead il pulsante
+      // sparisce, e il giro successivo lo ricalcola l'app.
+      expect(next.advancesToNext, isTrue);
+      expect(next.nextExerciseName, isNull);
+      expect(next.canCompleteSet, isTrue);
+    });
+
+    test('il passo dopo quello, senza l\'app, non si inventa', () {
+      final giro = LiveSessionSnapshot(
+        logId: 3,
+        exerciseName: 'French press',
+        entryIndex: 1,
+        setNumber: 1,
+        totalSets: 4,
+        canCompleteSet: true,
+        advancesToNext: true,
+        restSecondsOnComplete: 60,
+        labels: labels,
+      );
+
+      final next = giro.afterSetCompleted(tap);
+
+      // Niente "2/4" su French press: il giro 2 riparte da Curl EZ, e chi
+      // sia lo sa solo il Bloc.
+      expect(next.canCompleteSet, isFalse);
+      expect(next.setNumber, 1);
+      // Il recupero del giro parte lo stesso: quello non dipende dall'app.
+      expect(next.countdownEndsAt, tap.add(const Duration(seconds: 60)));
+    });
+
     test('senza recupero configurato non nasce nessun countdown', () {
       final senzaRecupero = LiveSessionSnapshot(
         logId: 3,
@@ -236,6 +359,7 @@ void main() {
         setNumber: 1,
         totalSets: 4,
         canCompleteSet: true,
+        advancesToNext: false,
         restSecondsOnComplete: 0,
         labels: labels,
       );
