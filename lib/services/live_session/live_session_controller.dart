@@ -55,6 +55,7 @@ class LiveSessionSnapshot {
     required this.setNumber,
     required this.totalSets,
     required this.canCompleteSet,
+    required this.advancesToNext,
     required this.restSecondsOnComplete,
     required this.labels,
     this.countdownStartsAt,
@@ -65,6 +66,7 @@ class LiveSessionSnapshot {
     this.nextSetNumber = 0,
     this.nextTotalSets = 0,
     this.nextRestSecondsOnComplete = 0,
+    this.nextAdvancesToNext = false,
   });
 
   /// Sessione a cui appartiene: un'azione rimasta in coda da un allenamento
@@ -85,6 +87,18 @@ class LiveSessionSnapshot {
   /// `false` quando non c'è più niente da spuntare: il nativo nasconde il
   /// pulsante invece di registrare una serie che non esiste.
   final bool canCompleteSet;
+
+  /// `true` quando la serie dopo questa è di un **altro** esercizio: il
+  /// nativo deve saltare a `next*` invece di contare avanti qui.
+  ///
+  /// È il caso dei blocchi a giri. In un superset un giro è una serie di
+  /// ciascun esercizio del gruppo, quindi dopo "Curl, giro 1" viene
+  /// "Pushdown, giro 1", non "Curl, giro 2" — contare avanti registrerebbe
+  /// giri che l'utente non ha fatto e l'altro esercizio non arriverebbe mai
+  /// sul banner. Non si ricava da un tipo di blocco: lo decide l'app
+  /// guardando qual è davvero la prossima serie rimasta, così un gruppo a
+  /// giri di un esercizio solo continua a contare avanti come deve.
+  final bool advancesToNext;
 
   /// Recupero da avviare alla conferma, in secondi. 0 significa nessun
   /// countdown (recupero non configurato o avvio automatico disattivato).
@@ -119,6 +133,11 @@ class LiveSessionSnapshot {
   /// Recupero da avviare confermando una serie di [nextExerciseName].
   final int nextRestSecondsOnComplete;
 
+  /// [advancesToNext] di [nextExerciseName]: viaggia con gli altri `next*`
+  /// perché senza, arrivato lì, il nativo non saprebbe se può continuare a
+  /// contare da solo (blocco normale) o se deve fermarsi (blocco a giri).
+  final bool nextAdvancesToNext;
+
   final LiveSessionLabels labels;
 
   Map<String, Object?> toMap() => {
@@ -128,6 +147,7 @@ class LiveSessionSnapshot {
     'setNumber': setNumber,
     'totalSets': totalSets,
     'canCompleteSet': canCompleteSet,
+    'advancesToNext': advancesToNext,
     'restSecondsOnComplete': restSecondsOnComplete,
     'countdownStartsAt': countdownStartsAt?.millisecondsSinceEpoch,
     'countdownEndsAt': countdownEndsAt?.millisecondsSinceEpoch,
@@ -137,6 +157,7 @@ class LiveSessionSnapshot {
     'nextSetNumber': nextSetNumber,
     'nextTotalSets': nextTotalSets,
     'nextRestSecondsOnComplete': nextRestSecondsOnComplete,
+    'nextAdvancesToNext': nextAdvancesToNext,
     ...labels.toMap(),
   };
 
@@ -170,6 +191,9 @@ class LiveSessionSnapshot {
       setNumber: setNumber,
       totalSets: totalSets,
       canCompleteSet: canCompleteSet,
+      // Un campo assente vale "come prima": la coda può portare il payload
+      // scritto da una versione dell'app che non lo mandava ancora.
+      advancesToNext: raw['advancesToNext'] as bool? ?? false,
       restSecondsOnComplete: restSecondsOnComplete,
       countdownStartsAt: _dateOrNull(raw['countdownStartsAt']),
       countdownEndsAt: _dateOrNull(raw['countdownEndsAt']),
@@ -179,6 +203,7 @@ class LiveSessionSnapshot {
       nextSetNumber: raw['nextSetNumber'] as int? ?? 0,
       nextTotalSets: raw['nextTotalSets'] as int? ?? 0,
       nextRestSecondsOnComplete: raw['nextRestSecondsOnComplete'] as int? ?? 0,
+      nextAdvancesToNext: raw['nextAdvancesToNext'] as bool? ?? false,
       labels: labels,
     );
   }
@@ -196,14 +221,17 @@ class LiveSessionSnapshot {
 
     // Su cosa si sposta il banner. Tre casi, gli stessi dell'App Intent.
     final focus = switch (this) {
-      // Restano serie di questo esercizio: si conta avanti e basta.
-      _ when totalSets > 0 && setNumber < totalSets => (
+      // Restano serie di questo esercizio: si conta avanti e basta. Non in un
+      // blocco a giri, dove la serie dopo è di un altro esercizio: lì
+      // [advancesToNext] manda direttamente al caso sotto.
+      _ when !advancesToNext && totalSets > 0 && setNumber < totalSets => (
         exerciseName: exerciseName,
         entryIndex: entryIndex,
         setNumber: setNumber + 1,
         totalSets: totalSets,
         restSecondsOnComplete: restSecondsOnComplete,
         canCompleteSet: true,
+        advancesToNext: advancesToNext,
         keepLookahead: true,
       ),
       // Erano finite: si passa all'esercizio dopo, quello che l'app ha
@@ -216,6 +244,10 @@ class LiveSessionSnapshot {
         totalSets: nextTotalSets,
         restSecondsOnComplete: nextRestSecondsOnComplete,
         canCompleteSet: nextSetNumber > 0,
+        // Arrivati lì, se anche quello è un esercizio a giri il passo
+        // successivo non si può fare da soli: senza lookahead il pulsante
+        // sparisce, che è meglio di registrare un giro mai fatto.
+        advancesToNext: nextAdvancesToNext,
         keepLookahead: false,
       ),
       // Niente più da spuntare: il contatore resta sull'ultima serie fatta e
@@ -227,6 +259,7 @@ class LiveSessionSnapshot {
         totalSets: totalSets,
         restSecondsOnComplete: restSecondsOnComplete,
         canCompleteSet: false,
+        advancesToNext: advancesToNext,
         keepLookahead: true,
       ),
     };
@@ -238,6 +271,7 @@ class LiveSessionSnapshot {
       setNumber: focus.setNumber,
       totalSets: focus.totalSets,
       canCompleteSet: focus.canCompleteSet,
+      advancesToNext: focus.advancesToNext,
       restSecondsOnComplete: focus.restSecondsOnComplete,
       countdownStartsAt: endsAt == null ? null : at,
       countdownEndsAt: endsAt,
@@ -249,6 +283,7 @@ class LiveSessionSnapshot {
       nextRestSecondsOnComplete: focus.keepLookahead
           ? nextRestSecondsOnComplete
           : 0,
+      nextAdvancesToNext: focus.keepLookahead ? nextAdvancesToNext : false,
       labels: labels,
     );
   }
@@ -262,6 +297,7 @@ class LiveSessionSnapshot {
       other.setNumber == setNumber &&
       other.totalSets == totalSets &&
       other.canCompleteSet == canCompleteSet &&
+      other.advancesToNext == advancesToNext &&
       other.restSecondsOnComplete == restSecondsOnComplete &&
       other.countdownStartsAt == countdownStartsAt &&
       other.countdownEndsAt == countdownEndsAt &&
@@ -271,6 +307,7 @@ class LiveSessionSnapshot {
       other.nextSetNumber == nextSetNumber &&
       other.nextTotalSets == nextTotalSets &&
       other.nextRestSecondsOnComplete == nextRestSecondsOnComplete &&
+      other.nextAdvancesToNext == nextAdvancesToNext &&
       other.labels == labels;
 
   @override
@@ -281,6 +318,7 @@ class LiveSessionSnapshot {
     setNumber,
     totalSets,
     canCompleteSet,
+    advancesToNext,
     restSecondsOnComplete,
     countdownStartsAt,
     countdownEndsAt,
@@ -290,6 +328,7 @@ class LiveSessionSnapshot {
     nextSetNumber,
     nextTotalSets,
     nextRestSecondsOnComplete,
+    nextAdvancesToNext,
     labels,
   );
 }

@@ -545,7 +545,11 @@ class WorkoutSessionBloc
     final log = state.log;
     if (log == null || state.status != WorkoutSessionStatus.ready) return null;
 
-    final focus = _liveFocus();
+    // Una lista sola, letta tre volte: la serie da confermare, quella subito
+    // dopo e quella dopo ancora. Servono tutte e tre perché il nativo deve
+    // sapere non solo dove andare, ma se può andarci da solo.
+    final pending = _livePendingSets().toList();
+    final focus = pending.isEmpty ? null : pending.first;
     final item = focus?.item ?? state.currentItem;
     if (item == null) return null;
 
@@ -557,7 +561,10 @@ class WorkoutSessionBloc
     // L'esercizio dopo viaggia insieme a questo: alla conferma dell'ultima
     // serie il nativo ci sposta sopra il banner da solo, invece di contare una
     // serie che non esiste.
-    final next = focus == null ? null : _liveFocusAfter(focus.item);
+    final nextAt = focus == null
+        ? -1
+        : pending.indexWhere((p) => p.item.index != focus.item.index);
+    final next = nextAt < 0 ? null : pending[nextAt];
     final nextRest = (next != null && state.autoStartRest)
         ? restTimerSpec(next.item)
         : null;
@@ -569,6 +576,10 @@ class WorkoutSessionBloc
       setNumber: focus?.setNumber ?? 0,
       totalSets: item.displayedSets,
       canCompleteSet: focus != null,
+      // In un blocco a giri la serie dopo è di un altro esercizio, e il
+      // nativo non deve contare avanti qui. Si guarda la sequenza vera invece
+      // del tipo di blocco: è la stessa domanda, posta dove ha una risposta.
+      advancesToNext: nextAt == 1,
       restSecondsOnComplete: restSpec?.total.inSeconds ?? 0,
       countdownStartsAt: countdown.startsAt,
       countdownEndsAt: countdown.endsAt,
@@ -578,6 +589,10 @@ class WorkoutSessionBloc
       nextSetNumber: next?.setNumber ?? 0,
       nextTotalSets: next?.item.displayedSets ?? 0,
       nextRestSecondsOnComplete: nextRest?.total.inSeconds ?? 0,
+      nextAdvancesToNext:
+          next != null &&
+          nextAt + 1 < pending.length &&
+          pending[nextAt + 1].item.index != next.item.index,
       labels: _liveLabels,
     );
   }
@@ -611,45 +626,70 @@ class WorkoutSessionBloc
     );
   }
 
-  /// Prossima serie da confermare: si parte dall'esercizio in evidenza e si
-  /// prosegue in sequenza, perché il pulsante della schermata di blocco deve
-  /// spuntare qualcosa di sensato anche quando l'esercizio corrente è finito.
-  ({SessionItem item, int setNumber})? _liveFocus() {
-    for (final pending in _livePendingSets()) {
-      return pending;
-    }
-    return null;
+  /// Serie ancora da spuntare, nell'ordine in cui si presentano all'utente,
+  /// a partire dall'esercizio in evidenza.
+  ///
+  /// La sequenza completa ([_pendingSetsInOrder]) viene **ruotata** fino alla
+  /// prima serie dell'esercizio in evidenza, non tagliata: quelle prima non si
+  /// perdono, si raccolgono in fondo. È il modo in cui una serie saltata torna
+  /// comunque sotto il pulsante, una volta finito il resto.
+  List<({SessionItem item, int setNumber})> _livePendingSets() {
+    final pending = _pendingSetsInOrder();
+    // Vuota solo se lo è anche la sequenza: le serie vengono da lì.
+    if (pending.isEmpty) return pending;
+    final start = state.currentIndex.clamp(0, state.items.length - 1);
+    final from = pending.indexWhere((p) => p.item.index >= start);
+    if (from <= 0) return pending;
+    return [...pending.skip(from), ...pending.take(from)];
   }
 
-  /// Prima serie da spuntare **dopo** [item]: è quella su cui il nativo si
-  /// sposta quando le serie di [item] finiscono. Le serie rimaste dello stesso
-  /// esercizio le conta da sé.
-  ({SessionItem item, int setNumber})? _liveFocusAfter(SessionItem item) {
-    for (final pending in _livePendingSets()) {
-      if (pending.item.index != item.index) return pending;
-    }
-    return null;
-  }
-
-  /// Serie ancora da spuntare, nell'ordine in cui si presentano all'utente:
-  /// dall'esercizio in evidenza in avanti, poi si ricomincia da capo per
-  /// raccogliere quelle saltate.
-  Iterable<({SessionItem item, int setNumber})> _livePendingSets() sync* {
+  /// Tutte le serie rimaste, nell'ordine in cui si eseguono davvero.
+  ///
+  /// Non è "tutte le serie di un esercizio, poi quelle del prossimo": in un
+  /// blocco a giri (superset, circuito) un giro è una serie di **ciascun**
+  /// esercizio del gruppo, quindi le serie si intrecciano — A giro 1, B giro
+  /// 1, A giro 2… Contarle per esercizio faceva restare il banner sullo
+  /// stesso nome per tutti i giri, e l'altro esercizio del superset non ci
+  /// arrivava mai. È la stessa regola per cui il recupero nasce solo
+  /// dall'ultimo esercizio del gruppo (`restTimerSpec`).
+  ///
+  /// Un esercizio fuori da un blocco a giri è un gruppo di uno, e lo stesso
+  /// codice lo percorre in sequenza.
+  List<({SessionItem item, int setNumber})> _pendingSetsInOrder() {
     final all = state.items;
-    if (all.isEmpty) return;
-    final start = state.currentIndex.clamp(0, all.length - 1);
-    for (var offset = 0; offset < all.length; offset++) {
-      final item = all[(start + offset) % all.length];
-      // `checkableSets`, non `displayedSets`: un esercizio senza serie
-      // prescritte ne ha comunque una da spuntare, e saltarlo qui lo faceva
-      // sparire dal banner della schermata di blocco.
-      final total = item.checkableSets;
-      for (var setNumber = 1; setNumber <= total; setNumber++) {
-        if (!item.isSetDone(setNumber)) {
-          yield (item: item, setNumber: setNumber);
+    final pending = <({SessionItem item, int setNumber})>[];
+    var i = 0;
+    while (i < all.length) {
+      final group = <SessionItem>[all[i]];
+      final block = all[i].block;
+      if (all[i].isRoundBased && block != null) {
+        // Gli esercizi del gruppo sono consecutivi: `items` li costruisce
+        // seguendo i blocchi del giorno.
+        while (i + 1 < all.length && identical(all[i + 1].block, block)) {
+          group.add(all[i + 1]);
+          i++;
+        }
+      }
+      i++;
+
+      // Un esercizio del gruppo può prescrivere serie sue: i giri sono
+      // tanti quanti ne chiede il più lungo, e chi ne ha meno esce prima.
+      var rounds = 0;
+      for (final item in group) {
+        if (item.checkableSets > rounds) rounds = item.checkableSets;
+      }
+      for (var round = 1; round <= rounds; round++) {
+        for (final item in group) {
+          // `checkableSets`, non `displayedSets`: un esercizio senza serie
+          // prescritte ne ha comunque una da spuntare, e saltarlo qui lo
+          // faceva sparire dal banner della schermata di blocco.
+          if (round <= item.checkableSets && !item.isSetDone(round)) {
+            pending.add((item: item, setNumber: round));
+          }
         }
       }
     }
+    return pending;
   }
 
   // --- helper ---

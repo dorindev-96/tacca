@@ -93,6 +93,7 @@ const _snapshot = LiveSessionSnapshot(
   setNumber: 2,
   totalSets: 4,
   canCompleteSet: true,
+  advancesToNext: false,
   restSecondsOnComplete: 90,
   labels: LiveSessionLabels(
     title: 'Allenamento',

@@ -47,6 +47,15 @@ struct TaccaSessionAttributes: ActivityAttributes {
     /// invece di registrare una serie che non esiste.
     var canCompleteSet: Bool
 
+    /// `true` quando la serie dopo questa è di un **altro** esercizio: si
+    /// salta a `next*` invece di contare avanti qui.
+    ///
+    /// È il caso dei blocchi a giri: in un superset un giro è una serie di
+    /// ciascun esercizio del gruppo, quindi dopo "Curl, giro 1" viene
+    /// "Pushdown, giro 1". Contare avanti metterebbe in coda un giro che
+    /// l'utente non ha fatto, e l'altro esercizio non arriverebbe mai qui.
+    var advancesToNext: Bool = false
+
     /// Recupero da far partire alla conferma, in secondi. 0 = nessuno.
     var restSecondsOnComplete: Int
 
@@ -71,6 +80,11 @@ struct TaccaSessionAttributes: ActivityAttributes {
 
     /// Recupero da avviare confermando una serie di `nextExerciseName`.
     var nextRestSecondsOnComplete: Int = 0
+
+    /// `advancesToNext` di `nextExerciseName`: senza, arrivati lì non si
+    /// saprebbe se si può continuare a contare da soli (blocco normale) o se
+    /// bisogna fermarsi e lasciar ricalcolare all'app (blocco a giri).
+    var nextAdvancesToNext: Bool = false
   }
 
   /// Sessione a cui appartiene l'attività: un'azione rimasta in coda da un

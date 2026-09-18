@@ -133,6 +133,7 @@ final class LiveSessionBridge {
       setNumber: payload["setNumber"] as? Int ?? 0,
       totalSets: payload["totalSets"] as? Int ?? 0,
       canCompleteSet: payload["canCompleteSet"] as? Bool ?? false,
+      advancesToNext: payload["advancesToNext"] as? Bool ?? false,
       restSecondsOnComplete: payload["restSecondsOnComplete"] as? Int ?? 0,
       countdownStartsAt: LiveSessionBridge.date(payload["countdownStartsAt"]),
       countdownEndsAt: LiveSessionBridge.date(payload["countdownEndsAt"]),
@@ -141,7 +142,8 @@ final class LiveSessionBridge {
       nextEntryIndex: payload["nextEntryIndex"] as? Int ?? 0,
       nextSetNumber: payload["nextSetNumber"] as? Int ?? 0,
       nextTotalSets: payload["nextTotalSets"] as? Int ?? 0,
-      nextRestSecondsOnComplete: payload["nextRestSecondsOnComplete"] as? Int ?? 0
+      nextRestSecondsOnComplete: payload["nextRestSecondsOnComplete"] as? Int ?? 0,
+      nextAdvancesToNext: payload["nextAdvancesToNext"] as? Bool ?? false
     )
   }
 

@@ -56,8 +56,10 @@ struct CompleteSetIntent: LiveActivityIntent {
     )
 
     var next = state
-    if state.totalSets > 0 && state.setNumber < state.totalSets {
-      // Restano serie di questo esercizio.
+    if !state.advancesToNext && state.totalSets > 0 && state.setNumber < state.totalSets {
+      // Restano serie di questo esercizio. Non in un blocco a giri, dove la
+      // serie dopo è di un altro esercizio: lì `advancesToNext` manda
+      // direttamente al ramo sotto.
       next.setNumber = state.setNumber + 1
     } else if let nextExercise = state.nextExerciseName {
       // Erano finite: si passa all'esercizio dopo, quello che l'app ha
@@ -68,6 +70,7 @@ struct CompleteSetIntent: LiveActivityIntent {
       next.totalSets = state.nextTotalSets
       next.restSecondsOnComplete = state.nextRestSecondsOnComplete
       next.canCompleteSet = state.nextSetNumber > 0
+      next.advancesToNext = state.nextAdvancesToNext
       // Un passo solo: quale sia l'esercizio ancora dopo lo sa solo l'app.
       // Esaurite anche queste serie il pulsante sparisce fino alla
       // riapertura — è l'unico momento in cui serve davvero riaprirla.
@@ -76,6 +79,7 @@ struct CompleteSetIntent: LiveActivityIntent {
       next.nextSetNumber = 0
       next.nextTotalSets = 0
       next.nextRestSecondsOnComplete = 0
+      next.nextAdvancesToNext = false
     } else {
       // Niente più da spuntare: il contatore resta sull'ultima serie fatta,
       // senza pulsante. Non si inventa una serie in più.
