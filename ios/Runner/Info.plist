@@ -28,6 +28,8 @@
 	<true/>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>La fotocamera serve per fotografare una scheda di allenamento cartacea da digitalizzare.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
