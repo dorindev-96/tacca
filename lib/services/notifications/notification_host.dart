@@ -6,6 +6,14 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
+/// Icona delle notifiche Android, come la vuole `AndroidInitializationSettings`.
+///
+/// La nomina solo questa stringa: nella build release lo shrinking delle
+/// risorse la considera inutilizzata e la elimina, a meno che non compaia in
+/// `android/app/src/main/res/raw/keep.xml` — e senza icona il plugin non si
+/// inizializza e nessuna notifica parte. Il test di `keep.xml` legge da qui.
+const String kAndroidNotificationIcon = '@drawable/ic_notification';
+
 /// Punto unico di inizializzazione di `flutter_local_notifications`.
 ///
 /// Il plugin è un singleton di piattaforma e `initialize` registra **una**
@@ -50,7 +58,7 @@ class NotificationHost {
           // Silhouette monocroma: in barra di stato Android appiattisce
           // l'icona sul canale alfa, quindi ic_launcher (quadrato opaco a
           // colori) diventerebbe un rettangolo bianco pieno.
-          android: AndroidInitializationSettings('@drawable/ic_notification'),
+          android: AndroidInitializationSettings(kAndroidNotificationIcon),
           iOS: DarwinInitializationSettings(
             // I permessi si chiedono all'avvio della prima sessione, non
             // all'apertura dell'app: il consenso arriva quando il motivo è
