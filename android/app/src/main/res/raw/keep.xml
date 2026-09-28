@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Risorse che lo shrinking della build release non deve togliere.
+
+     L'icona delle notifiche la nomina solo il codice Dart, come stringa
+     (NotificationHost, '@drawable/ic_notification'): R8 non la vede usata da
+     nessuna parte e nella release la elimina. Senza icona `initialize` del
+     plugin fallisce con `invalid_icon`, e da lì non parte più nessuna
+     notifica — né quella di sessione né i segnali del timer. In debug lo
+     shrinking non c'è, per questo il problema si vede solo sulla release. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_notification" />
