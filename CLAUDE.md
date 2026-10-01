@@ -138,6 +138,8 @@ Le regole che non si negoziano:
 
 - **l'icona delle notifiche va trattenuta in `android/app/src/main/res/raw/keep.xml`**: la nomina solo il Dart (`kAndroidNotificationIcon`), e nella build release lo shrinking delle risorse la elimina; senza icona `initialize` fallisce con `invalid_icon` e non parte più nessuna notifica, né quella di sessione né i segnali del timer. In debug non si vede: `test/services/notifications/android_resources_test.dart` è la guardia.
 
+- **l'Apple Watch è la stessa Live Activity, non un'app**: da iOS 18 / watchOS 11 `SessionLiveActivity` dichiara la famiglia `.small` e il contenuto smista su `activityFamily` (`.small` → `WatchSessionView`, card dello Smart Stack con il pulsante a tutta larghezza). Il tap sul Watch esegue `CompleteSetIntent` sull'iPhone, quindi coda, passo avanti e orario del tap sono quelli di sempre e il Dart non sa che il Watch esiste. Non serve nessun target watchOS e non va aggiunto per questo. L'`if #available(iOS 18)` sta in una funzione con `return` espliciti (`withWatchFamily`, SE-0360) perché i builder dei widget non costruiscono un `else`; due widget separati per gli stessi attributi si registrerebbero entrambi.
+
 Il lato nativo non lo compila la CI (runner Linux) e non ha test: la checklist da device sta in `docs/ios-live-activity.md`, insieme al setup Xcode (App Group, firma) che va fatto una volta a mano.
 
 ## Testing

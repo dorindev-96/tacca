@@ -8,15 +8,54 @@ The two platforms get there differently:
 
 | | iOS | Android |
 | --- | --- | --- |
-| Surface | Live Activity (ActivityKit) + Dynamic Island | ongoing notification |
+| Surface | Live Activity (ActivityKit) + Dynamic Island, and the Apple Watch Smart Stack | ongoing notification |
 | Countdown | `Text(timerInterval:)`, drawn by the system | `usesChronometer` + `chronometerCountDown` |
 | Button | App Intent, run by iOS in the app's process even while it sleeps (iOS 17+) | notification action → broadcast |
-| Minimum version | iOS 16.2 for the banner, 17.0 for the button | Android 8.0 (`minSdk 26`) |
+| Minimum version | iOS 16.2 for the banner, 17.0 for the button, 18.0 + watchOS 11 for the Watch | Android 8.0 (`minSdk 26`) |
 | Extra setup | **yes** — a second Xcode target, see below | one `<receiver>` line in `AndroidManifest.xml`, see below |
 
 Below 16.2 (or with Live Activities switched off in Settings) `isSupported`
 answers `false` and the session behaves exactly as it did before: no banner,
 no button, everything else unchanged.
+
+## Apple Watch
+
+There is no watchOS app and no watchOS target. Since watchOS 11 the Watch
+shows the paired iPhone's Live Activities in its Smart Stack on its own; what
+the app adds is a layout for it. `SessionLiveActivity` declares the `.small`
+supplemental activity family (iOS 18+), and the content view switches on
+`@Environment(\.activityFamily)`: `.medium` is the lock-screen banner,
+`.small` is `WatchSessionView` — exercise, set counter, countdown and the
+**Serie fatta** button across the whole card.
+
+Without that declaration the Watch would still show the activity, rebuilt from
+the Dynamic Island's compact views: an icon and the countdown, no button.
+
+The button is the same `Button(intent: CompleteSetIntent())`. A tap on the
+Watch is forwarded to the iPhone and runs the intent there, in the app's
+process — so it goes through exactly the path described below: queue, banner
+moved forward, rest reminder scheduled, the app applying it later with the
+time of the tap. Nothing on the Dart side knows the Watch exists, and the
+redraw after the tap reaches the Watch the same way it reaches the lock
+screen. That also means the Watch needs the iPhone in Bluetooth or Wi-Fi
+range: without it the tap has nowhere to run.
+
+Two details that only exist there:
+
+- **Always On.** With the wrist down the Watch dims the screen and sets
+  `isLuminanceReduced`; Apple asks for bright elements to be toned down. The
+  lime button turns into a lime outline of the same size, so the card does not
+  jump when the wrist comes back up.
+- **`if #available` without `else`.** Neither `WidgetBundleBuilder` nor the
+  configuration builder can build an `else`, so the iOS 18 branch lives in
+  `SessionLiveActivity.withWatchFamily()`, a plain function with explicit
+  `return`s (opaque result types with limited availability, SE-0360). Two
+  separate widgets for the same attributes are not an alternative: both would
+  register on iOS 18.
+
+Settings that decide whether it shows up at all are the user's, on the iPhone:
+*Watch app → Smart Stack → Live Activities* (per app, and whether they open
+automatically when the wrist is raised).
 
 ## How a confirmation travels
 
@@ -182,6 +221,23 @@ Worth walking through by hand at least once:
 - [ ] Finish the session: the banner disappears.
 - [ ] On an iPhone without Dynamic Island, and on iOS 16.x: banner yes, button
       only from 17.
+
+With an Apple Watch (watchOS 11+) paired to an iPhone on iOS 18+:
+
+- [ ] Start a session and raise the wrist: the card is at the top of the
+      Smart Stack with exercise, "Serie n/m", countdown and the **Serie fatta**
+      button — not just an icon and a timer (that would mean the `.small`
+      family is not being picked up).
+- [ ] Press **Serie fatta** on the Watch: the counter advances and the rest
+      countdown starts on the Watch **and** on the iPhone lock screen.
+- [ ] Reopen the app: the set is in the log with the time it was pressed on
+      the Watch.
+- [ ] Lower the wrist (Always On): the button becomes an outline, the card
+      keeps its size.
+- [ ] Long exercise names stay on one line and the button stays fully inside
+      the card, on the smallest Watch you have.
+- [ ] Phone out of range: the tap does nothing harmful, and once back in
+      range the next tap works.
 
 ## Testi dei permessi in più lingue (una volta, a mano)
 
