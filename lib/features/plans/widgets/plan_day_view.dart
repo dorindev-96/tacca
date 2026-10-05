@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../core/block_type_labels.dart';
@@ -17,8 +19,18 @@ import '../../../l10n/app_localizations.dart';
 /// impaginazione finisce nell'immagine da condividere ([PlanShareImage]). Due
 /// copie di questi widget vorrebbero dire due schede diverse — quella che si
 /// legge nell'app e quella che si manda su WhatsApp.
+///
+/// Nel dettaglio il giorno si disegna intero; nell'immagine può doversi
+/// spezzare fra due pagine, e allora se ne disegna solo una parte ([part]).
+/// È lo stesso widget in entrambi i casi, così una scheda divisa in pagine
+/// resta identica a quella che si legge.
 class PlanDaySection extends StatelessWidget {
-  const PlanDaySection({required this.day, required this.showLabel, super.key});
+  const PlanDaySection({
+    required this.day,
+    required this.showLabel,
+    this.part,
+    super.key,
+  });
 
   final WorkoutDay day;
 
@@ -26,9 +38,15 @@ class PlanDaySection extends StatelessWidget {
   /// l'intestazione sarebbe rumore.
   final bool showLabel;
 
+  /// La parte del giorno da disegnare; null = tutto il giorno.
+  final PlanDayPart? part;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final blocks = day.blocks.toList();
+    final part = this.part;
+    final opensDay = part?.opensDay ?? true;
 
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.xl),
@@ -37,19 +55,28 @@ class PlanDaySection extends StatelessWidget {
         children: [
           if (showLabel) ...[
             Text(day.label, style: context.type.subtitle),
-            if ((day.notes ?? '').isNotEmpty) ...[
+            if (opensDay && (day.notes ?? '').isNotEmpty) ...[
               const SizedBox(height: AppSpacing.xs + 2),
               Text(day.notes!, style: context.type.paragraphSmall),
             ],
             const SizedBox(height: AppSpacing.md),
           ],
-          if (day.blocks.isEmpty)
+          if (blocks.isEmpty)
             Text(l10n.dayNoBlocks, style: context.type.paragraphSmall)
-          else
-            for (final block in day.blocks)
+          else if (part == null)
+            for (final block in blocks)
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: PlanBlockCard(block: block),
+              )
+          else
+            for (final piece in part.blocks)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: PlanBlockCard(
+                  block: blocks[piece.block],
+                  rows: (start: piece.start, end: piece.end),
+                ),
               ),
         ],
       ),
@@ -57,16 +84,71 @@ class PlanDaySection extends StatelessWidget {
   }
 }
 
+/// La parte di un giorno che sta in una pagina dell'immagine condivisa.
+///
+/// Una pagina che riprende un giorno a metà ne ripete l'etichetta, perché chi
+/// la guarda da sola in una chat deve sapere di che giorno si tratta, ma non
+/// le note: quelle le ha già lette in cima al giorno, sulla pagina prima.
+class PlanDayPart {
+  const PlanDayPart({required this.opensDay, required this.blocks});
+
+  /// True se la parte comincia dal giorno stesso: etichetta *e* note.
+  final bool opensDay;
+
+  /// I blocchi della parte, ognuno con le righe che ci stanno.
+  final List<PlanBlockRows> blocks;
+}
+
+/// Un blocco, o il pezzo di un blocco, dentro una [PlanDayPart].
+class PlanBlockRows {
+  const PlanBlockRows({
+    required this.block,
+    required this.start,
+    required this.end,
+  });
+
+  /// Indice del blocco nel giorno.
+  final int block;
+
+  /// Prima riga inclusa e ultima esclusa (vedi [PlanBlockCard.rowCountOf]).
+  final int start;
+  final int end;
+}
+
 /// Card bianca di un blocco: tipo, parametri, note ed esercizi.
+///
+/// Quando il blocco non sta in una pagina dell'immagine condivisa se ne
+/// disegnano solo alcune righe ([rows]). Il pezzo che continua ripete tipo e
+/// parametri, perché una card senza intestazione in cima a una pagina non
+/// direbbe che cosa si sta leggendo, ma non le note; la numerazione degli
+/// esercizi prosegue da dove si era fermata.
 class PlanBlockCard extends StatelessWidget {
-  const PlanBlockCard({required this.block, super.key});
+  const PlanBlockCard({required this.block, this.rows, super.key});
 
   final Block block;
+
+  /// Le righe da disegnare, dalla `start` inclusa alla `end` esclusa (vedi
+  /// [rowCountOf]); null = tutto il blocco.
+  final ({int start, int end})? rows;
+
+  /// In quante righe si può spezzare [block] fra due pagine: un esercizio per
+  /// riga, oppure le righe del testo libero, che dopo un import AI non
+  /// riuscito può contenere una scheda intera. Un blocco vuoto è una riga
+  /// sola: quella che dice che è vuoto.
+  static int rowCountOf(Block block) => block.type == BlockType.freeText
+      ? _freeTextLines(block).length
+      : math.max(1, block.exercises.length);
+
+  static List<String> _freeTextLines(Block block) =>
+      (block.freeTextContent ?? '').split('\n');
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final exercises = block.exercises.toList();
+    final rows = this.rows;
+    final start = rows?.start ?? 0;
+    final end = rows?.end ?? rowCountOf(block);
 
     return SurfaceCard(
       child: Column(
@@ -84,18 +166,23 @@ class PlanBlockCard extends StatelessWidget {
               for (final param in _params(l10n)) MetaChip(label: param),
             ],
           ),
-          if ((block.notes ?? '').isNotEmpty) ...[
+          if (start == 0 && (block.notes ?? '').isNotEmpty) ...[
             const SizedBox(height: AppSpacing.sm),
             Text(block.notes!, style: context.type.paragraphSmall),
           ],
           const SizedBox(height: AppSpacing.lg),
           if (block.type == BlockType.freeText)
-            Text(block.freeTextContent ?? '', style: context.type.paragraph)
+            Text(
+              rows == null
+                  ? (block.freeTextContent ?? '')
+                  : _freeTextLines(block).sublist(start, end).join('\n'),
+              style: context.type.paragraph,
+            )
           else if (exercises.isEmpty)
             Text(l10n.blockNoExercises, style: context.type.paragraphSmall)
           else
-            for (var i = 0; i < exercises.length; i++) ...[
-              if (i > 0) const SizedBox(height: AppSpacing.lg),
+            for (var i = start; i < end; i++) ...[
+              if (i > start) const SizedBox(height: AppSpacing.lg),
               PlanExerciseRow(exercise: exercises[i], position: i + 1),
             ],
         ],

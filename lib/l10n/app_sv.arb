@@ -136,6 +136,7 @@
   "planDetailExerciseDuration": "Längd {seconds} s",
   "planShareFileNameFallback": "program",
   "planShareFailed": "Det gick inte att skapa bilden av programmet.",
+  "planSharePageIndicator": "Sida {page} av {count}",
 
   "dayNoBlocks": "Inga block den här dagen.",
   "blockNoExercises": "Inga övningar i det här blocket.",

@@ -308,6 +308,11 @@
   "@planShareFileNameFallback": { "description": "Nome del file immagine condiviso quando il nome della scheda non produce nessun carattere utilizzabile." },
   "planShareFailed": "Non è stato possibile creare l'immagine della scheda.",
   "@planShareFailed": { "description": "Errore mostrato quando l'export della scheda in immagine non riesce." },
+  "planSharePageIndicator": "Pagina {page} di {count}",
+  "@planSharePageIndicator": {
+    "description": "Numero di pagina nella firma in fondo a ogni immagine di una scheda condivisa, quando la scheda è lunga e si divide in più immagini.",
+    "placeholders": { "page": { "type": "int" }, "count": { "type": "int" } }
+  },
 
   "dayNoBlocks": "Nessun blocco in questo giorno.",
   "@dayNoBlocks": { "description": "Stato vuoto di un giorno senza blocchi (dettaglio ed editor)." },

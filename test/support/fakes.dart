@@ -14,6 +14,7 @@ import 'package:tacca/data/repositories/workout_log_repository.dart';
 import 'package:tacca/services/clipboard/clipboard_service.dart';
 import 'package:tacca/services/feedback/session_feedback.dart';
 import 'package:tacca/services/images/image_input.dart';
+import 'package:tacca/services/images/paged_image.dart';
 import 'package:tacca/services/images/ocr_service.dart';
 import 'package:tacca/services/images/plan_image_store.dart';
 import 'package:tacca/services/links/link_opener.dart';
@@ -477,9 +478,10 @@ class FakeLinkOpener implements LinkOpener {
 /// Foglio di condivisione finto: registra *cosa* è stato condiviso senza
 /// disegnare nessuna immagine.
 ///
-/// Il rendering vero è caro (una scheda lunga è un'immagine da megapixel) e
-/// non c'entra niente con la pagina che lo chiede: quello ha i suoi test in
-/// `test/services/images/widget_image_renderer_test.dart`.
+/// Il rendering vero è caro (una scheda lunga sono più immagini da qualche
+/// megapixel) e non c'entra niente con la pagina che lo chiede: quello ha i
+/// suoi test in `test/services/images/` e
+/// `test/features/plans/widgets/plan_share_image_test.dart`.
 class RecordingImageShareService implements ImageShareService {
   RecordingImageShareService({this.fails = false});
 
@@ -490,9 +492,8 @@ class RecordingImageShareService implements ImageShareService {
   final List<SharedImage> shared = [];
 
   @override
-  Future<void> shareWidgetAsImage({
-    required Widget widget,
-    required double width,
+  Future<void> sharePagedImage({
+    required PagedImage image,
     required String fileName,
     String? text,
     Rect? originRect,
@@ -500,8 +501,7 @@ class RecordingImageShareService implements ImageShareService {
     if (fails) throw Exception('condivisione non riuscita');
     shared.add(
       SharedImage(
-        widget: widget,
-        width: width,
+        image: image,
         fileName: fileName,
         text: text,
         originRect: originRect,
@@ -513,15 +513,13 @@ class RecordingImageShareService implements ImageShareService {
 /// Una chiamata registrata da [RecordingImageShareService].
 class SharedImage {
   const SharedImage({
-    required this.widget,
-    required this.width,
+    required this.image,
     required this.fileName,
     required this.text,
     required this.originRect,
   });
 
-  final Widget widget;
-  final double width;
+  final PagedImage image;
   final String fileName;
   final String? text;
   final Rect? originRect;

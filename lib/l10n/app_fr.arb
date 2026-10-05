@@ -136,6 +136,7 @@
   "planDetailExerciseDuration": "Durée {seconds} s",
   "planShareFileNameFallback": "programme",
   "planShareFailed": "Impossible de créer l'image du programme.",
+  "planSharePageIndicator": "Page {page} sur {count}",
 
   "dayNoBlocks": "Aucun bloc dans ce jour.",
   "blockNoExercises": "Aucun exercice dans ce bloc.",

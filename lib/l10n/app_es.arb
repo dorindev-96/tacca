@@ -136,6 +136,7 @@
   "planDetailExerciseDuration": "Duración {seconds} s",
   "planShareFileNameFallback": "rutina",
   "planShareFailed": "No se ha podido crear la imagen de la rutina.",
+  "planSharePageIndicator": "Página {page} de {count}",
 
   "dayNoBlocks": "No hay bloques en este día.",
   "blockNoExercises": "No hay ejercicios en este bloque.",

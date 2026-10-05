@@ -136,6 +136,7 @@
   "planDetailExerciseDuration": "Duration {seconds}s",
   "planShareFileNameFallback": "workout-plan",
   "planShareFailed": "The plan image could not be created.",
+  "planSharePageIndicator": "Page {page} of {count}",
   "dayNoBlocks": "No blocks on this day.",
   "blockNoExercises": "No exercises in this block.",
   "planEditorExercisesCount": "{count, plural, =0{No exercises} =1{1 exercise} other{{count} exercises}}",
