@@ -40,7 +40,7 @@
   "backupReading": "Lecture de la sauvegarde…",
   "backupRestoring": "Restauration en cours…",
   "backupRestoreConfirmTitle": "Restaurer cette sauvegarde ?",
-  "backupRestoreConfirmBody": "La sauvegarde du {date} à {time} contient {plans} et {logs}. Elle remplacera tout ce qui est dans l'app maintenant ({currentPlans} et {currentLogs}), et ce ne sera pas réversible.",
+  "backupRestoreConfirmBody": "Sauvegarde du {date} à {time} : {plans} et {logs}. Elle remplacera tout ce qui est dans l'app maintenant ({currentPlans} et {currentLogs}), et ce ne sera pas réversible.",
   "backupPlanCount": "{count, plural, =0{aucun programme} =1{1 programme} other{{count} programmes}}",
   "backupLogCount": "{count, plural, =0{aucun entraînement} =1{1 entraînement} other{{count} entraînements}}",
   "backupRestoreConfirmAction": "Restaurer",

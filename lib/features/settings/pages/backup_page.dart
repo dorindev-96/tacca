@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -66,11 +68,11 @@ class BackupPage extends StatelessWidget {
                 label: l10n.backupRestoreLabel,
                 child: _BackupCard(
                   body: l10n.backupRestoreBody,
-                  progress: switch (state.activity) {
-                    BackupActivity.reading => l10n.backupReading,
-                    BackupActivity.restoring => l10n.backupRestoring,
-                    _ => null,
-                  },
+                  // Il ripristino vero e proprio lo racconta il dialog che
+                  // blocca l'app (vedi _restore): qui solo la lettura.
+                  progress: state.activity == BackupActivity.reading
+                      ? l10n.backupReading
+                      : null,
                   action: PillButton(
                     label: l10n.backupRestoreAction,
                     tone: PillTone.outline,
@@ -124,10 +126,30 @@ class BackupPage extends StatelessWidget {
       destructive: true,
     );
 
-    if (confirmed) {
-      await cubit.restore(preview);
-    } else {
+    if (!confirmed || !context.mounted) {
       await cubit.discard(preview);
+      return;
+    }
+
+    // Finché il ripristino lavora l'app resta ferma: una scheda aperta o un
+    // allenamento iniziato da un'altra tab nel frattempo verrebbero spazzati
+    // via dalla sostituzione, e il loro salvataggio successivo riscriverebbe
+    // righe che non ci sono più. Il dialog sta sul navigator radice, quindi
+    // copre anche la tab bar.
+    final navigator = Navigator.of(context, rootNavigator: true);
+    unawaited(
+      showDialog<void>(
+        context: context,
+        useRootNavigator: true,
+        barrierDismissible: false,
+        barrierColor: context.colors.scrim,
+        builder: (context) => _RestoringDialog(label: l10n.backupRestoring),
+      ),
+    );
+    try {
+      await cubit.restore(preview);
+    } finally {
+      navigator.pop();
     }
   }
 
@@ -150,6 +172,38 @@ class BackupPage extends StatelessWidget {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+/// Il ripristino in corso, sopra tutta l'app. Non si chiude né toccando
+/// fuori né con il tasto indietro: lo chiude la pagina quando il ripristino
+/// è finito, bene o male.
+class _RestoringDialog extends StatelessWidget {
+  const _RestoringDialog({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      child: Dialog(
+        insetPadding: const EdgeInsets.all(AppSpacing.xl),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Row(
+            children: [
+              const SizedBox.square(
+                dimension: 24,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+              const SizedBox(width: AppSpacing.lg),
+              Expanded(child: Text(label, style: context.type.rowStrong)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

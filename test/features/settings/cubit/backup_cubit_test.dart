@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tacca/features/settings/cubit/backup_cubit.dart';
 import 'package:tacca/services/backup/backup_format.dart';
@@ -33,6 +35,19 @@ void main() {
       expect(cubit.state.outcome, isNull);
     });
 
+    test('un export abbandonato non apre il foglio di condivisione sopra '
+        'un\'altra schermata', () async {
+      service.exportGate = Completer<void>();
+      final export = cubit.export();
+
+      // L'utente esce dalla pagina mentre il file si sta scrivendo.
+      await cubit.close();
+      service.exportGate!.complete();
+      await export;
+
+      expect(files.shared, isEmpty);
+    });
+
     test('se non riesce lo dice, e i pulsanti tornano attivi', () async {
       service.exportFails = true;
 
@@ -56,6 +71,32 @@ void main() {
       expect(service.inspected, ['/tmp/tacca-backup.tacca']);
       expect(service.restored, isEmpty);
       expect(cubit.state.isBusy, isFalse);
+    });
+
+    test('il file scelto si rilascia dopo la lettura, riuscita o no', () async {
+      await cubit.pickBackup();
+      service.inspectProblem = BackupProblem.damaged;
+      await cubit.pickBackup();
+
+      expect(files.released, [
+        '/tmp/tacca-backup.tacca',
+        '/tmp/tacca-backup.tacca',
+      ]);
+    });
+
+    test('lo stesso errore due volte di fila si dice due volte', () async {
+      files.pickFails = true;
+      final outcomes = <BackupOutcome?>[];
+      final sub = cubit.stream.listen((s) => outcomes.add(s.outcome));
+
+      await cubit.pickBackup();
+      await cubit.pickBackup();
+      await pumpEventQueue();
+      await sub.cancel();
+
+      // Due esiti, due oggetti: la pagina li mostra entrambi.
+      expect(outcomes, hasLength(2));
+      expect(outcomes.first, isNot(same(outcomes.last)));
     });
 
     test('chiudere il selettore non è un errore', () async {

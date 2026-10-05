@@ -40,7 +40,7 @@
   "backupReading": "Leyendo la copia…",
   "backupRestoring": "Restaurando…",
   "backupRestoreConfirmTitle": "¿Restaurar esta copia?",
-  "backupRestoreConfirmBody": "La copia del {date} a las {time} contiene {plans} y {logs}. Sustituirá todo lo que hay ahora en la app ({currentPlans} y {currentLogs}) y no se podrá deshacer.",
+  "backupRestoreConfirmBody": "Copia del {date} a las {time}: {plans} y {logs}. Sustituirá todo lo que hay ahora en la app ({currentPlans} y {currentLogs}) y no se podrá deshacer.",
   "backupPlanCount": "{count, plural, =0{ninguna rutina} =1{1 rutina} other{{count} rutinas}}",
   "backupLogCount": "{count, plural, =0{ningún entrenamiento} =1{1 entrenamiento} other{{count} entrenamientos}}",
   "backupRestoreConfirmAction": "Restaurar",

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -86,10 +88,9 @@ void main() {
     expect(find.text('Ripristinare questo backup?'), findsOneWidget);
     expect(
       find.text(
-        'Il backup del 5 ott 2026 alle 18:30 contiene 3 schede e '
-        '1 allenamento. Prenderà il posto di tutto ciò che c\'è adesso '
-        'nell\'app (2 schede e 5 allenamenti) e non si potrà tornare '
-        'indietro.',
+        'Backup del 5 ott 2026 alle 18:30: 3 schede e 1 allenamento. '
+        'Prenderà il posto di tutto ciò che c\'è adesso nell\'app (2 schede '
+        'e 5 allenamenti) e non si potrà tornare indietro.',
       ),
       findsOneWidget,
     );
@@ -106,6 +107,57 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(service.restored, [service.preview]);
+    expect(
+      find.text('Backup ripristinato: 3 schede e 1 allenamento.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('un backup vuoto lo dice senza sgrammaticare', (tester) async {
+    service
+      ..counts = (plans: 0, logs: 0)
+      ..preview = fakeBackupPreview(plans: 0, logs: 0);
+    await pumpPage(tester);
+
+    await tapButton(tester, 'Scegli un backup');
+
+    expect(
+      find.textContaining(
+        ': nessuna scheda e nessun allenamento. Prenderà il posto',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('mentre ripristina l\'app resta ferma, e poi torna', (
+    tester,
+  ) async {
+    service.restoreGate = Completer<void>();
+    await pumpPage(tester);
+
+    await tapButton(tester, 'Scegli un backup');
+    await tester.tap(
+      find.descendant(
+        of: find.byType(Dialog),
+        matching: find.text('Ripristina'),
+      ),
+    );
+    // Il cerchio gira finché il ripristino non finisce: niente
+    // pumpAndSettle.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Ripristino in corso…'), findsOneWidget);
+    // Né il tasto indietro né un tocco fuori lo chiudono.
+    await tester.binding.handlePopRoute();
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Ripristino in corso…'), findsOneWidget);
+
+    service.restoreGate!.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ripristino in corso…'), findsNothing);
     expect(
       find.text('Backup ripristinato: 3 schede e 1 allenamento.'),
       findsOneWidget,

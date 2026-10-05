@@ -40,7 +40,7 @@
   "backupReading": "Reading the backup…",
   "backupRestoring": "Restoring…",
   "backupRestoreConfirmTitle": "Restore this backup?",
-  "backupRestoreConfirmBody": "The backup from {date} at {time} contains {plans} and {logs}. It will replace everything currently in the app ({currentPlans} and {currentLogs}), and this cannot be undone.",
+  "backupRestoreConfirmBody": "Backup from {date} at {time}: {plans} and {logs}. It will replace everything currently in the app ({currentPlans} and {currentLogs}), and this cannot be undone.",
   "backupPlanCount": "{count, plural, =0{no plans} =1{1 plan} other{{count} plans}}",
   "backupLogCount": "{count, plural, =0{no workouts} =1{1 workout} other{{count} workouts}}",
   "backupRestoreConfirmAction": "Restore",

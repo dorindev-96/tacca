@@ -90,9 +90,9 @@
   "@backupRestoring": { "description": "Stato mostrato mentre il backup sostituisce l'archivio." },
   "backupRestoreConfirmTitle": "Ripristinare questo backup?",
   "@backupRestoreConfirmTitle": { "description": "Titolo del dialog di conferma del ripristino." },
-  "backupRestoreConfirmBody": "Il backup del {date} alle {time} contiene {plans} e {logs}. Prenderà il posto di tutto ciò che c'è adesso nell'app ({currentPlans} e {currentLogs}) e non si potrà tornare indietro.",
+  "backupRestoreConfirmBody": "Backup del {date} alle {time}: {plans} e {logs}. Prenderà il posto di tutto ciò che c'è adesso nell'app ({currentPlans} e {currentLogs}) e non si potrà tornare indietro.",
   "@backupRestoreConfirmBody": {
-    "description": "Corpo del dialog di conferma del ripristino: quando è stato fatto il backup, cosa contiene e cosa sostituisce. I conteggi arrivano già formattati da backupPlanCount e backupLogCount.",
+    "description": "Corpo del dialog di conferma del ripristino: quando è stato fatto il backup, cosa contiene e cosa sostituisce. I conteggi arrivano già formattati da backupPlanCount e backupLogCount, e possono essere zero (\"nessuna scheda\"): per questo l'elenco segue i due punti invece di un verbo che lo nega male.",
     "placeholders": { "date": { "type": "DateTime", "format": "yMMMd" }, "time": { "type": "DateTime", "format": "Hm" }, "plans": { "type": "String" }, "logs": { "type": "String" }, "currentPlans": { "type": "String" }, "currentLogs": { "type": "String" } }
   },
   "backupPlanCount": "{count, plural, =0{nessuna scheda} =1{1 scheda} other{{count} schede}}",

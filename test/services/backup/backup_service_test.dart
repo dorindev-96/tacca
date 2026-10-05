@@ -350,6 +350,23 @@ void main() {
     expect(ppl.imagePaths, isEmpty);
   }, skip: skip);
 
+  test('due export che si accavallano non si pestano i piedi', () async {
+    final from = phone('vecchio');
+    await seed(from);
+
+    // Stesso minuto, stesso nome di file: senza la coda del servizio il
+    // secondo svuoterebbe la cartella e riaprirebbe il file mentre il primo
+    // lo sta ancora scrivendo.
+    final files = await Future.wait([
+      from.backup.export(),
+      from.backup.export(),
+    ]);
+
+    final to = phone('nuovo');
+    final preview = await to.backup.inspect(files.last.path);
+    expect((preview.plans, preview.logs), (2, 2));
+  }, skip: skip);
+
   test('ogni export ripulisce quello di prima', () async {
     final from = phone('vecchio');
     await seed(from);

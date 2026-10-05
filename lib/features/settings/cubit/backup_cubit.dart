@@ -23,19 +23,24 @@ enum BackupFailure {
 }
 
 /// L'esito dell'ultima operazione, da mostrare una volta.
+///
+/// I costruttori non sono `const` apposta: due errori uguali di fila devono
+/// essere due oggetti diversi. Un esito costante sarebbe sempre la stessa
+/// istanza, `emit` scarterebbe il secondo come stato invariato e il secondo
+/// tentativo fallito non direbbe niente.
 sealed class BackupOutcome {
-  const BackupOutcome();
+  BackupOutcome();
 }
 
 final class BackupRestored extends BackupOutcome {
-  const BackupRestored({required this.plans, required this.logs});
+  BackupRestored({required this.plans, required this.logs});
 
   final int plans;
   final int logs;
 }
 
 final class BackupFailed extends BackupOutcome {
-  const BackupFailed(this.reason);
+  BackupFailed(this.reason);
 
   final BackupFailure reason;
 }
@@ -79,12 +84,15 @@ class BackupCubit extends Cubit<BackupState> {
     _emit(const BackupState(activity: BackupActivity.exporting));
     try {
       final file = await _backup.export();
+      // Se nel frattempo la pagina è stata chiusa, il foglio di condivisione
+      // comparirebbe sopra un'altra schermata, per un export che l'utente ha
+      // abbandonato. Il file resta nella cartella temporanea fino al
+      // prossimo export.
+      if (isClosed) return;
       await _files.share(file, originRect: originRect);
       _emit(const BackupState());
     } catch (_) {
-      _emit(
-        const BackupState(outcome: BackupFailed(BackupFailure.exportFailed)),
-      );
+      _emit(BackupState(outcome: BackupFailed(BackupFailure.exportFailed)));
     }
   }
 
@@ -100,7 +108,7 @@ class BackupCubit extends Cubit<BackupState> {
     try {
       path = await _files.pick();
     } catch (_) {
-      _emit(const BackupState(outcome: BackupFailed(BackupFailure.readFailed)));
+      _emit(BackupState(outcome: BackupFailed(BackupFailure.readFailed)));
       return null;
     }
     if (path == null) return null;
@@ -125,7 +133,11 @@ class BackupCubit extends Cubit<BackupState> {
         ),
       );
     } catch (_) {
-      _emit(const BackupState(outcome: BackupFailed(BackupFailure.readFailed)));
+      _emit(BackupState(outcome: BackupFailed(BackupFailure.readFailed)));
+    } finally {
+      // Letto o rifiutato, il file scelto non serve più: quello che serviva
+      // è già stato estratto.
+      await _files.release(path);
     }
     return null;
   }
@@ -147,9 +159,7 @@ class BackupCubit extends Cubit<BackupState> {
     } catch (_) {
       // La transazione del database è una sola: se non è andata, l'archivio
       // è quello di prima.
-      _emit(
-        const BackupState(outcome: BackupFailed(BackupFailure.restoreFailed)),
-      );
+      _emit(BackupState(outcome: BackupFailed(BackupFailure.restoreFailed)));
     }
   }
 

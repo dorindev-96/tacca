@@ -552,6 +552,11 @@ class FakeBackupService implements BackupService {
   /// Ciò che [inspect] restituisce.
   BackupPreview preview;
 
+  /// Se non null, [export] e [restore] aspettano che il test li completi:
+  /// servono a guardare l'app mentre lavorano.
+  Completer<void>? exportGate;
+  Completer<void>? restoreGate;
+
   int exportCount = 0;
   final inspected = <String>[];
   final restored = <BackupPreview>[];
@@ -563,6 +568,7 @@ class FakeBackupService implements BackupService {
   @override
   Future<File> export() async {
     exportCount++;
+    await exportGate?.future;
     if (exportFails) throw const FileSystemException('disco pieno');
     return File('tacca-backup-2026-10-05-1830.tacca');
   }
@@ -577,6 +583,7 @@ class FakeBackupService implements BackupService {
 
   @override
   Future<void> restore(BackupPreview preview) async {
+    await restoreGate?.future;
     if (restoreFails) throw StateError('transazione fallita');
     restored.add(preview);
   }
@@ -608,11 +615,17 @@ BackupPreview fakeBackupPreview({
 /// condiviso e restituiscono il file che il test ha deciso (null = l'utente
 /// chiude il selettore).
 class FakeBackupFiles implements BackupFiles {
-  FakeBackupFiles({this.picked});
+  FakeBackupFiles({this.picked, this.pickFails = false});
 
   String? picked;
+
+  /// True = il selettore di sistema non riesce a consegnare il file.
+  bool pickFails;
   final shared = <File>[];
   final origins = <Rect?>[];
+
+  /// I file scelti che il cubit ha dichiarato non più necessari.
+  final released = <String>[];
 
   @override
   Future<void> share(File file, {Rect? originRect}) async {
@@ -621,5 +634,11 @@ class FakeBackupFiles implements BackupFiles {
   }
 
   @override
-  Future<String?> pick() async => picked;
+  Future<String?> pick() async {
+    if (pickFails) throw Exception('Failed to read file');
+    return picked;
+  }
+
+  @override
+  Future<void> release(String path) async => released.add(path);
 }

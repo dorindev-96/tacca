@@ -40,7 +40,7 @@
   "backupReading": "Backup wird gelesen…",
   "backupRestoring": "Wird wiederhergestellt…",
   "backupRestoreConfirmTitle": "Dieses Backup wiederherstellen?",
-  "backupRestoreConfirmBody": "Das Backup vom {date} um {time} enthält {plans} und {logs}. Es ersetzt alles, was jetzt in der App ist ({currentPlans} und {currentLogs}), und lässt sich nicht rückgängig machen.",
+  "backupRestoreConfirmBody": "Backup vom {date} um {time}: {plans} und {logs}. Es ersetzt alles, was jetzt in der App ist ({currentPlans} und {currentLogs}), und lässt sich nicht rückgängig machen.",
   "backupPlanCount": "{count, plural, =0{keine Pläne} =1{1 Plan} other{{count} Pläne}}",
   "backupLogCount": "{count, plural, =0{keine Trainings} =1{1 Training} other{{count} Trainings}}",
   "backupRestoreConfirmAction": "Wiederherstellen",

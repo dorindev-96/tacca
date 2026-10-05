@@ -68,6 +68,22 @@ class BackupService {
   /// memoria come se fosse una riga sola.
   static const int _maxHeaderLength = 4096;
 
+  /// La coda delle operazioni: export, lettura e ripristino passano uno alla
+  /// volta in tutta l'app, non solo dentro una pagina.
+  ///
+  /// Il cubit spegne i pulsanti mentre lavora, ma il cubit è della pagina e
+  /// questo servizio è dell'app: chi esce durante un export e rientra a
+  /// farne un altro avrebbe due export che svuotano e riempiono la stessa
+  /// cartella, e nello stesso minuto lo stesso file. Uno dei due ne
+  /// condividerebbe uno scritto a metà.
+  Future<void> _queue = Future<void>.value();
+
+  Future<T> _oneAtATime<T>(Future<T> Function() operation) {
+    final result = _queue.then((_) => operation());
+    _queue = result.then<void>((_) {}, onError: (Object _) {});
+    return result;
+  }
+
   /// Quante schede e quanti allenamenti ci sono adesso nell'app.
   ({int plans, int logs}) currentCounts() => _repository.count();
 
@@ -77,7 +93,9 @@ class BackupService {
   /// Il file di un export precedente si cancella qui: dopo la condivisione
   /// non si può, perché alcune app (la posta) leggono il file solo quando
   /// l'utente invia.
-  Future<File> export() async {
+  Future<File> export() => _oneAtATime(_export);
+
+  Future<File> _export() async {
     final data = _repository.readAll();
     final directory = await _freshDirectory('export');
     final file = File(
@@ -166,7 +184,10 @@ class BackupService {
   ///
   /// Lancia [BackupFormatException] se il file non è un backup, viene da una
   /// versione più recente dell'app o è rotto.
-  Future<BackupPreview> inspect(String path) async {
+  Future<BackupPreview> inspect(String path) =>
+      _oneAtATime(() => _inspect(path));
+
+  Future<BackupPreview> _inspect(String path) async {
     final file = File(path);
     final header = BackupDecoder.readHeader(await _firstLine(file));
     final decoder = BackupDecoder(header);
@@ -205,7 +226,10 @@ class BackupService {
   /// va storto prima della transazione si cancellano le immagini appena
   /// portate dentro e l'archivio resta com'era; dopo, le immagini delle
   /// schede sostituite non le usa più nessuno e si cancellano.
-  Future<void> restore(BackupPreview preview) async {
+  Future<void> restore(BackupPreview preview) =>
+      _oneAtATime(() => _restore(preview));
+
+  Future<void> _restore(BackupPreview preview) async {
     final backup = preview.backup;
     final adopted = <int, String>{};
     try {
@@ -238,7 +262,7 @@ class BackupService {
 
   /// Butta ciò che [inspect] ha preparato, quando l'utente non conferma.
   Future<void> discard(BackupPreview preview) =>
-      _deleteQuietly(preview.staging);
+      _oneAtATime(() => _deleteQuietly(preview.staging));
 
   /// La prima riga del file, cioè l'intestazione, letta senza mai tenere in
   /// memoria più di [_maxHeaderLength] caratteri.

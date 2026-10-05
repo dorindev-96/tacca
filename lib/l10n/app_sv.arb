@@ -40,7 +40,7 @@
   "backupReading": "Säkerhetskopian läses…",
   "backupRestoring": "Återställer…",
   "backupRestoreConfirmTitle": "Återställa den här säkerhetskopian?",
-  "backupRestoreConfirmBody": "Säkerhetskopian från {date} kl. {time} innehåller {plans} och {logs}. Den ersätter allt som finns i appen nu ({currentPlans} och {currentLogs}), och det går inte att ångra.",
+  "backupRestoreConfirmBody": "Säkerhetskopia från {date} kl. {time}: {plans} och {logs}. Den ersätter allt som finns i appen nu ({currentPlans} och {currentLogs}), och det går inte att ångra.",
   "backupPlanCount": "{count, plural, =0{inga program} =1{1 program} other{{count} program}}",
   "backupLogCount": "{count, plural, =0{inga träningspass} =1{1 träningspass} other{{count} träningspass}}",
   "backupRestoreConfirmAction": "Återställ",
