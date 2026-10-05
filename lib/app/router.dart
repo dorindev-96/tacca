@@ -25,8 +25,10 @@ import '../features/plans/pages/plan_detail_page.dart';
 import '../features/plans/pages/plan_editor_page.dart';
 import '../features/plans/pages/plan_images_page.dart';
 import '../features/plans/pages/plans_page.dart';
+import '../features/settings/cubit/backup_cubit.dart';
 import '../features/settings/cubit/settings_cubit.dart';
 import '../features/settings/pages/ai_settings_page.dart';
+import '../features/settings/pages/backup_page.dart';
 import '../features/settings/pages/settings_page.dart';
 import '../features/workout/bloc/workout_session_bloc.dart';
 import '../features/workout/bloc/workout_session_event.dart';
@@ -36,6 +38,8 @@ import '../features/workout/pages/workout_session_page.dart';
 import '../l10n/app_localizations.dart';
 import '../services/ai/ai_provider.dart';
 import '../services/ai/ai_selection.dart';
+import '../services/backup/backup_files.dart';
+import '../services/backup/backup_service.dart';
 import '../services/clipboard/clipboard_service.dart';
 import '../services/feedback/session_feedback.dart';
 import '../services/images/image_input.dart';
@@ -89,6 +93,17 @@ GoRouter createRouter() {
                   GoRoute(
                     path: 'legal',
                     builder: (context, state) => const LegalNoticePage(),
+                  ),
+                  // Backup locale: l'archivio in un file e ritorno.
+                  GoRoute(
+                    path: 'backup',
+                    builder: (context, state) => BlocProvider(
+                      create: (context) => BackupCubit(
+                        backup: context.read<BackupService>(),
+                        files: context.read<BackupFiles>(),
+                      ),
+                      child: const BackupPage(),
+                    ),
                   ),
                 ],
               ),

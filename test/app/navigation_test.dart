@@ -16,6 +16,8 @@ import 'package:tacca/l10n/app_localizations.dart';
 import 'package:tacca/services/ai/ai_provider.dart';
 import 'package:tacca/services/ai/ai_selection.dart';
 import 'package:tacca/services/ai/model_catalog.dart';
+import 'package:tacca/services/backup/backup_files.dart';
+import 'package:tacca/services/backup/backup_service.dart';
 import 'package:tacca/services/feedback/session_feedback.dart';
 import 'package:tacca/services/live_session/live_session_controller.dart';
 import 'package:tacca/services/notifications/session_notifier.dart';
@@ -93,6 +95,8 @@ void main() {
           RepositoryProvider<AiSelectionResolver>.value(
             value: AiSelectionResolver(settings: settings, catalog: _catalog),
           ),
+          RepositoryProvider<BackupService>.value(value: FakeBackupService()),
+          RepositoryProvider<BackupFiles>.value(value: FakeBackupFiles()),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -172,6 +176,28 @@ void main() {
       find.text('Nessuna scheda. Creane una per iniziare.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('dalle Impostazioni si arriva al backup e si torna indietro', (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      plans: FakePlanRepository(),
+      logs: FakeWorkoutLogRepository(),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('home-tab-Impostazioni')));
+    await tester.pumpAndSettle();
+    expect(find.text('Esporta o ripristina schede e storico'), findsOneWidget);
+
+    await tester.tap(find.text('Backup'));
+    await tester.pumpAndSettle();
+    expect(find.text('Esporta backup'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Indietro'));
+    await tester.pumpAndSettle();
+    expect(find.text('Intelligenza artificiale'), findsOneWidget);
   });
 
   testWidgets(

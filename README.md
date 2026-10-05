@@ -25,6 +25,7 @@ Personal project, pre-1.0. What is actually built:
 | Workout session, timers, crash recovery | ✅ done |
 | Lock-screen set confirmation | ✅ done — iOS needs a one-off Xcode setup |
 | History | ✅ done |
+| Local backup: export to a file, restore from it | ✅ done |
 | AI import from photo / gallery / pasted text | ✅ done, **OpenRouter, Anthropic and Google Gemini** |
 | AI import through your own chat, no key needed | ✅ done — copy the prompt, paste the answer back |
 | AI chat to create/edit a plan | 🚫 not planned — importing a plan and then editing it by hand covers the need |
@@ -45,6 +46,8 @@ Personal project, pre-1.0. What is actually built:
 **AI import (optional, bring your own key).** Photograph a paper plan, pick images from the gallery, or paste text; the model returns a structured plan that lands in the manual editor for review — nothing is saved until you press save. If the selected model has no vision support, the photos go through the phone's on-device OCR first and only the text is sent. If the model fails to produce valid JSON twice in a row, the raw answer is kept as a free-text block: your input is never discarded.
 
 **AI import through your own chat (no key at all).** The same import with the model outside the app, in two guided steps. Step one takes your plan — typed, pasted, or photographed and read by the phone's on-device OCR into an editable field — and copies a self-contained prompt to the clipboard. You paste it into whichever AI chat you already use, then step two takes the answer back. The pasted text goes through the very same pipeline as the API route, and it does not have to be clean JSON: the parser digs the plan out of greetings, code fences, whole pasted conversations, trailing commas and stray comments. If it still cannot read it, you get the parser's own error formulated as a correction to paste back into the chat — the manual twin of the automatic retry — and, as a last resort, the answer is kept as a free-text block. No API key, no account, no network call: the app never talks to anyone here.
+
+**Local backup.** *Impostazioni → Backup* writes the whole archive — every plan, archived ones included, the full workout history and the original photos of imported plans — into a single `.tacca` file and hands it to the system share sheet, so it can go to Files, Drive, an email to yourself or another phone. Restoring picks that file with the system file picker, reads and checks it end to end before anything changes, says what it is about to replace, and only then swaps the archive in a single database transaction: a broken, truncated or foreign file is rejected with nothing touched, and restoring the same backup twice does not duplicate anything. Settings and API keys are deliberately not in the backup. The file is gzip-compressed JSON Lines, one record per line, so even a backup with dozens of photos is written and read one record at a time.
 
 **First-run notice.** Before anything else opens, a blocking disclaimer states what the app is and is not: not a medical app and not medical advice, you train under your own responsibility, the plans and photos you load are yours and stay your responsibility, and an AI import can misread a plan — check it before you train. Acceptance is *versioned*: bumping `AppConstants.legalNoticeVersion` puts the notice back in front of everyone who accepted an older wording. The full terms live on the web and open in the **system browser** — the app embeds no WebView. The same text stays readable from *Impostazioni → Termini e responsabilità*.
 
@@ -112,7 +115,7 @@ lib/
   core/       design tokens (colour, type, radius, spacing, icons), shared widgets
   data/       ObjectBox store, entities, repositories
   features/   plans · ai_import · workout · history · settings · legal
-  services/   ai · timer · notifications · live_session · images (OCR, off-screen rendering) · share · clipboard · feedback · wakelock · links
+  services/   ai · backup · timer · notifications · live_session · images (OCR, off-screen rendering) · share · clipboard · feedback · wakelock · links
 ```
 
 Decisions worth knowing before you read the code:
@@ -128,6 +131,7 @@ Decisions worth knowing before you read the code:
 - **Nothing opens inside the app.** The one external link — the terms and conditions — is handed to the system browser through `LinkOpener` (`url_launcher` in `LaunchMode.externalApplication`), and the app copies the link to the clipboard if no browser answers. There is deliberately no in-app browser: a WebView is one more surface to declare and maintain.
 - **The lock screen is a service, not a widget.** `services/live_session/` publishes an immutable snapshot to whatever surface the platform offers and hands back the confirmations that arrive from it; the two implementations share nothing but that contract. Because the button runs without the app (an iOS App Intent, an Android background isolate), confirmations go through a durable queue and are applied with the timestamp of the tap, while the surface itself is moved forward one step on the spot — the same arithmetic written once in Dart and once in Swift.
 - **Exporting a plan means re-drawing it, not screenshotting it.** `WidgetImageRenderer` mounts a throwaway element tree with its own `RenderView`, constrained in width and free in height, and paints it into a `RepaintBoundary`. A boundary inside the real page could only ever capture the visible part of the viewport. The consequence is that every page it draws (`PlanSharePage`) has to carry its own `Directionality`, `MediaQuery`, `Localizations` and `Theme`: there is no `MaterialApp` above it. The same tree also *measures*: `PlanShareImage` splits the plan into indivisible pieces and decides where each page ends by laying out real candidate pages, never by arithmetic that imitates the layout.
+- **A backup replaces, it does not merge.** `BackupService` reads and validates the whole file first (header counts catch a truncated download, since a cut gzip stream does not error), extracts the photos to a temp folder, and only after the user confirms does `BackupRepository.replaceAll` swap plans and history in one ObjectBox transaction. Nothing is taken from the file as a path: restored photos get fresh names, exactly like newly taken ones.
 - **Icons are drawn, not fonted.** `lib/core/design/linear_icons.dart` holds the real glyphs of the design's icon set as SVG path data, painted by `LinearIcon`. Material icons are not used in the UI: their optical grid is visibly foreign next to these shapes.
 
 The visual design (colours, typography scale, icon set, layout) is adapted from the free [Gym Full](https://www.figma.com/community/file/1415305484748482666/gym-full-figma) Figma community file.

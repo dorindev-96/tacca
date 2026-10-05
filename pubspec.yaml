@@ -39,6 +39,11 @@ dependencies:
   # (WhatsApp, mail, "Salva nelle foto") il PNG di una scheda esportata. Il
   # disegno dell'immagine è nostro, vedi services/images/widget_image_renderer.dart.
   share_plus: ^12.0.2
+  # Selettore di file di sistema (plugin ufficiale flutter.dev): serve solo a
+  # scegliere il file di un backup da ripristinare, Impostazioni → Backup.
+  # L'export invece passa dal foglio di condivisione di share_plus. Vedi
+  # services/backup/backup_files.dart.
+  file_selector: ^1.1.0
 
 dev_dependencies:
   flutter_test:
