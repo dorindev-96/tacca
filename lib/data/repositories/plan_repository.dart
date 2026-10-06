@@ -65,13 +65,13 @@ class ObjectBoxPlanRepository implements PlanRepository {
     return (_planBox.query(WorkoutPlan_.isArchived.equals(archived))
           ..order(WorkoutPlan_.updatedAt, flags: Order.descending))
         .watch(triggerImmediately: true)
-        .map((query) => query.find()..forEach(_sortPlanTree));
+        .map((query) => query.find()..forEach(sortPlanTree));
   }
 
   @override
   WorkoutPlan? getById(int id) {
     final plan = _planBox.get(id);
-    if (plan != null) _sortPlanTree(plan);
+    if (plan != null) sortPlanTree(plan);
     return plan;
   }
 
@@ -80,7 +80,7 @@ class ObjectBoxPlanRepository implements PlanRepository {
     final query = _planBox.query(WorkoutPlan_.isActive.equals(true)).build();
     try {
       final plan = query.findFirst();
-      if (plan != null) _sortPlanTree(plan);
+      if (plan != null) sortPlanTree(plan);
       return plan;
     } finally {
       query.close();
@@ -269,16 +269,21 @@ class ObjectBoxPlanRepository implements PlanRepository {
       _planBox.remove(planId);
     });
   }
+}
 
-  /// Ordina in memoria l'intero albero per `sortOrder` (§4: i repository
-  /// restituiscono liste già ordinate; `ToMany` non garantisce l'ordine).
-  void _sortPlanTree(WorkoutPlan plan) {
-    plan.days.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-    for (final day in plan.days) {
-      day.blocks.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-      for (final block in day.blocks) {
-        block.exercises.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-      }
+/// Ordina in memoria l'intero albero di [plan] per `sortOrder` (§4: i
+/// repository restituiscono liste già ordinate; `ToMany` non garantisce
+/// l'ordine).
+///
+/// È una funzione e non un metodo perché le schede non escono solo da qui:
+/// anche il backup le legge tutte insieme, e deve leggerle nello stesso
+/// ordine.
+void sortPlanTree(WorkoutPlan plan) {
+  plan.days.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+  for (final day in plan.days) {
+    day.blocks.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    for (final block in day.blocks) {
+      block.exercises.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     }
   }
 }

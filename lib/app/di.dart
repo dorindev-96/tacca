@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/db/object_box.dart';
+import '../data/repositories/backup_repository.dart';
 import '../data/repositories/plan_repository.dart';
 import '../data/repositories/settings_repository.dart';
 import '../data/repositories/workout_log_repository.dart';
@@ -18,6 +19,8 @@ import '../services/ai/providers/anthropic_provider.dart';
 import '../services/ai/providers/google_provider.dart';
 import '../services/ai/providers/open_router_provider.dart';
 import '../services/ai/providers/routing_ai_provider.dart';
+import '../services/backup/backup_files.dart';
+import '../services/backup/backup_service.dart';
 import '../services/clipboard/clipboard_service.dart';
 import '../services/feedback/session_feedback.dart';
 import '../services/images/image_input.dart';
@@ -146,6 +149,22 @@ class AppProviders extends StatelessWidget {
         ),
         RepositoryProvider<ImageShareService>(
           create: (context) => const SystemImageShareService(),
+        ),
+        // Backup locale: lettura e sostituzione dell'archivio intero (una
+        // transazione sola su schede e storico), il servizio che ne scrive e
+        // legge il file, e i plugin che lo portano fuori e lo riportano
+        // dentro.
+        RepositoryProvider<BackupRepository>(
+          create: (context) => ObjectBoxBackupRepository(objectBox),
+        ),
+        RepositoryProvider<BackupService>(
+          create: (context) => BackupService(
+            repository: context.read<BackupRepository>(),
+            imageStore: context.read<PlanImageStore>(),
+          ),
+        ),
+        RepositoryProvider<BackupFiles>(
+          create: (context) => const SystemBackupFiles(),
         ),
       ],
       child: MultiBlocProvider(

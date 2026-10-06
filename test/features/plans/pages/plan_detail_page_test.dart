@@ -231,13 +231,15 @@ void main() {
 
     expect(sharer.shared, hasLength(1));
     final call = sharer.shared.single;
-    expect(call.width, PlanShareImage.logicalWidth);
     // Quello che viene disegnato è il manifesto della scheda aperta, non uno
     // scatto della pagina.
-    expect(call.widget, isA<PlanShareImage>());
-    expect((call.widget as PlanShareImage).plan.id, 1);
-    // Il nome del file è quello della scheda, ridotto a caratteri innocui.
-    expect(call.fileName, 'push-pull-legs.png');
+    expect(call.image, isA<PlanShareImage>());
+    final image = call.image as PlanShareImage;
+    expect(image.plan.id, 1);
+    expect(image.pageWidth, PlanShareImage.logicalWidth);
+    // Il nome dei file è quello della scheda, ridotto a caratteri innocui;
+    // estensione e numero di pagina li aggiunge il servizio.
+    expect(call.fileName, 'push-pull-legs');
     expect(call.text, 'Push Pull Legs');
     // Ancora del popover per iPad: senza, il foglio compare dove capita.
     expect(call.originRect, isNotNull);

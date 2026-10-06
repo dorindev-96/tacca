@@ -92,6 +92,24 @@ void main() {
     },
   );
 
+  testWidgets('misura senza disegnare, anche più widget con lo stesso albero', (
+    tester,
+  ) async {
+    final heights = const WidgetImageRenderer().measure(
+      width: 100,
+      body: (measure) => [
+        measure(box(50)),
+        measure(box(6000)),
+        measure(box(8)),
+      ],
+    );
+
+    // Ogni misura è quella del widget montato in quel momento, non di quello
+    // di prima: l'albero si aggiorna, non si accumula.
+    expect(heights, [50, 6000, 8]);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('due esportazioni di fila non lasciano niente in giro', (
     tester,
   ) async {

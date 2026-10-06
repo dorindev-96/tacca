@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
@@ -8,12 +9,17 @@ import 'package:tacca/data/entities/log_set.dart';
 import 'package:tacca/data/entities/workout_day.dart';
 import 'package:tacca/data/entities/workout_log.dart';
 import 'package:tacca/data/entities/workout_plan.dart';
+import 'package:tacca/data/repositories/backup_repository.dart';
 import 'package:tacca/data/repositories/plan_repository.dart';
 import 'package:tacca/data/repositories/settings_repository.dart';
 import 'package:tacca/data/repositories/workout_log_repository.dart';
+import 'package:tacca/services/backup/backup_files.dart';
+import 'package:tacca/services/backup/backup_format.dart';
+import 'package:tacca/services/backup/backup_service.dart';
 import 'package:tacca/services/clipboard/clipboard_service.dart';
 import 'package:tacca/services/feedback/session_feedback.dart';
 import 'package:tacca/services/images/image_input.dart';
+import 'package:tacca/services/images/paged_image.dart';
 import 'package:tacca/services/images/ocr_service.dart';
 import 'package:tacca/services/images/plan_image_store.dart';
 import 'package:tacca/services/links/link_opener.dart';
@@ -477,9 +483,10 @@ class FakeLinkOpener implements LinkOpener {
 /// Foglio di condivisione finto: registra *cosa* è stato condiviso senza
 /// disegnare nessuna immagine.
 ///
-/// Il rendering vero è caro (una scheda lunga è un'immagine da megapixel) e
-/// non c'entra niente con la pagina che lo chiede: quello ha i suoi test in
-/// `test/services/images/widget_image_renderer_test.dart`.
+/// Il rendering vero è caro (una scheda lunga sono più immagini da qualche
+/// megapixel) e non c'entra niente con la pagina che lo chiede: quello ha i
+/// suoi test in `test/services/images/` e
+/// `test/features/plans/widgets/plan_share_image_test.dart`.
 class RecordingImageShareService implements ImageShareService {
   RecordingImageShareService({this.fails = false});
 
@@ -490,9 +497,8 @@ class RecordingImageShareService implements ImageShareService {
   final List<SharedImage> shared = [];
 
   @override
-  Future<void> shareWidgetAsImage({
-    required Widget widget,
-    required double width,
+  Future<void> sharePagedImage({
+    required PagedImage image,
     required String fileName,
     String? text,
     Rect? originRect,
@@ -500,8 +506,7 @@ class RecordingImageShareService implements ImageShareService {
     if (fails) throw Exception('condivisione non riuscita');
     shared.add(
       SharedImage(
-        widget: widget,
-        width: width,
+        image: image,
         fileName: fileName,
         text: text,
         originRect: originRect,
@@ -513,16 +518,127 @@ class RecordingImageShareService implements ImageShareService {
 /// Una chiamata registrata da [RecordingImageShareService].
 class SharedImage {
   const SharedImage({
-    required this.widget,
-    required this.width,
+    required this.image,
     required this.fileName,
     required this.text,
     required this.originRect,
   });
 
-  final Widget widget;
-  final double width;
+  final PagedImage image;
   final String fileName;
   final String? text;
   final Rect? originRect;
+}
+
+/// Il servizio di backup senza disco né database: registra le chiamate e
+/// risponde come il test ha deciso. Il servizio vero ha i suoi test, con file
+/// e ObjectBox veri, in `test/services/backup/`.
+class FakeBackupService implements BackupService {
+  FakeBackupService({
+    this.counts = (plans: 0, logs: 0),
+    this.exportFails = false,
+    this.inspectProblem,
+    this.restoreFails = false,
+    BackupPreview? preview,
+  }) : preview = preview ?? fakeBackupPreview();
+
+  ({int plans, int logs}) counts;
+  bool exportFails;
+
+  /// Se non null, [inspect] rifiuta il file per questo motivo.
+  BackupProblem? inspectProblem;
+  bool restoreFails;
+
+  /// Ciò che [inspect] restituisce.
+  BackupPreview preview;
+
+  /// Se non null, [export] e [restore] aspettano che il test li completi:
+  /// servono a guardare l'app mentre lavorano.
+  Completer<void>? exportGate;
+  Completer<void>? restoreGate;
+
+  int exportCount = 0;
+  final inspected = <String>[];
+  final restored = <BackupPreview>[];
+  final discarded = <BackupPreview>[];
+
+  @override
+  ({int plans, int logs}) currentCounts() => counts;
+
+  @override
+  Future<File> export() async {
+    exportCount++;
+    await exportGate?.future;
+    if (exportFails) throw const FileSystemException('disco pieno');
+    return File('tacca-backup-2026-10-05-1830.tacca');
+  }
+
+  @override
+  Future<BackupPreview> inspect(String path) async {
+    inspected.add(path);
+    final problem = inspectProblem;
+    if (problem != null) throw BackupFormatException(problem, 'finto');
+    return preview;
+  }
+
+  @override
+  Future<void> restore(BackupPreview preview) async {
+    await restoreGate?.future;
+    if (restoreFails) throw StateError('transazione fallita');
+    restored.add(preview);
+  }
+
+  @override
+  Future<void> discard(BackupPreview preview) async => discarded.add(preview);
+}
+
+/// Un backup già letto, con i conteggi che servono al dialog di conferma.
+BackupPreview fakeBackupPreview({
+  int plans = 3,
+  int logs = 42,
+  DateTime? createdAt,
+}) => BackupPreview(
+  backup: DecodedBackup(
+    header: BackupHeader(
+      createdAt: createdAt ?? DateTime(2026, 10, 5, 18, 30),
+      plans: plans,
+      logs: logs,
+      images: 0,
+    ),
+    data: const BackupData(plans: [], logs: []),
+    planImages: const {},
+  ),
+  staging: Directory('backup-finto'),
+);
+
+/// Foglio di condivisione e selettore di file finti: registrano cosa è stato
+/// condiviso e restituiscono il file che il test ha deciso (null = l'utente
+/// chiude il selettore).
+class FakeBackupFiles implements BackupFiles {
+  FakeBackupFiles({this.picked, this.pickFails = false});
+
+  String? picked;
+
+  /// True = il selettore di sistema non riesce a consegnare il file.
+  bool pickFails;
+  final shared = <File>[];
+  final origins = <Rect?>[];
+
+  /// I file scelti che il cubit ha dichiarato non più necessari.
+  final released = <String>[];
+
+  @override
+  Future<void> share(File file, {Rect? originRect}) async {
+    shared.add(file);
+    origins.add(originRect);
+  }
+
+  @override
+  Future<String?> pick() async {
+    if (pickFails) throw Exception('Failed to read file');
+    return picked;
+  }
+
+  @override
+  Future<void> release(String path) async => released.add(path);
 }

@@ -12,6 +12,14 @@ abstract final class AppConstants {
   /// tedesco. Vedi `App.build`.
   static const Locale fallbackLocale = Locale('it');
 
+  /// Il nome dell'app, che firma le immagini delle schede condivise.
+  ///
+  /// Non sta negli ARB perché non è una frase da tradurre: è un nome, e si
+  /// scrive così in ogni lingua, come gli endonimi di
+  /// `core/l10n/language_names.dart`. È lo stesso nome che il telefono mostra
+  /// sotto l'icona (`android:label`, `CFBundleDisplayName`).
+  static const String appName = 'Tacca';
+
   /// Termini e condizioni completi. Si aprono nel browser di sistema
   /// (`LinkOpener`): l'app non incorpora nessuna WebView.
   static const String termsUrl =

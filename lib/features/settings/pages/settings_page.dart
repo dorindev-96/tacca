@@ -15,7 +15,8 @@ import '../../../l10n/app_localizations.dart';
 import '../cubit/locale_cubit.dart';
 import '../cubit/theme_mode_cubit.dart';
 
-/// Impostazioni (RF-08): punto d'ingresso della configurazione AI.
+/// Impostazioni (RF-08): lingua, tema, configurazione AI, backup locale e
+/// termini.
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
@@ -61,6 +62,16 @@ class SettingsPage extends StatelessWidget {
             title: l10n.settingsAiTile,
             subtitle: l10n.settingsAiTileSubtitle,
             onTap: () => context.push('/settings/ai'),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          SettingsTile(
+            // Il set del design non ha un archivio né una freccia di
+            // download: finché il glifo non arriva dal file di design, il
+            // backup lo segna il lucchetto — i dati messi al sicuro.
+            icon: AppIcons.lock,
+            title: l10n.settingsBackupTile,
+            subtitle: l10n.settingsBackupTileSubtitle,
+            onTap: () => context.push('/settings/backup'),
           ),
           const SizedBox(height: AppSpacing.sm),
           SettingsTile(

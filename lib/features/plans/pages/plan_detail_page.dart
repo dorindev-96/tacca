@@ -236,8 +236,8 @@ class PlanDetailPage extends StatelessWidget {
   ///
   /// L'immagine non è uno screenshot: la pagina è più alta dello schermo e di
   /// un `ListView` esiste solo la parte visibile. Viene ridisegnata da capo
-  /// fuori dall'albero ([PlanShareImage]), a larghezza fissa e altezza
-  /// libera.
+  /// fuori dall'albero ([PlanShareImage]), a larghezza fissa; se è lunga si
+  /// divide in più pagine, che partono tutte insieme.
   ///
   /// Il rettangolo passato al servizio è quello della pagina: su iPad il
   /// foglio di condivisione è un popover e senza un'ancora compare dove
@@ -260,9 +260,8 @@ class PlanDetailPage extends StatelessWidget {
         : null;
 
     try {
-      await sharer.shareWidgetAsImage(
-        widget: poster,
-        width: PlanShareImage.logicalWidth,
+      await sharer.sharePagedImage(
+        image: poster,
         fileName: _imageFileName(plan.name, l10n),
         text: plan.name,
         originRect: origin,
@@ -274,15 +273,16 @@ class PlanDetailPage extends StatelessWidget {
     }
   }
 
-  /// Nome del file che vedrà chi riceve l'immagine: il nome della scheda
-  /// ridotto ai caratteri che sopravvivono a un file system e a una chat.
+  /// Nome del file che vedrà chi riceve l'immagine, senza estensione: il
+  /// nome della scheda ridotto ai caratteri che sopravvivono a un file system
+  /// e a una chat. Estensione e numero di pagina li aggiunge il servizio.
   String _imageFileName(String planName, AppLocalizations l10n) {
     final slug = planName
         .toLowerCase()
         .replaceAll(RegExp('[^a-z0-9]+'), '-')
         .replaceAll(RegExp('^-+|-+\$'), '');
     final name = slug.isEmpty ? l10n.planShareFileNameFallback : slug;
-    return '${name.length <= 60 ? name : name.substring(0, 60)}.png';
+    return name.length <= 60 ? name : name.substring(0, 60);
   }
 
   Future<void> _handle(

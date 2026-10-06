@@ -117,7 +117,7 @@ class ObjectBoxWorkoutLogRepository implements WorkoutLogRepository {
     )..order(WorkoutLog_.startedAt, flags: Order.descending)).build();
     try {
       final log = query.findFirst();
-      if (log != null) _sortLogTree(log);
+      if (log != null) sortLogTree(log);
       return log;
     } finally {
       query.close();
@@ -132,7 +132,7 @@ class ObjectBoxWorkoutLogRepository implements WorkoutLogRepository {
         .watch(triggerImmediately: true)
         .map((query) {
           final log = query.findFirst();
-          if (log != null) _sortLogTree(log);
+          if (log != null) sortLogTree(log);
           return log;
         });
   }
@@ -140,7 +140,7 @@ class ObjectBoxWorkoutLogRepository implements WorkoutLogRepository {
   @override
   WorkoutLog? getById(int id) {
     final log = _logBox.get(id);
-    if (log != null) _sortLogTree(log);
+    if (log != null) sortLogTree(log);
     return log;
   }
 
@@ -174,7 +174,7 @@ class ObjectBoxWorkoutLogRepository implements WorkoutLogRepository {
           WorkoutLog_.dbStatus.notEquals(WorkoutStatus.inProgress.name),
         )..order(WorkoutLog_.startedAt, flags: Order.descending))
         .watch(triggerImmediately: true)
-        .map((query) => query.find()..forEach(_sortLogTree));
+        .map((query) => query.find()..forEach(sortLogTree));
   }
 
   @override
@@ -266,12 +266,14 @@ class ObjectBoxWorkoutLogRepository implements WorkoutLogRepository {
       query.close();
     }
   }
+}
 
-  void _sortLogTree(WorkoutLog log) {
-    log.entries.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-    for (final entry in log.entries) {
-      entry.sets.sort((a, b) => a.setNumber.compareTo(b.setNumber));
-    }
+/// Ordina in memoria entry e serie di [log], come `sortPlanTree` fa con le
+/// schede: anche questa serve sia al repository sia al backup.
+void sortLogTree(WorkoutLog log) {
+  log.entries.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+  for (final entry in log.entries) {
+    entry.sets.sort((a, b) => a.setNumber.compareTo(b.setNumber));
   }
 }
 
