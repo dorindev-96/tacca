@@ -58,3 +58,5 @@ lib/l10n/app_localizations*.dart
 /lib/objectbox.dll
 
 /items
+
+/brag-output
