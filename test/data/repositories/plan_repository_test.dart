@@ -74,7 +74,11 @@ void main() {
     test('savePlan su una scheda esistente aggiorna updatedAt', () {
       final plan = buildPlan();
       repository.savePlan(plan);
-      final originalUpdatedAt = plan.updatedAt;
+      // Il riferimento va riletto dal database e non preso da `plan`:
+      // `PropertyType.date` salva al millisecondo, mentre in memoria
+      // `DateTime.now()` ha i microsecondi. Con due salvataggi nello stesso
+      // millisecondo il valore riletto risultava *prima* di quello in memoria.
+      final originalUpdatedAt = repository.getById(plan.id)!.updatedAt;
 
       plan.name = 'Nome aggiornato';
       repository.savePlan(plan);
