@@ -7,6 +7,7 @@ import '../../../data/entities/workout_log.dart';
 import '../../../data/repositories/workout_log_repository.dart';
 import '../../../services/timer/timer_engine.dart';
 import 'session_item.dart';
+import 'session_step.dart';
 
 part 'workout_session_state.freezed.dart';
 
@@ -102,6 +103,20 @@ sealed class WorkoutSessionState with _$WorkoutSessionState {
     if (all.isEmpty) return null;
     final index = currentIndex.clamp(0, all.length - 1);
     return all[index];
+  }
+
+  /// Il giro da chiudere col pulsante in fondo alla sessione: il primo ancora
+  /// aperto nel superset o nel circuito dell'esercizio in evidenza. Null fuori
+  /// da un gruppo a giri, o a gruppo finito.
+  SessionStep? get currentRound {
+    final item = currentItem;
+    if (item == null) return null;
+    final group = executionGroupOf(items, item.index);
+    if (group.length < 2) return null;
+    for (final step in pendingStepsOf(group)) {
+      return step;
+    }
+    return null;
   }
 
   int get completedExercises => items.where((item) => item.isDone).length;

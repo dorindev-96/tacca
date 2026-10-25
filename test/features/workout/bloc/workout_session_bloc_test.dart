@@ -74,6 +74,57 @@ void main() {
     ]);
     warmupDay.blocks.add(warmupBlock);
     plan.days.add(warmupDay);
+
+    // Un superset in mezzo a due esercizi normali: è dove il banner deve
+    // passare da "serie" a "giro" e tornare indietro.
+    final mixedDay = WorkoutDay(label: 'Giorno D', sortOrder: 3)..id = 13;
+    final before = Block.ofType(BlockType.standard)..id = 103;
+    before.exercises.add(
+      Exercise(name: 'Squat', sets: 2, reps: '5', restSeconds: 90)..id = 1006,
+    );
+    final pair = Block.ofType(BlockType.superset, sortOrder: 1)
+      ..id = 104
+      ..rounds = 3
+      ..restBetweenRoundsSeconds = 75;
+    pair.exercises.addAll([
+      Exercise(name: 'Trazioni', reps: '8')..id = 1007,
+      Exercise(name: 'Dip', reps: '10', sortOrder: 1)..id = 1008,
+    ]);
+    final after = Block.ofType(BlockType.standard, sortOrder: 2)..id = 105;
+    after.exercises.add(
+      Exercise(name: 'Plank', durationSeconds: 60)..id = 1009,
+    );
+    mixedDay.blocks.addAll([before, pair, after]);
+    plan.days.add(mixedDay);
+
+    // Superset in cui il primo esercizio prescrive una serie in più: l'ultimo
+    // giro lo fa da solo.
+    final unevenDay = WorkoutDay(label: 'Giorno E', sortOrder: 4)..id = 14;
+    final uneven = Block.ofType(BlockType.superset)
+      ..id = 106
+      ..rounds = 3
+      ..restBetweenRoundsSeconds = 60;
+    uneven.exercises.addAll([
+      Exercise(name: 'Panca inclinata', sets: 4, reps: '10')..id = 1010,
+      Exercise(name: 'Croci', reps: '12', sortOrder: 1)..id = 1011,
+    ]);
+    unevenDay.blocks.add(uneven);
+    plan.days.add(unevenDay);
+
+    // Circuito di tre, col recupero scritto sull'ultimo esercizio invece che
+    // sul blocco: è un'altra forma con cui arriva una scheda vera.
+    final circuitDay = WorkoutDay(label: 'Giorno F', sortOrder: 5)..id = 15;
+    final circuit = Block.ofType(BlockType.circuit)
+      ..id = 107
+      ..rounds = 2;
+    circuit.exercises.addAll([
+      Exercise(name: 'Burpee', reps: '10')..id = 1012,
+      Exercise(name: 'Kettlebell swing', reps: '15', sortOrder: 1)..id = 1013,
+      Exercise(name: 'Box jump', reps: '8', restSeconds: 120, sortOrder: 2)
+        ..id = 1014,
+    ]);
+    circuitDay.blocks.add(circuit);
+    plan.days.add(circuitDay);
     return plan;
   }
 
@@ -110,6 +161,23 @@ void main() {
     await logs.dispose();
     await live.dispose();
   });
+
+  /// Giro confermato dalla schermata di blocco: `entryIndex` è il primo
+  /// esercizio del gruppo, `setNumber` il giro.
+  LiveSessionAction roundConfirmed(
+    WorkoutSessionBloc bloc, {
+    required DateTime at,
+    String id = 'giro-1',
+    int entryIndex = 0,
+    int round = 1,
+  }) => LiveSessionAction(
+    id: id,
+    kind: LiveSessionActionKind.roundCompleted,
+    logId: bloc.state.log!.id,
+    entryIndex: entryIndex,
+    setNumber: round,
+    at: at,
+  );
 
   /// Conferma come la manda il nativo: id già assegnato e orario del tap.
   LiveSessionAction setConfirmed(
@@ -324,6 +392,246 @@ void main() {
       await pumpEventQueue();
       expect(bloc.state.timer!.spec.kind, TimerKind.rest);
       expect(bloc.state.timer!.spec.total, const Duration(seconds: 60));
+
+      await bloc.close();
+    });
+  });
+
+  group('giro intero (superset e circuito)', () {
+    test(
+      'RoundCompleted spunta il giro di ogni esercizio e salva subito',
+      () async {
+        final bloc = await startedSession(dayId: 11);
+        final savesBefore = logs.saveCount;
+
+        bloc.add(const RoundCompleted(entryIndex: 0, round: 1));
+        await pumpEventQueue();
+
+        final items = bloc.state.items;
+        expect(items.map((i) => i.isSetDone(1)), [true, true]);
+        expect(items.map((i) => i.setNumbered(1)!.completedAt), [_now, _now]);
+        expect(
+          logs.saveCount,
+          savesBefore + 1,
+          reason: 'un giro è una mutazione sola, e si persiste subito',
+        );
+
+        await bloc.close();
+      },
+    );
+
+    test('a giro chiuso parte il recupero del giro', () async {
+      final bloc = await startedSession(dayId: 11);
+
+      bloc.add(const RoundCompleted(entryIndex: 0, round: 1));
+      await pumpEventQueue();
+
+      expect(timerEngine.current!.spec.kind, TimerKind.rest);
+      expect(timerEngine.current!.spec.total, const Duration(seconds: 60));
+      expect(timerEngine.current!.startedAt, _now);
+      // La barra del timer dice di quale giro è il recupero.
+      expect(timerEngine.current!.spec.label, 'Curl EZ + French press');
+
+      await bloc.close();
+    });
+
+    test(
+      'ogni esercizio parte dai suoi valori, non da quelli dell\'altro',
+      () async {
+        logs.lastPerformances['Curl EZ'] = LastPerformance(
+          performedAt: DateTime(2026, 8, 8),
+          sets: [buildLogSet(1, weightKg: 30, reps: '10')],
+        );
+        logs.lastPerformances['French press'] = LastPerformance(
+          performedAt: DateTime(2026, 8, 8),
+          sets: [buildLogSet(1, weightKg: 20, reps: '12')],
+        );
+        final bloc = await startedSession(dayId: 11);
+
+        bloc.add(const RoundCompleted(entryIndex: 0, round: 1));
+        await pumpEventQueue();
+
+        final items = bloc.state.items;
+        expect(items[0].setNumbered(1)!.weightKg, 30);
+        expect(items[1].setNumbered(1)!.weightKg, 20);
+        expect(items[1].setNumbered(1)!.reps, '12');
+
+        await bloc.close();
+      },
+    );
+
+    test('un giro cominciato a mano si chiude spuntando il resto', () async {
+      final bloc = await startedSession(dayId: 11);
+      bloc.add(
+        const SetLogged(entryIndex: 0, setNumber: 1, weightKg: 32, reps: '8'),
+      );
+      await pumpEventQueue();
+
+      // Qualunque esercizio del gruppo identifica il giro.
+      bloc.add(const RoundCompleted(entryIndex: 1, round: 1));
+      await pumpEventQueue();
+
+      final items = bloc.state.items;
+      expect(items[0].entry.sets, hasLength(1));
+      expect(
+        items[0].setNumbered(1)!.weightKg,
+        32,
+        reason: 'la serie già registrata non si tocca',
+      );
+      expect(items[1].isSetDone(1), isTrue);
+      expect(timerEngine.current!.spec.total, const Duration(seconds: 60));
+
+      await bloc.close();
+    });
+
+    test('lo stesso giro confermato due volte vale una', () async {
+      final bloc = await startedSession(dayId: 11);
+
+      bloc.add(const RoundCompleted(entryIndex: 0, round: 1));
+      await pumpEventQueue();
+      final savesBefore = logs.saveCount;
+      bloc.add(const RoundCompleted(entryIndex: 0, round: 1));
+      await pumpEventQueue();
+
+      expect(bloc.state.items.map((i) => i.entry.sets.length), [1, 1]);
+      expect(logs.saveCount, savesBefore, reason: 'non c\'era niente da fare');
+
+      await bloc.close();
+    });
+
+    test(
+      'l\'evidenza passa al giro dopo, poi a ciò che segue il superset',
+      () async {
+        final bloc = await startedSession(dayId: 13);
+        bloc.add(const ExerciseFocused(2));
+        await pumpEventQueue();
+
+        bloc.add(const RoundCompleted(entryIndex: 1, round: 1));
+        await pumpEventQueue();
+        // Il giro 2 riparte dal primo esercizio della coppia.
+        expect(bloc.state.currentIndex, 1);
+        expect(bloc.state.currentRound!.number, 2);
+
+        bloc.add(const RoundCompleted(entryIndex: 1, round: 2));
+        bloc.add(const RoundCompleted(entryIndex: 1, round: 3));
+        await pumpEventQueue();
+        // Superset finito: si va avanti, non si torna indietro allo squat
+        // saltato — quello arriva dopo, a fine giornata.
+        expect(bloc.state.items[bloc.state.currentIndex].name, 'Plank');
+        expect(bloc.state.currentRound, isNull);
+
+        await bloc.close();
+      },
+    );
+
+    test(
+      'chi prescrive più serie degli altri fa l\'ultimo giro da solo',
+      () async {
+        final bloc = await startedSession(dayId: 14);
+        for (var round = 1; round <= 3; round++) {
+          bloc.add(RoundCompleted(entryIndex: 0, round: round));
+        }
+        await pumpEventQueue();
+        bloc.add(const TimerStopped());
+        await pumpEventQueue();
+
+        final round4 = bloc.state.currentRound!;
+        expect(round4.number, 4);
+        expect(round4.title, 'Panca inclinata');
+
+        bloc.add(const RoundCompleted(entryIndex: 0, round: 4));
+        await pumpEventQueue();
+
+        final items = bloc.state.items;
+        expect(items[0].entry.sets, hasLength(4));
+        expect(
+          items[1].entry.sets,
+          hasLength(3),
+          reason: 'nessun giro inventato',
+        );
+        // Il giro è chiuso anche se a chiuderlo non è l'ultimo del blocco.
+        expect(timerEngine.current!.spec.total, const Duration(seconds: 60));
+        expect(bloc.state.currentRound, isNull);
+
+        await bloc.close();
+      },
+    );
+
+    test('nel circuito il giro spunta tutti gli esercizi', () async {
+      final bloc = await startedSession(dayId: 15);
+
+      expect(
+        bloc.state.currentRound!.title,
+        'Burpee + Kettlebell swing + Box jump',
+      );
+
+      bloc.add(const RoundCompleted(entryIndex: 0, round: 1));
+      await pumpEventQueue();
+
+      expect(bloc.state.items.every((i) => i.isSetDone(1)), isTrue);
+      // Senza recupero sul blocco vale quello di chi chiude il giro.
+      expect(timerEngine.current!.spec.total, const Duration(minutes: 2));
+      expect(bloc.state.currentRound!.number, 2);
+
+      await bloc.close();
+    });
+
+    test('col recupero automatico spento il giro si spunta e basta', () async {
+      final bloc = await startedSession(dayId: 11);
+      bloc.add(const AutoStartRestToggled(false));
+
+      bloc.add(const RoundCompleted(entryIndex: 0, round: 1));
+      await pumpEventQueue();
+
+      expect(bloc.state.items.every((i) => i.isSetDone(1)), isTrue);
+      expect(timerEngine.current, isNull);
+
+      await bloc.close();
+    });
+
+    test('un timer già in corso non viene interrotto dal giro', () async {
+      final bloc = await startedSession(dayId: 11);
+      bloc.add(TimerRequested(TimerSpec.amrap(const Duration(minutes: 10))));
+      await pumpEventQueue();
+
+      bloc.add(const RoundCompleted(entryIndex: 0, round: 1));
+      await pumpEventQueue();
+
+      expect(bloc.state.items.every((i) => i.isSetDone(1)), isTrue);
+      expect(timerEngine.current!.spec.kind, TimerKind.amrap);
+      expect(bloc.state.pendingTimerRequest, isNull);
+
+      await bloc.close();
+    });
+
+    test('fuori da un superset il giro vale come la serie', () async {
+      // Un'azione rimasta in coda mentre la scheda cambiava: il gruppo si
+      // ricalcola adesso, e se non c'è più resta la serie di quell'esercizio.
+      final bloc = await startedSession();
+
+      bloc.add(const RoundCompleted(entryIndex: 0, round: 1));
+      await pumpEventQueue();
+
+      expect(bloc.state.items.map((i) => i.isSetDone(1)), [true, false]);
+      expect(timerEngine.current!.spec.total, const Duration(minutes: 2));
+
+      await bloc.close();
+    });
+
+    test('il pulsante del giro esiste solo dentro un gruppo', () async {
+      final bloc = await startedSession(dayId: 13);
+
+      // Squat: esercizio normale.
+      expect(bloc.state.currentRound, isNull);
+
+      // Dip, il secondo della coppia: il giro è comunque quello del gruppo.
+      bloc.add(const ExerciseFocused(2));
+      await pumpEventQueue();
+      final round = bloc.state.currentRound!;
+      expect(round.number, 1);
+      expect(round.anchor.name, 'Trazioni');
+      expect(round.title, 'Trazioni + Dip');
+      expect(round.total, 3);
 
       await bloc.close();
     });
@@ -667,39 +975,117 @@ void main() {
       },
     );
 
-    test('in un superset il giro dopo è dell\'altro esercizio', () async {
-      // Il difetto: il banner contava i giri restando sullo stesso nome
-      // ("Curl EZ, 2/4") e il secondo esercizio del superset non ci arrivava
-      // mai. Un giro è una serie di *ciascuno* dei due.
+    test('in un superset il banner mostra il giro intero', () async {
+      // Durante il giro non ci si ferma a spuntare: il telefono si riprende in
+      // mano alla fine, e un tocco solo deve chiudere entrambi gli esercizi.
       final bloc = await startedSession(dayId: 11);
 
       final snapshot = live.started.single;
-      expect(snapshot.exerciseName, 'Curl EZ');
+      expect(snapshot.exerciseName, 'Curl EZ + French press');
+      expect(snapshot.entryIndex, 0);
       expect(snapshot.setNumber, 1);
-      expect(snapshot.nextExerciseName, 'French press');
-      expect(snapshot.nextSetNumber, 1);
-      // Il nativo non deve contare avanti qui: la serie dopo non è sua.
-      expect(snapshot.advancesToNext, isTrue);
-      // E nemmeno là, arrivato sul secondo: dopo quello si torna al primo,
-      // e quel passo lo sa fare solo l'app.
-      expect(snapshot.nextAdvancesToNext, isTrue);
+      expect(snapshot.totalSets, 4);
+      expect(snapshot.completesRound, isTrue);
+      // Il giro dopo è dello stesso gruppo: il nativo conta avanti i giri come
+      // conterebbe le serie.
+      expect(snapshot.advancesToNext, isFalse);
+      // Il recupero del giro parte dal tap, senza aspettare l'app.
+      expect(snapshot.restSecondsOnComplete, 60);
+      expect(snapshot.nextExerciseName, isNull);
 
       await bloc.close();
     });
 
-    test('confermato il primo del giro, il banner passa al secondo', () async {
+    test('confermato un giro, il banner passa al giro dopo', () async {
       final bloc = await startedSession(dayId: 11);
 
-      bloc.add(const SetCompleted(entryIndex: 0, setNumber: 1));
+      bloc.add(const RoundCompleted(entryIndex: 0, round: 1));
       await pumpEventQueue();
 
-      expect(live.last!.exerciseName, 'French press');
-      expect(live.last!.setNumber, 1);
-      // Chiuso il giro si torna al primo esercizio, al giro dopo.
-      expect(live.last!.nextExerciseName, 'Curl EZ');
-      expect(live.last!.nextSetNumber, 2);
-      // Il recupero del giro nasce dal secondo, non da qui.
-      expect(live.last!.restSecondsOnComplete, 60);
+      expect(live.last!.exerciseName, 'Curl EZ + French press');
+      expect(live.last!.setNumber, 2);
+      expect(live.last!.completesRound, isTrue);
+      expect(live.last!.countdownEndsAt, _now.add(const Duration(seconds: 60)));
+
+      await bloc.close();
+    });
+
+    test(
+      'spuntato a mano il primo, il pulsante chiude il resto del giro',
+      () async {
+        final bloc = await startedSession(dayId: 11);
+
+        bloc.add(const SetCompleted(entryIndex: 0, setNumber: 1));
+        await pumpEventQueue();
+
+        // Resta il giro 1, non "French press 1": il pulsante dice cosa si
+        // chiude, e il recupero è ancora quello del giro.
+        expect(live.last!.exerciseName, 'Curl EZ + French press');
+        expect(live.last!.setNumber, 1);
+        expect(live.last!.completesRound, isTrue);
+        expect(live.last!.restSecondsOnComplete, 60);
+
+        await bloc.close();
+      },
+    );
+
+    test('il superset arriva sul banner come passo dopo, e se ne va', () async {
+      final bloc = await startedSession(dayId: 13);
+
+      final squat = live.started.single;
+      expect(squat.exerciseName, 'Squat');
+      expect(squat.completesRound, isFalse);
+      expect(squat.nextExerciseName, 'Trazioni + Dip');
+      expect(squat.nextEntryIndex, 1);
+      expect(squat.nextSetNumber, 1);
+      expect(squat.nextTotalSets, 3);
+      expect(squat.nextRestSecondsOnComplete, 75);
+      // Arrivato lì, il pulsante deve chiudere il giro, non la serie.
+      expect(squat.nextCompletesRound, isTrue);
+      // E da lì può contare avanti i giri da solo.
+      expect(squat.nextAdvancesToNext, isFalse);
+
+      bloc.add(const ExerciseFocused(2));
+      await pumpEventQueue();
+
+      final pair = live.last!;
+      expect(pair.exerciseName, 'Trazioni + Dip');
+      expect(pair.entryIndex, 1);
+      expect(pair.completesRound, isTrue);
+      expect(pair.nextExerciseName, 'Plank');
+      expect(pair.nextCompletesRound, isFalse);
+
+      await bloc.close();
+    });
+
+    test('il giro confermato dal blocco vale con l\'orario del tap', () async {
+      final bloc = await startedSession(dayId: 11);
+      final tap = _now.subtract(const Duration(seconds: 20));
+
+      live.deliver(roundConfirmed(bloc, at: tap));
+      await pumpEventQueue();
+
+      final items = bloc.state.items;
+      expect(items.map((i) => i.setNumbered(1)!.completedAt), [tap, tap]);
+      // Il recupero del giro parte dal tap: ne restano 40 secondi su 60.
+      expect(timerEngine.current!.startedAt, tap);
+      expect(timerEngine.current!.remaining, const Duration(seconds: 40));
+
+      await bloc.close();
+    });
+
+    test('il giro rimasto in coda si applica al rientro, una volta', () async {
+      final bloc = await startedSession(dayId: 11);
+      final tap = _now.subtract(const Duration(seconds: 10));
+      live.pending = [roundConfirmed(bloc, at: tap)];
+      // Lo stesso tap consegnato anche dallo stream, con l'app ancora viva.
+      live.deliver(roundConfirmed(bloc, at: tap));
+      await pumpEventQueue();
+
+      bloc.add(const AppLifecycleChanged(toBackground: false));
+      await pumpEventQueue();
+
+      expect(bloc.state.items.map((i) => i.entry.sets.length), [1, 1]);
 
       await bloc.close();
     });
@@ -886,18 +1272,16 @@ void main() {
     );
 
     test(
-      'senza recupero del giro il nativo non avvia nessun countdown',
+      'con l\'evidenza sul secondo della coppia il banner resta sul giro',
       () async {
-        // Giorno a superset: il riposo è del giro, quindi nasce solo
-        // dall'ultimo esercizio del blocco.
         final bloc = await startedSession(dayId: 11);
-
-        expect(live.started.single.restSecondsOnComplete, 0);
 
         bloc.add(const ExerciseFocused(1));
         await pumpEventQueue();
 
-        expect(live.last!.exerciseName, 'French press');
+        expect(live.last!.exerciseName, 'Curl EZ + French press');
+        // L'azione si riconosce dal primo esercizio del gruppo.
+        expect(live.last!.entryIndex, 0);
         expect(live.last!.restSecondsOnComplete, 60);
 
         await bloc.close();

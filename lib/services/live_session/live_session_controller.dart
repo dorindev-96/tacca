@@ -47,6 +47,12 @@ abstract interface class LiveSessionController {
 /// reagire da solo al tap: [restSecondsOnComplete] gli permette di far partire
 /// il countdown, i campi `next*` di spostare il banco sull'esercizio dopo —
 /// entrambi senza aspettare che l'app si risvegli.
+///
+/// "Esercizio" e "serie" qui sono i nomi storici dei campi: in un superset o
+/// in un circuito il banner mostra il **giro intero** ([completesRound]) — il
+/// nome è quello degli esercizi del giro uniti da "+", la "serie" è il numero
+/// del giro, il totale sono i giri. Per il nativo non cambia niente: conta
+/// avanti i giri come conterebbe le serie.
 class LiveSessionSnapshot {
   const LiveSessionSnapshot({
     required this.logId,
@@ -58,6 +64,7 @@ class LiveSessionSnapshot {
     required this.advancesToNext,
     required this.restSecondsOnComplete,
     required this.labels,
+    this.completesRound = false,
     this.countdownStartsAt,
     this.countdownEndsAt,
     this.countdownLabel,
@@ -67,6 +74,7 @@ class LiveSessionSnapshot {
     this.nextTotalSets = 0,
     this.nextRestSecondsOnComplete = 0,
     this.nextAdvancesToNext = false,
+    this.nextCompletesRound = false,
   });
 
   /// Sessione a cui appartiene: un'azione rimasta in coda da un allenamento
@@ -104,6 +112,15 @@ class LiveSessionSnapshot {
   /// countdown (recupero non configurato o avvio automatico disattivato).
   final int restSecondsOnComplete;
 
+  /// `true` quando il pulsante chiude un **giro intero** di un superset o di
+  /// un circuito: l'azione è un [LiveSessionActionKind.roundCompleted], il
+  /// pulsante dice "Giro fatto" e il conteggio "Giro 2/4".
+  ///
+  /// Durante un giro non ci si ferma a spuntare: il telefono si riprende in
+  /// mano alla fine, ed è lì che un tocco solo deve bastare per tutti gli
+  /// esercizi del giro, recupero compreso.
+  final bool completesRound;
+
   /// Inizio del countdown in corso: serve al nativo per disegnare la barra di
   /// avanzamento, non solo il tempo che manca.
   final DateTime? countdownStartsAt;
@@ -138,6 +155,10 @@ class LiveSessionSnapshot {
   /// contare da solo (blocco normale) o se deve fermarsi (blocco a giri).
   final bool nextAdvancesToNext;
 
+  /// [completesRound] di [nextExerciseName]: arrivato lì, il pulsante deve
+  /// sapere se conferma una serie o un giro.
+  final bool nextCompletesRound;
+
   final LiveSessionLabels labels;
 
   Map<String, Object?> toMap() => {
@@ -149,6 +170,7 @@ class LiveSessionSnapshot {
     'canCompleteSet': canCompleteSet,
     'advancesToNext': advancesToNext,
     'restSecondsOnComplete': restSecondsOnComplete,
+    'completesRound': completesRound,
     'countdownStartsAt': countdownStartsAt?.millisecondsSinceEpoch,
     'countdownEndsAt': countdownEndsAt?.millisecondsSinceEpoch,
     'countdownLabel': countdownLabel,
@@ -158,6 +180,7 @@ class LiveSessionSnapshot {
     'nextTotalSets': nextTotalSets,
     'nextRestSecondsOnComplete': nextRestSecondsOnComplete,
     'nextAdvancesToNext': nextAdvancesToNext,
+    'nextCompletesRound': nextCompletesRound,
     ...labels.toMap(),
   };
 
@@ -195,6 +218,7 @@ class LiveSessionSnapshot {
       // scritto da una versione dell'app che non lo mandava ancora.
       advancesToNext: raw['advancesToNext'] as bool? ?? false,
       restSecondsOnComplete: restSecondsOnComplete,
+      completesRound: raw['completesRound'] as bool? ?? false,
       countdownStartsAt: _dateOrNull(raw['countdownStartsAt']),
       countdownEndsAt: _dateOrNull(raw['countdownEndsAt']),
       countdownLabel: raw['countdownLabel'] as String?,
@@ -204,12 +228,13 @@ class LiveSessionSnapshot {
       nextTotalSets: raw['nextTotalSets'] as int? ?? 0,
       nextRestSecondsOnComplete: raw['nextRestSecondsOnComplete'] as int? ?? 0,
       nextAdvancesToNext: raw['nextAdvancesToNext'] as bool? ?? false,
+      nextCompletesRound: raw['nextCompletesRound'] as bool? ?? false,
       labels: labels,
     );
   }
 
-  /// Lo stato in cui la superficie si trova subito dopo una conferma, con il
-  /// recupero avviato all'orario del tap.
+  /// Lo stato in cui la superficie si trova subito dopo una conferma — di una
+  /// serie o di un giro intero —, con il recupero avviato all'orario del tap.
   ///
   /// È l'unico passo avanti che si può fare senza l'app, e la stessa
   /// aritmetica sta in `CompleteSetIntent.swift`: le due copie devono restare
@@ -232,6 +257,7 @@ class LiveSessionSnapshot {
         restSecondsOnComplete: restSecondsOnComplete,
         canCompleteSet: true,
         advancesToNext: advancesToNext,
+        completesRound: completesRound,
         keepLookahead: true,
       ),
       // Erano finite: si passa all'esercizio dopo, quello che l'app ha
@@ -248,6 +274,9 @@ class LiveSessionSnapshot {
         // successivo non si può fare da soli: senza lookahead il pulsante
         // sparisce, che è meglio di registrare un giro mai fatto.
         advancesToNext: nextAdvancesToNext,
+        // Serie o giro intero: lo dice il passo su cui si arriva, non quello
+        // da cui si parte (dopo un superset viene un esercizio normale).
+        completesRound: nextCompletesRound,
         keepLookahead: false,
       ),
       // Niente più da spuntare: il contatore resta sull'ultima serie fatta e
@@ -260,6 +289,7 @@ class LiveSessionSnapshot {
         restSecondsOnComplete: restSecondsOnComplete,
         canCompleteSet: false,
         advancesToNext: advancesToNext,
+        completesRound: completesRound,
         keepLookahead: true,
       ),
     };
@@ -273,6 +303,7 @@ class LiveSessionSnapshot {
       canCompleteSet: focus.canCompleteSet,
       advancesToNext: focus.advancesToNext,
       restSecondsOnComplete: focus.restSecondsOnComplete,
+      completesRound: focus.completesRound,
       countdownStartsAt: endsAt == null ? null : at,
       countdownEndsAt: endsAt,
       countdownLabel: endsAt == null ? null : labels.restLabel,
@@ -284,6 +315,7 @@ class LiveSessionSnapshot {
           ? nextRestSecondsOnComplete
           : 0,
       nextAdvancesToNext: focus.keepLookahead ? nextAdvancesToNext : false,
+      nextCompletesRound: focus.keepLookahead ? nextCompletesRound : false,
       labels: labels,
     );
   }
@@ -299,6 +331,7 @@ class LiveSessionSnapshot {
       other.canCompleteSet == canCompleteSet &&
       other.advancesToNext == advancesToNext &&
       other.restSecondsOnComplete == restSecondsOnComplete &&
+      other.completesRound == completesRound &&
       other.countdownStartsAt == countdownStartsAt &&
       other.countdownEndsAt == countdownEndsAt &&
       other.countdownLabel == countdownLabel &&
@@ -308,10 +341,11 @@ class LiveSessionSnapshot {
       other.nextTotalSets == nextTotalSets &&
       other.nextRestSecondsOnComplete == nextRestSecondsOnComplete &&
       other.nextAdvancesToNext == nextAdvancesToNext &&
+      other.nextCompletesRound == nextCompletesRound &&
       other.labels == labels;
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     logId,
     exerciseName,
     entryIndex,
@@ -320,6 +354,7 @@ class LiveSessionSnapshot {
     canCompleteSet,
     advancesToNext,
     restSecondsOnComplete,
+    completesRound,
     countdownStartsAt,
     countdownEndsAt,
     countdownLabel,
@@ -329,8 +364,9 @@ class LiveSessionSnapshot {
     nextTotalSets,
     nextRestSecondsOnComplete,
     nextAdvancesToNext,
+    nextCompletesRound,
     labels,
-  );
+  ]);
 }
 
 /// Stringhe localizzate che viaggiano insieme allo stato.
@@ -343,6 +379,8 @@ class LiveSessionLabels {
     required this.title,
     required this.setsLabel,
     required this.completeAction,
+    required this.roundsLabel,
+    required this.completeRoundAction,
     required this.restLabel,
     required this.restDoneLabel,
   });
@@ -356,6 +394,13 @@ class LiveSessionLabels {
   /// Etichetta del pulsante ("Serie fatta").
   final String completeAction;
 
+  /// Parola per i giri di un superset o di un circuito: il nativo ci accosta
+  /// "2/4", come alle serie.
+  final String roundsLabel;
+
+  /// Etichetta del pulsante quando chiude un giro intero ("Giro fatto").
+  final String completeRoundAction;
+
   /// Etichetta del countdown di recupero.
   final String restLabel;
 
@@ -366,6 +411,8 @@ class LiveSessionLabels {
     'title': title,
     'setsLabel': setsLabel,
     'completeAction': completeAction,
+    'roundsLabel': roundsLabel,
+    'completeRoundAction': completeRoundAction,
     'restLabel': restLabel,
     'restDoneLabel': restDoneLabel,
   };
@@ -373,6 +420,10 @@ class LiveSessionLabels {
   /// Rilegge le etichette dalla mappa piatta prodotta da
   /// [LiveSessionSnapshot.toMap]; `null` se ne manca anche una sola: senza
   /// non si disegna niente di leggibile.
+  ///
+  /// Fanno eccezione quelle dei giri, che ripiegano sulle serie: una notifica
+  /// pubblicata dalla versione precedente dell'app non le ha, e un tap lì
+  /// sopra deve registrare la serie lo stesso.
   static LiveSessionLabels? tryParse(Object? raw) {
     if (raw is! Map) return null;
     final title = raw['title'];
@@ -387,10 +438,16 @@ class LiveSessionLabels {
         restDoneLabel is! String) {
       return null;
     }
+    final roundsLabel = raw['roundsLabel'];
+    final completeRoundAction = raw['completeRoundAction'];
     return LiveSessionLabels(
       title: title,
       setsLabel: setsLabel,
       completeAction: completeAction,
+      roundsLabel: roundsLabel is String ? roundsLabel : setsLabel,
+      completeRoundAction: completeRoundAction is String
+          ? completeRoundAction
+          : completeAction,
       restLabel: restLabel,
       restDoneLabel: restDoneLabel,
     );
@@ -402,18 +459,32 @@ class LiveSessionLabels {
       other.title == title &&
       other.setsLabel == setsLabel &&
       other.completeAction == completeAction &&
+      other.roundsLabel == roundsLabel &&
+      other.completeRoundAction == completeRoundAction &&
       other.restLabel == restLabel &&
       other.restDoneLabel == restDoneLabel;
 
   @override
-  int get hashCode =>
-      Object.hash(title, setsLabel, completeAction, restLabel, restDoneLabel);
+  int get hashCode => Object.hash(
+    title,
+    setsLabel,
+    completeAction,
+    roundsLabel,
+    completeRoundAction,
+    restLabel,
+    restDoneLabel,
+  );
 }
 
 /// Cosa ha premuto l'utente sulla superficie di sistema.
 enum LiveSessionActionKind {
   /// Conferma della serie corrente: registra la serie e avvia il recupero.
-  setCompleted;
+  setCompleted,
+
+  /// Conferma del giro corrente di un superset o di un circuito: registra la
+  /// serie di ogni esercizio del giro e avvia il recupero del giro.
+  /// `entryIndex` è il primo esercizio del gruppo, `setNumber` il giro.
+  roundCompleted;
 
   static LiveSessionActionKind? parse(String? name) {
     for (final kind in values) {

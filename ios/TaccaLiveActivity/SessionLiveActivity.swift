@@ -60,16 +60,18 @@ struct SessionLiveActivity: Widget {
     }
   }
 
-  /// "Serie 2/4", o "Serie 2" quando la scheda non prescrive quante.
+  /// "Serie 2/4", o "Serie 2" quando la scheda non prescrive quante. In un
+  /// superset "Giro 2/4".
   static func setsText(
     _ attributes: TaccaSessionAttributes,
     _ state: TaccaSessionAttributes.ContentState
   ) -> String {
     guard state.setNumber > 0 else { return attributes.title }
+    let unit = attributes.unitLabel(state)
     if state.totalSets > 0 {
-      return "\(attributes.setsLabel) \(state.setNumber)/\(state.totalSets)"
+      return "\(unit) \(state.setNumber)/\(state.totalSets)"
     }
-    return "\(attributes.setsLabel) \(state.setNumber)"
+    return "\(unit) \(state.setNumber)"
   }
 }
 
@@ -139,7 +141,8 @@ struct CountdownView: View {
   }
 }
 
-/// Il pulsante che conferma la serie senza aprire l'app.
+/// Il pulsante che conferma la serie — o il giro intero di un superset —
+/// senza aprire l'app.
 ///
 /// Richiede iOS 17: prima di allora i widget non possono eseguire intent. Su
 /// 16.2 il banner resta comunque utile — esercizio corrente e countdown — solo
@@ -152,7 +155,7 @@ struct CompleteSetButton: View {
     if #available(iOS 17.0, *) {
       if state.canCompleteSet {
         Button(intent: CompleteSetIntent()) {
-          Text(attributes.completeAction)
+          Text(attributes.actionLabel(state))
             .font(.subheadline.weight(.bold))
             .foregroundStyle(TaccaColors.ink)
             .padding(.horizontal, 16)

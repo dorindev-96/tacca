@@ -9,6 +9,8 @@ void main() {
     title: 'Allenamento',
     setsLabel: 'Serie',
     completeAction: 'Serie fatta',
+    roundsLabel: 'Giro',
+    completeRoundAction: 'Giro fatto',
     restLabel: 'Recupero',
     restDoneLabel: 'Recupero finito',
   );
@@ -67,6 +69,22 @@ void main() {
   });
 
   group('LiveSessionAction.tryParse', () {
+    test('accetta la conferma di un giro intero', () {
+      // È la stringa scritta da `CompleteSetIntent.swift`: se cambia di là
+      // senza cambiare qui, il giro confermato a telefono bloccato si perde.
+      final action = LiveSessionAction.tryParse({
+        'id': 'abc',
+        'kind': 'roundCompleted',
+        'logId': 3,
+        'entryIndex': 0,
+        'setNumber': 2,
+        'at': DateTime(2026, 8, 15, 18).millisecondsSinceEpoch,
+      });
+
+      expect(action!.kind, LiveSessionActionKind.roundCompleted);
+      expect(action.setNumber, 2);
+    });
+
     test('accetta quello che manda il nativo', () {
       final action = LiveSessionAction.tryParse({
         'id': 'abc',
@@ -117,6 +135,40 @@ void main() {
       // Non solo le coordinate della serie: torna indietro tutto lo stato
       // mostrato, perché l'isolate di background deve poterlo ridisegnare.
       expect(decoded.snapshot, snapshot);
+    });
+
+    test('su un giro intero l\'azione è la conferma del giro', () {
+      final at = DateTime(2026, 8, 15, 18);
+      final giro = LiveActionPayload.forSnapshot(
+        LiveSessionSnapshot(
+          logId: 3,
+          exerciseName: 'Curl EZ + French press',
+          entryIndex: 0,
+          setNumber: 2,
+          totalSets: 4,
+          canCompleteSet: true,
+          advancesToNext: false,
+          restSecondsOnComplete: 60,
+          completesRound: true,
+          labels: labels,
+        ),
+        queuePath: '/tmp/actions.json',
+      );
+      final serie = LiveActionPayload.forSnapshot(
+        snapshot,
+        queuePath: '/tmp/actions.json',
+      );
+
+      final action = giro.toAction(at);
+      expect(action.kind, LiveSessionActionKind.roundCompleted);
+      expect(action.entryIndex, 0);
+      expect(action.setNumber, 2);
+      expect(serie.toAction(at).kind, LiveSessionActionKind.setCompleted);
+      // E fa andata e ritorno nella coda come quella di una serie.
+      expect(
+        LiveSessionAction.tryParse(action.toMap())!.kind,
+        LiveSessionActionKind.roundCompleted,
+      );
     });
 
     test('l\'id dell\'azione identifica la serie e il momento del tap', () {
@@ -178,6 +230,48 @@ void main() {
       expect(giro.toMap()['advancesToNext'], isTrue);
       expect(giro.toMap()['nextAdvancesToNext'], isTrue);
       expect(LiveSessionSnapshot.tryParse(giro.toMap()), giro);
+    });
+
+    test('anche il giro intero fa andata e ritorno', () {
+      // Se `completesRound` si perde nel payload Android, l'isolate di
+      // background ridisegna "Serie fatta" e mette in coda una serie sola.
+      final giro = LiveSessionSnapshot(
+        logId: 3,
+        exerciseName: 'Curl EZ + French press',
+        entryIndex: 0,
+        setNumber: 2,
+        totalSets: 4,
+        canCompleteSet: true,
+        advancesToNext: false,
+        restSecondsOnComplete: 60,
+        completesRound: true,
+        nextExerciseName: 'Plank',
+        nextEntryIndex: 2,
+        nextSetNumber: 1,
+        nextCompletesRound: false,
+        labels: labels,
+      );
+
+      expect(giro.toMap()['completesRound'], isTrue);
+      expect(giro.toMap()['nextCompletesRound'], isFalse);
+      expect(giro.toMap()['completeRoundAction'], 'Giro fatto');
+      expect(LiveSessionSnapshot.tryParse(giro.toMap()), giro);
+    });
+
+    test('una notifica di prima dei giri si rilegge lo stesso', () {
+      // Pubblicata dalla versione precedente dell'app: niente etichette dei
+      // giri, niente flag. Un tap lì sopra deve restare una serie confermata.
+      final vecchia = snapshot.toMap()
+        ..remove('roundsLabel')
+        ..remove('completeRoundAction')
+        ..remove('completesRound')
+        ..remove('nextCompletesRound');
+
+      final parsed = LiveSessionSnapshot.tryParse(vecchia)!;
+
+      expect(parsed.completesRound, isFalse);
+      expect(parsed.labels.roundsLabel, 'Serie');
+      expect(parsed.labels.completeRoundAction, 'Serie fatta');
     });
 
     test('rifiuta una mappa senza stato o senza etichette', () {
@@ -349,6 +443,89 @@ void main() {
       expect(next.setNumber, 1);
       // Il recupero del giro parte lo stesso: quello non dipende dall'app.
       expect(next.countdownEndsAt, tap.add(const Duration(seconds: 60)));
+    });
+
+    test('in un superset conta avanti i giri, restando sul giro', () {
+      // Il gemello in `CompleteSetIntent.swift`: lo stesso ramo che conta le
+      // serie conta i giri, e il pulsante resta "Giro fatto".
+      final giro = LiveSessionSnapshot(
+        logId: 3,
+        exerciseName: 'Trazioni + Dip',
+        entryIndex: 1,
+        setNumber: 1,
+        totalSets: 3,
+        canCompleteSet: true,
+        advancesToNext: false,
+        restSecondsOnComplete: 75,
+        completesRound: true,
+        nextExerciseName: 'Plank',
+        nextEntryIndex: 3,
+        nextSetNumber: 1,
+        labels: labels,
+      );
+
+      final next = giro.afterSetCompleted(tap);
+
+      expect(next.exerciseName, 'Trazioni + Dip');
+      expect(next.entryIndex, 1);
+      expect(next.setNumber, 2);
+      expect(next.completesRound, isTrue);
+      expect(next.countdownEndsAt, tap.add(const Duration(seconds: 75)));
+      // Il lookahead resta: servirà finiti i giri.
+      expect(next.nextExerciseName, 'Plank');
+    });
+
+    test('finiti i giri, sull\'esercizio dopo si torna alle serie', () {
+      final ultimoGiro = LiveSessionSnapshot(
+        logId: 3,
+        exerciseName: 'Trazioni + Dip',
+        entryIndex: 1,
+        setNumber: 3,
+        totalSets: 3,
+        canCompleteSet: true,
+        advancesToNext: false,
+        restSecondsOnComplete: 75,
+        completesRound: true,
+        nextExerciseName: 'Plank',
+        nextEntryIndex: 3,
+        nextSetNumber: 1,
+        nextCompletesRound: false,
+        labels: labels,
+      );
+
+      final next = ultimoGiro.afterSetCompleted(tap);
+
+      expect(next.exerciseName, 'Plank');
+      expect(next.entryIndex, 3);
+      expect(next.completesRound, isFalse);
+      expect(next.canCompleteSet, isTrue);
+    });
+
+    test('arrivando su un superset il pulsante chiude il giro', () {
+      final squat = LiveSessionSnapshot(
+        logId: 3,
+        exerciseName: 'Squat',
+        entryIndex: 0,
+        setNumber: 2,
+        totalSets: 2,
+        canCompleteSet: true,
+        advancesToNext: false,
+        restSecondsOnComplete: 90,
+        nextExerciseName: 'Trazioni + Dip',
+        nextEntryIndex: 1,
+        nextSetNumber: 1,
+        nextTotalSets: 3,
+        nextRestSecondsOnComplete: 75,
+        nextCompletesRound: true,
+        labels: labels,
+      );
+
+      final next = squat.afterSetCompleted(tap);
+
+      expect(next.exerciseName, 'Trazioni + Dip');
+      expect(next.completesRound, isTrue);
+      expect(next.restSecondsOnComplete, 75);
+      expect(next.nextCompletesRound, isFalse);
     });
 
     test('senza recupero configurato non nasce nessun countdown', () {

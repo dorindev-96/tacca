@@ -15,6 +15,7 @@ import '../../../services/timer/timer_engine.dart';
 import '../../../services/wakelock/screen_wake.dart';
 import 'block_timer_spec.dart';
 import 'session_item.dart';
+import 'session_step.dart';
 import 'workout_session_event.dart';
 import 'workout_session_state.dart';
 
@@ -58,6 +59,7 @@ class WorkoutSessionBloc
     on<SessionStarted>(_onSessionStarted);
     on<SessionResumed>(_onSessionResumed);
     on<SetCompleted>(_onSetCompleted);
+    on<RoundCompleted>(_onRoundCompleted);
     on<LiveActionReceived>(_onLiveActionReceived);
     on<SetUnchecked>(_onSetUnchecked);
     on<SetLogged>(_onSetLogged);
@@ -276,6 +278,18 @@ class WorkoutSessionBloc
     );
   }
 
+  void _onRoundCompleted(
+    RoundCompleted event,
+    Emitter<WorkoutSessionState> emit,
+  ) {
+    _completeRound(
+      entryIndex: event.entryIndex,
+      round: event.round,
+      at: _now(),
+      emit: emit,
+    );
+  }
+
   /// Conferma arrivata da fuori: Live Activity o notifica persistente.
   ///
   /// Si scartano le azioni di un'altra sessione (una coda rimasta indietro non
@@ -293,6 +307,13 @@ class WorkoutSessionBloc
         _completeSet(
           entryIndex: action.entryIndex,
           setNumber: action.setNumber,
+          at: action.at,
+          emit: emit,
+        );
+      case LiveSessionActionKind.roundCompleted:
+        _completeRound(
+          entryIndex: action.entryIndex,
+          round: action.setNumber,
           at: action.at,
           emit: emit,
         );
@@ -320,11 +341,66 @@ class WorkoutSessionBloc
     );
 
     _persist(emit, currentIndex: entryIndex);
+    _autoStartRest(restTimerSpec(item, label: item.name), at: at);
+  }
 
+  /// Chiude il giro [round] del superset o del circuito di cui fa parte
+  /// l'esercizio [entryIndex]: spunta, tutte con l'orario [at], le serie che
+  /// mancano, e avvia **un** recupero — quello del giro.
+  ///
+  /// È il gesto con cui si riprende in mano il telefono a giro finito: un
+  /// tocco solo al posto di uno per esercizio, e il recupero parte una volta,
+  /// a giro chiuso — non dal recupero di un esercizio a metà del giro, che a
+  /// quel punto è già passato.
+  void _completeRound({
+    required int entryIndex,
+    required int round,
+    required DateTime at,
+    required Emitter<WorkoutSessionState> emit,
+  }) {
+    final items = state.items;
+    if (entryIndex < 0 || entryIndex >= items.length) return;
+    // Il gruppo si ricalcola adesso, non si fida di chi ha mandato l'azione:
+    // fuori da un superset — la scheda può essere cambiata nel frattempo —
+    // il "giro" è la serie di quell'esercizio e basta.
+    final step = SessionStep(
+      group: executionGroupOf(items, entryIndex),
+      number: round,
+    );
+    final pending = step.pending;
+    if (pending.isEmpty) return;
+    final rest = stepRestSpec(step);
+
+    for (final item in pending) {
+      final prefill = _prefillFor(item, round);
+      item.entry.sets.add(
+        LogSet(
+          setNumber: round,
+          reps: prefill.reps,
+          weightKg: prefill.weightKg,
+          completedAt: at,
+        ),
+      );
+    }
+
+    _persist(emit, currentIndex: _focusAfter(step));
+    _autoStartRest(rest, at: at);
+  }
+
+  /// Dove va l'evidenza a giro chiuso: sul prossimo passo da fare — il giro
+  /// dopo dello stesso superset, o l'esercizio che lo segue —, così la card
+  /// lime, il pulsante in fondo e la schermata di blocco dicono la stessa cosa.
+  int _focusAfter(SessionStep done) {
+    final next = pendingStepsFrom(state.items, done.anchor.index);
+    if (next.isEmpty) return state.currentIndex;
+    return next.first.pending.first.index;
+  }
+
+  /// Avvia il recupero di una conferma data a [at].
+  void _autoStartRest(TimerSpec? spec, {required DateTime at}) {
     // L'avvio automatico non interrompe mai un timer già in corso: il
     // conflitto va risolto dall'utente, non silenziosamente (§9).
     if (!state.autoStartRest || _timerEngine.isRunning) return;
-    final spec = restTimerSpec(item, label: item.name);
     if (spec == null) return;
     // Il recupero parte da quando la serie è finita. Se nel frattempo è già
     // scaduto — conferma dalla schermata di blocco e app riaperta molto dopo —
@@ -539,60 +615,63 @@ class WorkoutSessionBloc
     );
   }
 
-  /// Stato da mostrare fuori dall'app: l'esercizio con la prossima serie da
-  /// spuntare e, se ce n'è uno, il countdown in corso.
+  /// Stato da mostrare fuori dall'app: il prossimo passo da confermare — la
+  /// serie di un esercizio, o il giro intero di un superset — e, se ce n'è
+  /// uno, il countdown in corso.
   LiveSessionSnapshot? _liveSnapshot() {
     final log = state.log;
     if (log == null || state.status != WorkoutSessionStatus.ready) return null;
 
-    // Una lista sola, letta tre volte: la serie da confermare, quella subito
-    // dopo e quella dopo ancora. Servono tutte e tre perché il nativo deve
+    // Una lista sola, letta tre volte: il passo da confermare, quello subito
+    // dopo e quello dopo ancora. Servono tutti e tre perché il nativo deve
     // sapere non solo dove andare, ma se può andarci da solo.
-    final pending = _livePendingSets().toList();
-    final focus = pending.isEmpty ? null : pending.first;
-    final item = focus?.item ?? state.currentItem;
+    final steps = pendingStepsFrom(state.items, state.currentIndex);
+    final focus = steps.isEmpty ? null : steps.first;
+    final item = focus?.anchor ?? state.currentItem;
     if (item == null) return null;
 
     final countdown = _liveCountdown();
-    final restSpec = (focus != null && state.autoStartRest)
-        ? restTimerSpec(focus.item)
+    final rest = (focus != null && state.autoStartRest)
+        ? stepRestSpec(focus)
         : null;
 
-    // L'esercizio dopo viaggia insieme a questo: alla conferma dell'ultima
+    // Il passo dopo viaggia insieme a questo: alla conferma dell'ultima
     // serie il nativo ci sposta sopra il banner da solo, invece di contare una
     // serie che non esiste.
     final nextAt = focus == null
         ? -1
-        : pending.indexWhere((p) => p.item.index != focus.item.index);
-    final next = nextAt < 0 ? null : pending[nextAt];
+        : steps.indexWhere((s) => s.anchor.index != focus.anchor.index);
+    final next = nextAt < 0 ? null : steps[nextAt];
     final nextRest = (next != null && state.autoStartRest)
-        ? restTimerSpec(next.item)
+        ? stepRestSpec(next)
         : null;
 
     return LiveSessionSnapshot(
       logId: log.id,
-      exerciseName: item.name,
+      exerciseName: focus?.title ?? item.name,
       entryIndex: item.index,
-      setNumber: focus?.setNumber ?? 0,
-      totalSets: item.displayedSets,
+      setNumber: focus?.number ?? 0,
+      totalSets: focus?.total ?? item.displayedSets,
       canCompleteSet: focus != null,
-      // In un blocco a giri la serie dopo è di un altro esercizio, e il
-      // nativo non deve contare avanti qui. Si guarda la sequenza vera invece
-      // del tipo di blocco: è la stessa domanda, posta dove ha una risposta.
+      // Il passo dopo è di un altro gruppo, e il nativo non deve contare
+      // avanti qui. Si guarda la sequenza vera invece del tipo di blocco: è la
+      // stessa domanda, posta dove ha una risposta.
       advancesToNext: nextAt == 1,
-      restSecondsOnComplete: restSpec?.total.inSeconds ?? 0,
+      restSecondsOnComplete: rest?.total.inSeconds ?? 0,
+      completesRound: focus?.isRound ?? false,
       countdownStartsAt: countdown.startsAt,
       countdownEndsAt: countdown.endsAt,
       countdownLabel: countdown.label,
-      nextExerciseName: next?.item.name,
-      nextEntryIndex: next?.item.index ?? 0,
-      nextSetNumber: next?.setNumber ?? 0,
-      nextTotalSets: next?.item.displayedSets ?? 0,
+      nextExerciseName: next?.title,
+      nextEntryIndex: next?.anchor.index ?? 0,
+      nextSetNumber: next?.number ?? 0,
+      nextTotalSets: next?.total ?? 0,
       nextRestSecondsOnComplete: nextRest?.total.inSeconds ?? 0,
       nextAdvancesToNext:
           next != null &&
-          nextAt + 1 < pending.length &&
-          pending[nextAt + 1].item.index != next.item.index,
+          nextAt + 1 < steps.length &&
+          steps[nextAt + 1].anchor.index != next.anchor.index,
+      nextCompletesRound: next?.isRound ?? false,
       labels: _liveLabels,
     );
   }
@@ -624,72 +703,6 @@ class WorkoutSessionBloc
           ? _liveLabels.restLabel
           : (timer.spec.label ?? _liveLabels.restLabel),
     );
-  }
-
-  /// Serie ancora da spuntare, nell'ordine in cui si presentano all'utente,
-  /// a partire dall'esercizio in evidenza.
-  ///
-  /// La sequenza completa ([_pendingSetsInOrder]) viene **ruotata** fino alla
-  /// prima serie dell'esercizio in evidenza, non tagliata: quelle prima non si
-  /// perdono, si raccolgono in fondo. È il modo in cui una serie saltata torna
-  /// comunque sotto il pulsante, una volta finito il resto.
-  List<({SessionItem item, int setNumber})> _livePendingSets() {
-    final pending = _pendingSetsInOrder();
-    // Vuota solo se lo è anche la sequenza: le serie vengono da lì.
-    if (pending.isEmpty) return pending;
-    final start = state.currentIndex.clamp(0, state.items.length - 1);
-    final from = pending.indexWhere((p) => p.item.index >= start);
-    if (from <= 0) return pending;
-    return [...pending.skip(from), ...pending.take(from)];
-  }
-
-  /// Tutte le serie rimaste, nell'ordine in cui si eseguono davvero.
-  ///
-  /// Non è "tutte le serie di un esercizio, poi quelle del prossimo": in un
-  /// blocco a giri (superset, circuito) un giro è una serie di **ciascun**
-  /// esercizio del gruppo, quindi le serie si intrecciano — A giro 1, B giro
-  /// 1, A giro 2… Contarle per esercizio faceva restare il banner sullo
-  /// stesso nome per tutti i giri, e l'altro esercizio del superset non ci
-  /// arrivava mai. È la stessa regola per cui il recupero nasce solo
-  /// dall'ultimo esercizio del gruppo (`restTimerSpec`).
-  ///
-  /// Un esercizio fuori da un blocco a giri è un gruppo di uno, e lo stesso
-  /// codice lo percorre in sequenza.
-  List<({SessionItem item, int setNumber})> _pendingSetsInOrder() {
-    final all = state.items;
-    final pending = <({SessionItem item, int setNumber})>[];
-    var i = 0;
-    while (i < all.length) {
-      final group = <SessionItem>[all[i]];
-      final block = all[i].block;
-      if (all[i].isRoundBased && block != null) {
-        // Gli esercizi del gruppo sono consecutivi: `items` li costruisce
-        // seguendo i blocchi del giorno.
-        while (i + 1 < all.length && identical(all[i + 1].block, block)) {
-          group.add(all[i + 1]);
-          i++;
-        }
-      }
-      i++;
-
-      // Un esercizio del gruppo può prescrivere serie sue: i giri sono
-      // tanti quanti ne chiede il più lungo, e chi ne ha meno esce prima.
-      var rounds = 0;
-      for (final item in group) {
-        if (item.checkableSets > rounds) rounds = item.checkableSets;
-      }
-      for (var round = 1; round <= rounds; round++) {
-        for (final item in group) {
-          // `checkableSets`, non `displayedSets`: un esercizio senza serie
-          // prescritte ne ha comunque una da spuntare, e saltarlo qui lo
-          // faceva sparire dal banner della schermata di blocco.
-          if (round <= item.checkableSets && !item.isSetDone(round)) {
-            pending.add((item: item, setNumber: round));
-          }
-        }
-      }
-    }
-    return pending;
   }
 
   // --- helper ---

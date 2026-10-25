@@ -28,6 +28,11 @@ enum LiveSessionShared {
 /// `ContentState` è la parte che cambia durante l'allenamento; gli attributi
 /// veri e propri (etichette localizzate e id della sessione) restano fissi per
 /// tutta la durata dell'attività.
+///
+/// "Esercizio" e "serie" sono i nomi storici dei campi: in un superset o in un
+/// circuito lo stato mostra il **giro intero** (`completesRound`) — il nome è
+/// quello degli esercizi del giro uniti da "+", la serie è il numero del giro.
+/// Per il conteggio non cambia niente: i giri si contano come le serie.
 @available(iOS 16.1, *)
 struct TaccaSessionAttributes: ActivityAttributes {
   public struct ContentState: Codable, Hashable {
@@ -59,6 +64,11 @@ struct TaccaSessionAttributes: ActivityAttributes {
     /// Recupero da far partire alla conferma, in secondi. 0 = nessuno.
     var restSecondsOnComplete: Int
 
+    /// `true` quando il pulsante chiude un giro intero di un superset o di un
+    /// circuito: in coda va un `roundCompleted`, il pulsante dice "Giro fatto"
+    /// e il conteggio "Giro 2/4". L'app spunta poi ogni esercizio del giro.
+    var completesRound: Bool = false
+
     var countdownStartsAt: Date?
     var countdownEndsAt: Date?
     var countdownLabel: String?
@@ -85,6 +95,11 @@ struct TaccaSessionAttributes: ActivityAttributes {
     /// saprebbe se si può continuare a contare da soli (blocco normale) o se
     /// bisogna fermarsi e lasciar ricalcolare all'app (blocco a giri).
     var nextAdvancesToNext: Bool = false
+
+    /// `completesRound` di `nextExerciseName`: arrivati lì, il pulsante deve
+    /// sapere se conferma una serie o un giro (dopo un superset viene spesso un
+    /// esercizio normale, e viceversa).
+    var nextCompletesRound: Bool = false
   }
 
   /// Sessione a cui appartiene l'attività: un'azione rimasta in coda da un
@@ -97,4 +112,21 @@ struct TaccaSessionAttributes: ActivityAttributes {
   var completeAction: String
   var restLabel: String
   var restDoneLabel: String
+
+  /// Parola per i giri ("Giro") e pulsante che chiude un giro intero ("Giro
+  /// fatto"): le controparti di `setsLabel` e `completeAction`.
+  var roundsLabel: String = ""
+  var completeRoundAction: String = ""
+
+  /// Etichette dello stato mostrato: quelle dei giri quando il pulsante ne
+  /// chiude uno intero.
+  func unitLabel(_ state: ContentState) -> String {
+    state.completesRound && !roundsLabel.isEmpty ? roundsLabel : setsLabel
+  }
+
+  func actionLabel(_ state: ContentState) -> String {
+    state.completesRound && !completeRoundAction.isEmpty
+      ? completeRoundAction
+      : completeAction
+  }
 }

@@ -547,6 +547,11 @@
   "@workoutCircuitHint": { "description": "Spiegazione di come si esegue un circuito, sotto l'intestazione del gruppo." },
   "workoutStartRoundRest": "Avvia recupero del giro",
   "@workoutStartRoundRest": { "description": "Azione che avvia il recupero fra i giri di un superset o circuito." },
+  "workoutCompleteRound": "Giro {number} fatto",
+  "@workoutCompleteRound": {
+    "description": "Pulsante in fondo alla sessione che, in un superset o circuito, spunta in un colpo la serie del giro di ogni esercizio del gruppo e avvia il recupero del giro.",
+    "placeholders": { "number": { "type": "int" } }
+  },
   "workoutLastTime": "Ultima volta ({date})",
   "@workoutLastTime": {
     "description": "Intestazione della riga con carichi e ripetizioni dell'ultima sessione.",
@@ -628,6 +633,10 @@
   "@workoutLiveSets": { "description": "Parola per le serie sulla schermata di blocco: il sistema le accosta il conteggio \"2/4\"." },
   "workoutLiveCompleteSet": "Serie fatta",
   "@workoutLiveCompleteSet": { "description": "Pulsante che conferma la serie dalla schermata di blocco, senza aprire l'app." },
+  "workoutLiveRounds": "Giro",
+  "@workoutLiveRounds": { "description": "Parola per i giri di un superset o circuito sulla schermata di blocco: il sistema le accosta il conteggio \"2/4\"." },
+  "workoutLiveCompleteRound": "Giro fatto",
+  "@workoutLiveCompleteRound": { "description": "Pulsante della schermata di blocco che, in un superset o circuito, conferma il giro intero senza aprire l'app." },
   "workoutLiveRestDone": "Recupero finito",
   "@workoutLiveRestDone": { "description": "Testo sulla schermata di blocco quando il countdown di recupero è scaduto." },
   "workoutResumeTitle": "Riprendere l'allenamento?",
