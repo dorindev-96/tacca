@@ -235,6 +235,8 @@ const kTestLiveLabels = LiveSessionLabels(
   title: 'Allenamento',
   setsLabel: 'Serie',
   completeAction: 'Serie fatta',
+  roundsLabel: 'Giro',
+  completeRoundAction: 'Giro fatto',
   restLabel: 'Recupero',
   restDoneLabel: 'Recupero finito',
 );

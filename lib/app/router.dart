@@ -269,6 +269,8 @@ LiveSessionLabels _liveSessionLabels(BuildContext context) {
     title: l10n.workoutLiveTitle,
     setsLabel: l10n.workoutLiveSets,
     completeAction: l10n.workoutLiveCompleteSet,
+    roundsLabel: l10n.workoutLiveRounds,
+    completeRoundAction: l10n.workoutLiveCompleteRound,
     restLabel: l10n.workoutTimerRest,
     restDoneLabel: l10n.workoutLiveRestDone,
   );

@@ -49,6 +49,18 @@ sets of that exercise are gone too the button disappears until the app is
 reopened and recomputes the lookahead. Because each redraw republishes the new
 state into the payload, consecutive taps chain correctly without the app.
 
+Inside a superset or a circuit a step is the **whole round**, not one set of
+one exercise: you do not touch the phone between the exercises of a round, you
+pick it up at the end. The snapshot then carries `completesRound`: the banner
+shows the exercises of the round joined by "+" and "Giro 2/4", the button reads
+"Giro fatto", and the queued action is a `roundCompleted` whose `entryIndex` is
+the first exercise of the group and whose `setNumber` is the round. The app
+re-derives the group when it applies the action and ticks every exercise that
+does not have that round yet, all with the tap time, starting one rest — the
+round's. For the native side a round is just a set with a flag: rounds are
+counted forward by the same branch that counts sets, and `nextCompletesRound`
+tells it whether the step it jumps to is a round or a set.
+
 `WorkoutSessionBloc` drains the queue when a session opens **and** every time
 the app returns to the foreground, then applies each action **with the
 timestamp of the tap** — the rest timer starts from when the set actually

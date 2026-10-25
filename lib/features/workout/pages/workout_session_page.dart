@@ -181,6 +181,9 @@ class _SessionScaffold extends StatelessWidget {
     final bloc = context.read<WorkoutSessionBloc>();
     final items = state.items;
     final log = state.log;
+    final round = state.status == WorkoutSessionStatus.ready
+        ? state.currentRound
+        : null;
 
     return PopScope(
       canPop: state.status != WorkoutSessionStatus.ready,
@@ -256,13 +259,31 @@ class _SessionScaffold extends StatelessWidget {
                 message: l10n.workoutNoExercises,
               )
             : ListView(
-                padding: const EdgeInsets.fromLTRB(
+                padding: EdgeInsets.fromLTRB(
                   AppSpacing.xl,
                   0,
                   AppSpacing.xl,
-                  AppSpacing.xxl,
+                  round == null ? AppSpacing.xxl : AppSpacing.actionClearance,
                 ),
                 children: _buildBody(context, bloc, l10n, items),
+              ),
+        // Superset e circuiti si fanno senza toccare il telefono: lo si
+        // riprende in mano a giro finito, e un tocco solo — qui sotto, dove
+        // arriva il pollice — spunta tutti gli esercizi del giro e avvia il
+        // recupero. Le spunte sulle card restano per chi le vuole una a una.
+        dock: round == null
+            ? null
+            : PillButton(
+                key: const ValueKey('complete-round'),
+                label: l10n.workoutCompleteRound(round.number),
+                icon: AppIcons.check,
+                iconColor: context.colors.lime,
+                onPressed: () => bloc.add(
+                  RoundCompleted(
+                    entryIndex: round.anchor.index,
+                    round: round.number,
+                  ),
+                ),
               ),
       ),
     );

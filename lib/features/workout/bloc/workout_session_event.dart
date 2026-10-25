@@ -34,6 +34,19 @@ final class SetCompleted extends WorkoutSessionEvent {
   final int setNumber;
 }
 
+/// Giro concluso in un superset o in un circuito: spunta in un colpo la serie
+/// [round] di ogni esercizio del gruppo che non l'ha ancora, e avvia il
+/// recupero del giro.
+///
+/// [entryIndex] è un esercizio qualsiasi del gruppo. Fuori da un gruppo a
+/// giri vale come [SetCompleted].
+final class RoundCompleted extends WorkoutSessionEvent {
+  const RoundCompleted({required this.entryIndex, required this.round});
+
+  final int entryIndex;
+  final int round;
+}
+
 /// Spunta tolta: la serie registrata viene rimossa.
 final class SetUnchecked extends WorkoutSessionEvent {
   const SetUnchecked({required this.entryIndex, required this.setNumber});

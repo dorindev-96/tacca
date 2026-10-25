@@ -1,6 +1,7 @@
 import '../../../data/entities/block.dart';
 import '../../../services/timer/timer_engine.dart';
 import 'session_item.dart';
+import 'session_step.dart';
 
 /// Timer "di blocco": quello che guida l'esecuzione dell'intero blocco
 /// (EMOM, AMRAP, Tabata, For Time). I blocchi a serie classiche non ne hanno
@@ -82,3 +83,34 @@ TimerSpec? restTimerSpec(SessionItem item, {String? label}) {
   }
   return null;
 }
+
+/// Recupero da avviare a giro concluso (superset, circuito): quello che
+/// partirebbe spuntando [closing], l'esercizio che chiude il giro.
+///
+/// Si scosta da [restTimerSpec] in un caso solo: quando a chiudere il giro non
+/// è l'ultimo esercizio del blocco — uno che prescrive più serie degli altri e
+/// gli ultimi giri li fa da solo. Il giro è finito lo stesso, e il recupero
+/// fra i giri gli spetta.
+TimerSpec? roundRestSpec(SessionItem closing, {String? label}) {
+  final exerciseRest = closing.exercise?.restSeconds;
+  if (exerciseRest != null && exerciseRest > 0) {
+    return TimerSpec.rest(
+      Duration(seconds: exerciseRest),
+      label: label ?? closing.name,
+    );
+  }
+  final roundRest = closing.block?.restBetweenRoundsSeconds;
+  if (roundRest != null && roundRest > 0) {
+    return TimerSpec.rest(
+      Duration(seconds: roundRest),
+      label: label ?? closing.name,
+    );
+  }
+  return null;
+}
+
+/// Recupero da avviare confermando [step]: quello del giro se il passo è un
+/// giro intero, quello della serie altrimenti.
+TimerSpec? stepRestSpec(SessionStep step) => step.isRound
+    ? roundRestSpec(step.closing, label: step.title)
+    : restTimerSpec(step.anchor);

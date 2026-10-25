@@ -212,6 +212,42 @@ void main() {
     expect(find.text('01:00'), findsOneWidget);
   });
 
+  testWidgets(
+    'in un superset un tocco solo chiude il giro e avvia il recupero',
+    (tester) async {
+      await pumpSession(tester, dayId: 11);
+
+      final dock = find.byKey(const ValueKey('complete-round'));
+      expect(dock, findsOneWidget);
+      expect(
+        find.descendant(of: dock, matching: find.text('Giro 1 fatto')),
+        findsOneWidget,
+      );
+
+      await tester.tap(dock);
+      await tester.pumpAndSettle();
+
+      // Entrambi gli esercizi hanno il giro 1 registrato…
+      expect(find.text('1/4 giri'), findsNWidgets(2));
+      // …il recupero del giro è partito…
+      expect(find.text('01:00'), findsOneWidget);
+      // …e il pulsante è già sul giro dopo.
+      expect(
+        find.descendant(of: dock, matching: find.text('Giro 2 fatto')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('fuori dai superset il pulsante del giro non c\'è', (
+    tester,
+  ) async {
+    await pumpSession(tester);
+
+    expect(find.byKey(const ValueKey('complete-round')), findsNothing);
+    expect(find.textContaining('fatto'), findsNothing);
+  });
+
   testWidgets('spuntare una serie la registra e avvia il recupero', (
     tester,
   ) async {

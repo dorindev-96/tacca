@@ -199,13 +199,18 @@ class LiveActionPayload {
     }
   }
 
+  /// La conferma di ciò che la notifica mostrava: una serie, o il giro intero
+  /// di un superset.
   LiveSessionAction toAction(DateTime at) => LiveSessionAction(
     // Deterministico: la stessa conferma consegnata due volte (stream e coda)
     // viene riconosciuta e applicata una volta sola.
     id:
-        'set-${snapshot.logId}-${snapshot.entryIndex}-${snapshot.setNumber}'
+        '${snapshot.completesRound ? 'round' : 'set'}'
+        '-${snapshot.logId}-${snapshot.entryIndex}-${snapshot.setNumber}'
         '-${at.millisecondsSinceEpoch}',
-    kind: LiveSessionActionKind.setCompleted,
+    kind: snapshot.completesRound
+        ? LiveSessionActionKind.roundCompleted
+        : LiveSessionActionKind.setCompleted,
     logId: snapshot.logId,
     entryIndex: snapshot.entryIndex,
     setNumber: snapshot.setNumber,
@@ -226,12 +231,15 @@ Future<void> showLiveSessionNotification(
 }) {
   final countdown = snapshot.countdownEndsAt;
   final label = snapshot.countdownLabel;
+  final labels = snapshot.labels;
+  // In un superset si contano i giri, non le serie.
+  final unit = snapshot.completesRound ? labels.roundsLabel : labels.setsLabel;
   // A serie esaurite non c'è nessun numero da mostrare: resta il titolo.
   final sets = switch (snapshot) {
-    _ when snapshot.setNumber <= 0 => snapshot.labels.title,
+    _ when snapshot.setNumber <= 0 => labels.title,
     _ when snapshot.totalSets > 0 =>
-      '${snapshot.labels.setsLabel} ${snapshot.setNumber}/${snapshot.totalSets}',
-    _ => '${snapshot.labels.setsLabel} ${snapshot.setNumber}',
+      '$unit ${snapshot.setNumber}/${snapshot.totalSets}',
+    _ => '$unit ${snapshot.setNumber}',
   };
   final details = AndroidNotificationDetails(
     'workout_live',
@@ -249,7 +257,7 @@ Future<void> showLiveSessionNotification(
     playSound: false,
     enableVibration: false,
     visibility: NotificationVisibility.public,
-    subText: snapshot.labels.title,
+    subText: labels.title,
     showWhen: countdown != null,
     when: countdown?.millisecondsSinceEpoch,
     usesChronometer: countdown != null,
@@ -258,7 +266,9 @@ Future<void> showLiveSessionNotification(
       if (snapshot.canCompleteSet)
         AndroidNotificationAction(
           kCompleteSetActionId,
-          snapshot.labels.completeAction,
+          snapshot.completesRound
+              ? labels.completeRoundAction
+              : labels.completeAction,
           // Il pulsante non deve aprire l'app né far sparire la notifica:
           // è tutto il senso della cosa.
           showsUserInterface: false,
