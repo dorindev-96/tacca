@@ -68,7 +68,6 @@ class AppScaffold extends StatelessWidget {
         backgroundColor: context.colors.background,
         // Il dock è disegnato dentro lo Stack, non da `bottomNavigationBar`:
         // deve galleggiare *sopra* la lista, che gli scorre sotto.
-        resizeToAvoidBottomInset: true,
         body: Stack(
           children: [
             SafeArea(

@@ -10,13 +10,7 @@ import '../design/linear_icons.dart';
 /// nient'altro di proposito — un parser SVG generico sarebbe codice non
 /// verificato per casi che non esistono nel progetto.
 class LinearIcon extends StatelessWidget {
-  const LinearIcon(
-    this.icon, {
-    this.size = 24,
-    this.color,
-    this.semanticLabel,
-    super.key,
-  });
+  const LinearIcon(this.icon, {this.size = 24, this.color, super.key});
 
   final LinearIconData icon;
   final double size;
@@ -25,29 +19,28 @@ class LinearIcon extends StatelessWidget {
   /// come `currentColor` nell'SVG di origine.
   final Color? color;
 
-  final String? semanticLabel;
-
   @override
   Widget build(BuildContext context) {
-    final iconTheme = IconTheme.of(context);
-    final resolved =
-        color ??
-        iconTheme.color?.withValues(alpha: iconTheme.opacity) ??
-        const Color(0xFF192126);
-
     Widget glyph = CustomPaint(
       size: Size.square(size),
-      isComplex: true,
-      painter: _LinearIconPainter(icon: icon, color: resolved),
+      painter: _LinearIconPainter(
+        icon: icon,
+        color: color ?? _currentColor(context),
+      ),
     );
 
     if (icon.quarterTurns != 0) {
       glyph = RotatedBox(quarterTurns: icon.quarterTurns, child: glyph);
     }
-    if (semanticLabel != null) {
-      glyph = Semantics(label: semanticLabel, child: glyph);
-    }
     return SizedBox.square(dimension: size, child: glyph);
+  }
+
+  /// Letto solo quando il colore non è passato: quasi ogni chiamante lo passa,
+  /// e la dipendenza dall'[IconTheme] costerebbe una ricostruzione a ogni suo
+  /// cambio. [IconTheme.of] restituisce sempre un tema risolto, colore incluso.
+  static Color _currentColor(BuildContext context) {
+    final iconTheme = IconTheme.of(context);
+    return iconTheme.color!.withValues(alpha: iconTheme.opacity);
   }
 }
 

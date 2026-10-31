@@ -34,6 +34,7 @@ Map<String, TextStyle> _styles(AppTypography t) => {
   'row': t.row,
   'rowStrong': t.rowStrong,
   'sectionLabel': t.sectionLabel,
+  'fieldLabel': t.fieldLabel,
   'meta': t.meta,
   'metaStrong': t.metaStrong,
   'chip': t.chip,

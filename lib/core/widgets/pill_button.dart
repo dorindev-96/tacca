@@ -45,9 +45,8 @@ class PillButton extends StatelessWidget {
     this.leading,
     this.tone = PillTone.primary,
     this.expand = true,
-    this.height = 48,
     super.key,
-  });
+  }) : _compact = false;
 
   /// Variante compatta usata dentro le card e le testate: alta 44, etichetta
   /// da 14.
@@ -60,7 +59,7 @@ class PillButton extends StatelessWidget {
     this.tone = PillTone.primary,
     this.expand = false,
     super.key,
-  }) : height = 44;
+  }) : _compact = true;
 
   final String label;
   final VoidCallback? onPressed;
@@ -80,9 +79,7 @@ class PillButton extends StatelessWidget {
   /// True = occupa tutta la larghezza disponibile.
   final bool expand;
 
-  final double height;
-
-  bool get _compact => height < 48;
+  final bool _compact;
 
   @override
   Widget build(BuildContext context) {
@@ -136,7 +133,7 @@ class PillButton extends StatelessWidget {
         onTap: onPressed,
         customBorder: const StadiumBorder(),
         child: Container(
-          height: height,
+          height: _compact ? 44 : 48,
           width: expand ? double.infinity : null,
           padding: EdgeInsets.symmetric(
             horizontal: _compact ? AppSpacing.card : AppSpacing.xl,
@@ -149,8 +146,8 @@ class PillButton extends StatelessWidget {
   }
 }
 
-/// Riquadro con il raggio della pillola usato quando serve la forma senza il
-/// comportamento (barra di avanzamento, indicatori).
+/// Barra di avanzamento sottile con le estremità della pillola. Spessore e
+/// colori di default vengono da `progressIndicatorTheme`.
 class ProgressLine extends StatelessWidget {
   const ProgressLine({required this.value, this.track, this.color, super.key});
 
@@ -170,9 +167,8 @@ class ProgressLine extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.pill),
       child: LinearProgressIndicator(
         value: value.clamp(0, 1),
-        minHeight: 4,
-        backgroundColor: track ?? context.colors.stroke,
-        color: color ?? context.colors.ink,
+        backgroundColor: track,
+        color: color,
       ),
     );
   }

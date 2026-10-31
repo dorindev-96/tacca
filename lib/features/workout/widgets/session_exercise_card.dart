@@ -7,6 +7,7 @@ import '../../../core/design/linear_icons.dart';
 import '../../../core/design/theme_context.dart';
 import '../../../core/extensions/log_set_format.dart';
 import '../../../core/widgets/linear_icon.dart';
+import '../../../core/widgets/meta_chip.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/surface_card.dart';
 import '../../../data/entities/log_set.dart';
@@ -152,7 +153,12 @@ class SessionExerciseCard extends StatelessWidget {
               ),
               if (sets > 0) ...[
                 const SizedBox(width: AppSpacing.md),
-                _CountChip(label: counter, palette: palette, strong: isCurrent),
+                // Sopra il lime, la chip prende l'inchiostro che non si
+                // capovolge: è il tono che [MetaChip] ha apposta.
+                MetaChip(
+                  label: counter,
+                  tone: isCurrent ? ChipTone.onAccent : ChipTone.neutral,
+                ),
               ],
             ],
           ),
@@ -247,38 +253,6 @@ class _GroupMarker extends StatelessWidget {
         style: context.type.buttonSmall.copyWith(
           height: 1,
           color: palette.foreground,
-        ),
-      ),
-    );
-  }
-}
-
-/// "2/4 serie": il conteggio di avanzamento dell'esercizio.
-class _CountChip extends StatelessWidget {
-  const _CountChip({
-    required this.label,
-    required this.palette,
-    required this.strong,
-  });
-
-  final String label;
-  final _CardPalette palette;
-  final bool strong;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 26,
-      alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm + 2),
-      decoration: BoxDecoration(
-        color: palette.marker,
-        borderRadius: BorderRadius.circular(AppRadius.chip),
-      ),
-      child: Text(
-        label,
-        style: (strong ? context.type.chipStrong : context.type.chip).copyWith(
-          color: strong ? palette.foreground : palette.secondary,
         ),
       ),
     );

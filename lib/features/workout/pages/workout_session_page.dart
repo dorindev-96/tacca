@@ -238,7 +238,7 @@ class _SessionScaffold extends StatelessWidget {
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   l10n.workoutProgress(state.completedExercises, items.length),
-                  style: context.type.sectionLabel.copyWith(fontSize: 14),
+                  style: context.type.fieldLabel,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 ProgressLine(value: state.completedExercises / items.length),

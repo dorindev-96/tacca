@@ -57,23 +57,19 @@ abstract final class AppIcons {
     ),
   ]);
 
-  static const LinearIconData chevronRight = LinearIconData([
-    LinearIconPath(
-      'M 4.125 5.303 L 0 1.179 L 1.179 0 L 6.482 5.303 L 1.179 10.607 L 0 9.428 L 4.125 5.303 Z',
-      dx: 6.852,
-      dy: 4.697,
-    ),
-  ]);
+  static const LinearIconData chevronRight = LinearIconData([_chevron]);
 
   /// La stessa freccia di [chevronRight], ruotata: è così anche nel file di
   /// design.
   static const LinearIconData chevronLeft = LinearIconData([
-    LinearIconPath(
-      'M 4.125 5.303 L 0 1.179 L 1.179 0 L 6.482 5.303 L 1.179 10.607 L 0 9.428 L 4.125 5.303 Z',
-      dx: 6.852,
-      dy: 4.697,
-    ),
+    _chevron,
   ], quarterTurns: 2);
+
+  static const LinearIconPath _chevron = LinearIconPath(
+    'M 4.125 5.303 L 0 1.179 L 1.179 0 L 6.482 5.303 L 1.179 10.607 L 0 9.428 L 4.125 5.303 Z',
+    dx: 6.852,
+    dy: 4.697,
+  );
 
   static const LinearIconData chevronDown = LinearIconData([
     LinearIconPath(

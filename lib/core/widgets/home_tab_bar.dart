@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../design/app_radius.dart';
@@ -46,50 +44,42 @@ class HomeTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Una larghezza fissa sotto `Center` si stringe da sé a quella
+    // disponibile: sugli schermi più stretti di 340 la barra li riempie.
     return Center(
-      child: LayoutBuilder(
-        builder: (context, constraints) => Container(
-          width: math.min(_width, constraints.maxWidth),
-          height: height,
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.sm + 2,
-            0,
-            AppSpacing.xl + AppSpacing.xs,
-            0,
-          ),
-          decoration: BoxDecoration(
-            color: context.colors.inkSurface,
-            borderRadius: BorderRadius.all(Radius.circular(AppRadius.xl)),
-            boxShadow: context.chrome.floating,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              for (var i = 0; i < tabs.length; i++)
-                // Solo la tab attiva porta l'etichetta, quindi solo lei può
-                // diventare troppo larga: è l'unica flessibile.
-                if (i == currentIndex)
-                  Flexible(
-                    child: _Tab(
-                      key: ValueKey('home-tab-${tabs[i].label}'),
-                      tab: tabs[i],
-                      selected: true,
-                      onTap: () => onSelected(i),
-                    ),
-                  )
-                else
-                  _Tab(
-                    key: ValueKey('home-tab-${tabs[i].label}'),
-                    tab: tabs[i],
-                    selected: false,
-                    onTap: () => onSelected(i),
-                  ),
-            ],
-          ),
+      child: Container(
+        width: _width,
+        height: height,
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.sm + 2,
+          0,
+          AppSpacing.xl + AppSpacing.xs,
+          0,
+        ),
+        decoration: BoxDecoration(
+          color: context.colors.inkSurface,
+          borderRadius: BorderRadius.all(Radius.circular(AppRadius.xl)),
+          boxShadow: context.chrome.floating,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            for (var i = 0; i < tabs.length; i++)
+              // Solo la tab attiva porta l'etichetta, quindi solo lei può
+              // diventare troppo larga: è l'unica flessibile.
+              if (i == currentIndex) Flexible(child: _tab(i)) else _tab(i),
+          ],
         ),
       ),
     );
   }
+
+  Widget _tab(int i) => _Tab(
+    key: ValueKey('home-tab-${tabs[i].label}'),
+    tab: tabs[i],
+    selected: i == currentIndex,
+    onTap: () => onSelected(i),
+  );
 }
 
 class _Tab extends StatelessWidget {
@@ -143,9 +133,14 @@ class _Tab extends StatelessWidget {
       button: true,
       selected: selected,
       label: tab.label,
+      // Niente velo dei tocchi: il `Material` più vicino è quello della
+      // shell, che disegna l'inchiostro *sotto* il fondo pieno della barra.
+      // Sarebbe un'animazione a ogni tocco che nessuno vede; la risposta al
+      // tocco è la pillola lime che si sposta.
       child: InkWell(
         onTap: onTap,
-        customBorder: const StadiumBorder(),
+        splashFactory: NoSplash.splashFactory,
+        highlightColor: Colors.transparent,
         child: SizedBox(
           height: HomeTabBar.height,
           child: Padding(

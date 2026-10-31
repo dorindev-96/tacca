@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../design/app_radius.dart';
 import '../design/app_spacing.dart';
 import '../design/linear_icons.dart';
 import '../design/theme_context.dart';
@@ -22,11 +23,9 @@ PopupMenuItem<T> appMenuItem<T>({
   required String label,
   LinearIconData? icon,
   bool destructive = false,
-  bool enabled = true,
 }) {
   return PopupMenuItem<T>(
     value: value,
-    enabled: enabled,
     height: 48,
     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.card),
     child: Builder(
@@ -72,12 +71,8 @@ PopupMenuItem<T> appMenuCheckItem<T>({
             width: 24,
             decoration: BoxDecoration(
               color: checked ? context.colors.lime : null,
-              borderRadius: BorderRadius.circular(AppSpacing.sm),
-              border: checked
-                  ? null
-                  : Border.fromBorderSide(
-                      BorderSide(color: context.colors.stroke),
-                    ),
+              borderRadius: BorderRadius.circular(AppRadius.xs),
+              border: checked ? null : Border.all(color: context.colors.stroke),
             ),
             // La spunta sta sopra il lime: inchiostro che non si capovolge.
             child: checked
@@ -115,7 +110,6 @@ class AppMenuButton<T> extends StatelessWidget {
     required this.onSelected,
     this.shape = MenuButtonShape.square,
     this.foreground,
-    this.tooltip,
     super.key,
   });
 
@@ -126,14 +120,11 @@ class AppMenuButton<T> extends StatelessWidget {
   /// Null = l'inchiostro del tema.
   final Color? foreground;
 
-  final String? tooltip;
-
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<T>(
       onSelected: onSelected,
       itemBuilder: itemBuilder,
-      tooltip: tooltip ?? MaterialLocalizations.of(context).showMenuTooltip,
       padding: EdgeInsets.zero,
       position: PopupMenuPosition.under,
       child: switch (shape) {

@@ -20,25 +20,22 @@ import 'app_palette.dart';
 final class AppChrome {
   const AppChrome._({required this.floating, required this.systemOverlay});
 
-  /// Il colore della barra di navigazione è quello del fondo pagina, preso da
-  /// [palette] invece di riscritto: sono lo stesso colore, e ricopiarlo qui
+  /// Il colore della barra di navigazione è quello del fondo pagina, preso
+  /// dalla palette invece di riscritto: sono lo stesso colore, e ricopiarlo qui
   /// vorrebbe dire scoprire a schermo che uno dei due è rimasto indietro.
-  factory AppChrome._of({
-    required AppPalette palette,
-    required Brightness brightness,
-    required List<BoxShadow> floating,
-  }) {
-    final dark = brightness == Brightness.dark;
+  factory AppChrome._of(Brightness brightness, List<BoxShadow> floating) {
+    // Icone di sistema a contrasto col fondo: chiare al buio, scure al chiaro.
+    final icons = brightness == Brightness.dark
+        ? Brightness.light
+        : Brightness.dark;
     return AppChrome._(
       floating: floating,
       systemOverlay: SystemUiOverlayStyle(
         statusBarColor: const Color(0x00000000),
-        statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
-        statusBarBrightness: dark ? Brightness.dark : Brightness.light,
-        systemNavigationBarColor: palette.background,
-        systemNavigationBarIconBrightness: dark
-            ? Brightness.light
-            : Brightness.dark,
+        statusBarIconBrightness: icons,
+        statusBarBrightness: brightness,
+        systemNavigationBarColor: AppPalette.of(brightness).background,
+        systemNavigationBarIconBrightness: icons,
       ),
     );
   }
@@ -52,25 +49,17 @@ final class AppChrome {
 
   /// Chiaro: l'ombra del file di design,
   /// `0 8px 24px rgba(0,0,0,.15), 0 2px 6px rgba(0,0,0,.06)`.
-  static final AppChrome light = AppChrome._of(
-    palette: AppPalette.light,
-    brightness: Brightness.light,
-    floating: const [
-      BoxShadow(color: Color(0x26000000), blurRadius: 24, offset: Offset(0, 8)),
-      BoxShadow(color: Color(0x0F000000), blurRadius: 6, offset: Offset(0, 2)),
-    ],
-  );
+  static final AppChrome light = AppChrome._of(Brightness.light, const [
+    BoxShadow(color: Color(0x26000000), blurRadius: 24, offset: Offset(0, 8)),
+    BoxShadow(color: Color(0x0F000000), blurRadius: 6, offset: Offset(0, 2)),
+  ]);
 
   /// Scuro: la stessa forma d'ombra, più opaca perché il fondo sotto è già
   /// scuro e un nero al 15% sopra un nero non disegna niente.
-  static final AppChrome dark = AppChrome._of(
-    palette: AppPalette.dark,
-    brightness: Brightness.dark,
-    floating: const [
-      BoxShadow(color: Color(0x80000000), blurRadius: 24, offset: Offset(0, 8)),
-      BoxShadow(color: Color(0x40000000), blurRadius: 6, offset: Offset(0, 2)),
-    ],
-  );
+  static final AppChrome dark = AppChrome._of(Brightness.dark, const [
+    BoxShadow(color: Color(0x80000000), blurRadius: 24, offset: Offset(0, 8)),
+    BoxShadow(color: Color(0x40000000), blurRadius: 6, offset: Offset(0, 2)),
+  ]);
 
   static AppChrome of(Brightness brightness) =>
       brightness == Brightness.dark ? dark : light;

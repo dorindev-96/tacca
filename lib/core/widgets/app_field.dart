@@ -7,7 +7,9 @@ import '../design/theme_context.dart';
 /// Le due forme di campo del restyling.
 ///
 /// Non ce ne sono altre, e nessuna delle due ha un contorno: la forma la fa
-/// il colore del riempimento.
+/// il colore del riempimento. Riempimento, spaziatura interna e stile del
+/// suggerimento vengono da `inputDecorationTheme`: qui c'è solo ciò in cui le
+/// due forme se ne staccano.
 abstract final class AppField {
   /// Campo che sta **sul fondo pagina**: pillola al colore delle card, raggio
   /// 26, come il campo di ricerca dell'archivio.
@@ -23,12 +25,7 @@ abstract final class AppField {
     return InputDecoration(
       hintText: hintText,
       isDense: true,
-      filled: true,
       fillColor: context.colors.surface,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.card,
-        vertical: AppSpacing.lg,
-      ),
       prefixIcon: prefixIcon == null
           ? null
           : Padding(
@@ -40,7 +37,6 @@ abstract final class AppField {
             ),
       prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
       suffixIcon: suffixIcon,
-      hintStyle: context.type.row.copyWith(color: context.colors.muted),
       border: _border(AppRadius.lg),
       enabledBorder: _border(AppRadius.lg),
       focusedBorder: _border(AppRadius.lg),
@@ -58,15 +54,8 @@ abstract final class AppField {
     return InputDecoration(
       hintText: hintText,
       labelText: labelText,
-      filled: true,
       fillColor: context.colors.fill,
-      contentPadding:
-          contentPadding ??
-          const EdgeInsets.symmetric(
-            horizontal: AppSpacing.card,
-            vertical: AppSpacing.lg,
-          ),
-      hintStyle: context.type.row.copyWith(color: context.colors.muted),
+      contentPadding: contentPadding,
       border: _border(AppRadius.md),
       enabledBorder: _border(AppRadius.md),
       focusedBorder: _border(AppRadius.md),
@@ -94,10 +83,7 @@ class FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Text(
-        text,
-        style: context.type.sectionLabel.copyWith(fontSize: 14),
-      ),
+      child: Text(text, style: context.type.fieldLabel),
     );
   }
 }

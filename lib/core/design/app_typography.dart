@@ -40,13 +40,13 @@ final class AppTypography {
     required this.screenTitle,
     required this.sheetTitleLong,
     required this.subtitle,
-    required this.cardTitle,
     required this.button,
     required this.buttonSmall,
     required this.blockType,
     required this.row,
     required this.rowStrong,
     required this.sectionLabel,
+    required this.fieldLabel,
     required this.meta,
     required this.metaStrong,
     required this.chip,
@@ -65,13 +65,14 @@ final class AppTypography {
     screenTitle: _screenTitle.copyWith(color: palette.ink),
     sheetTitleLong: _sheetTitleLong.copyWith(color: palette.ink),
     subtitle: _subtitle.copyWith(color: palette.ink),
-    cardTitle: _cardTitle.copyWith(color: palette.ink),
     button: _button.copyWith(color: palette.ink),
     buttonSmall: _buttonSmall.copyWith(color: palette.ink),
     blockType: _blockType.copyWith(color: palette.ink),
     row: _row.copyWith(color: palette.ink),
     rowStrong: _rowStrong.copyWith(color: palette.ink),
-    sectionLabel: _sectionLabel.copyWith(color: palette.muted),
+    // Le misure di una riga, in grigio: è il contenuto a fare il contrasto.
+    sectionLabel: _row.copyWith(color: palette.muted),
+    fieldLabel: _fieldLabel.copyWith(color: palette.muted),
     meta: _meta.copyWith(color: palette.muted),
     metaStrong: _metaStrong.copyWith(color: palette.ink),
     chip: _chip.copyWith(color: palette.muted),
@@ -102,8 +103,9 @@ final class AppTypography {
   /// Sottotitolo: giorno nel dettaglio scheda, nome dell'esercizio corrente.
   final TextStyle subtitle;
 
-  /// Titolo di una card non in evidenza.
-  final TextStyle cardTitle;
+  /// Titolo di una card non in evidenza: le misure e il colore della riga in
+  /// evidenza.
+  TextStyle get cardTitle => rowStrong;
 
   /// Etichetta di un pulsante pillola.
   final TextStyle button;
@@ -123,6 +125,10 @@ final class AppTypography {
 
   /// Label di sezione ("In uso", "Schede", "Archiviate", "Descrizione").
   final TextStyle sectionLabel;
+
+  /// Nome sopra un campo, e le righe di servizio che gli somigliano
+  /// ("3 di 5 esercizi"): grigio da 14.
+  final TextStyle fieldLabel;
 
   /// Dato secondario accanto a una riga ("3 giorni").
   final TextStyle meta;
@@ -189,13 +195,6 @@ final class AppTypography {
     fontWeight: FontWeight.w900,
   );
 
-  static const TextStyle _cardTitle = TextStyle(
-    fontFamily: fontFamily,
-    fontSize: 16,
-    height: 1.2,
-    fontWeight: FontWeight.w700,
-  );
-
   static const TextStyle _button = TextStyle(
     fontFamily: fontFamily,
     fontSize: 16,
@@ -232,9 +231,9 @@ final class AppTypography {
     fontWeight: FontWeight.w700,
   );
 
-  static const TextStyle _sectionLabel = TextStyle(
+  static const TextStyle _fieldLabel = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 16,
+    fontSize: 14,
     height: 1.2,
     fontWeight: FontWeight.w400,
   );
