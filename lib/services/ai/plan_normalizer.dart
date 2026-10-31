@@ -1,3 +1,4 @@
+import '../../core/extensions/blank_text.dart';
 import '../../data/entities/block.dart';
 import 'dto/plan_dto.dart';
 
@@ -55,10 +56,10 @@ List<BlockDto> normalizeBlocks(List<BlockDto> blocks) {
 /// l'esercizio ha già una nota propria non si sovrascrive nulla e il blocco
 /// resta a sé.
 BlockDto _demoteSoleExerciseNote(BlockDto block) {
-  if (!_isStandard(block) || _isBlank(block.notes)) return block;
+  if (!_isStandard(block) || block.notes.isBlank) return block;
   if (block.exercises.length != 1) return block;
   final exercise = block.exercises.single;
-  if (!_isBlank(exercise.notes)) return block;
+  if (!exercise.notes.isBlank) return block;
   return block.copyWith(
     notes: null,
     exercises: [exercise.copyWith(notes: block.notes)],
@@ -67,9 +68,6 @@ BlockDto _demoteSoleExerciseNote(BlockDto block) {
 
 /// Un blocco confluisce nel precedente solo se è `standard` e non porta una
 /// nota di gruppo: la nota è il segno che la scheda apriva lì una sezione.
-bool _isAbsorbable(BlockDto block) =>
-    _isStandard(block) && _isBlank(block.notes);
+bool _isAbsorbable(BlockDto block) => _isStandard(block) && block.notes.isBlank;
 
 bool _isStandard(BlockDto block) => block.type == BlockType.standard.name;
-
-bool _isBlank(String? value) => value == null || value.trim().isEmpty;

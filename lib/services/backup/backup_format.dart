@@ -159,7 +159,7 @@ abstract final class BackupEncoder {
       'plan': planRef,
       'day': dayRef,
       'startedAt': _date(log.startedAt),
-      'finishedAt': log.finishedAt == null ? null : _date(log.finishedAt!),
+      'finishedAt': _date(log.finishedAt),
       'status': log.dbStatus,
       'notes': log.notes,
       'planNameSnapshot': log.planNameSnapshot,
@@ -228,7 +228,7 @@ abstract final class BackupEncoder {
       if (entry.value != null) entry.key: entry.value,
   };
 
-  static String _date(DateTime value) => value.toUtc().toIso8601String();
+  static String? _date(DateTime? value) => value?.toUtc().toIso8601String();
 }
 
 const _planType = 'plan';
@@ -599,10 +599,7 @@ class _Reader {
   int? optionalInteger(String key) {
     final value = _json[key];
     if (value == null) return null;
-    // JSON non distingue 3 da 3.0: un intero scritto con il punto è ancora
-    // un intero.
-    if (value is num && value == value.roundToDouble()) return value.toInt();
-    throw _wrong(key, 'un intero');
+    return _integral(value) ?? (throw _wrong(key, 'un intero'));
   }
 
   double? optionalNumber(String key) =>
@@ -623,10 +620,7 @@ class _Reader {
 
   List<int> integers(String key) => [
     for (final (index, value) in _list(key).indexed)
-      if (value is num && value == value.roundToDouble())
-        value.toInt()
-      else
-        throw _wrong('$key[$index]', 'un intero'),
+      _integral(value) ?? (throw _wrong('$key[$index]', 'un intero')),
   ];
 
   List<_Reader> objects(String key) => [
@@ -639,6 +633,11 @@ class _Reader {
 
   List<Object?> _list(String key) =>
       _typed<List<Object?>>(key, 'un elenco') ?? const [];
+
+  /// JSON non distingue 3 da 3.0: un intero scritto con il punto è ancora un
+  /// intero.
+  static int? _integral(Object? value) =>
+      value is num && value == value.roundToDouble() ? value.toInt() : null;
 
   T? _typed<T extends Object>(String key, String expected) {
     final value = _json[key];

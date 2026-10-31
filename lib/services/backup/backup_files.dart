@@ -70,7 +70,6 @@ class SystemBackupFiles implements BackupFiles {
     // Nessun filtro per tipo: l'estensione `.tacca` non la conosce nessun
     // sistema, e un filtro per tipo MIME nasconderebbe proprio il backup.
     // Che il file sia un backup lo dice il suo contenuto, non il nome.
-    final file = await openFile();
-    return file?.path;
+    return (await openFile())?.path;
   }
 }

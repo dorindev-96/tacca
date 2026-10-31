@@ -486,12 +486,8 @@ enum LiveSessionActionKind {
   /// `entryIndex` è il primo esercizio del gruppo, `setNumber` il giro.
   roundCompleted;
 
-  static LiveSessionActionKind? parse(String? name) {
-    for (final kind in values) {
-      if (kind.name == name) return kind;
-    }
-    return null;
-  }
+  /// `null` per un nome sconosciuto, o che non è nemmeno una stringa.
+  static LiveSessionActionKind? parse(Object? name) => values.asNameMap()[name];
 }
 
 /// Azione eseguita fuori dall'app.
@@ -523,7 +519,7 @@ class LiveSessionAction {
   /// utilizzabile (versione vecchia della coda, campo mancante).
   static LiveSessionAction? tryParse(Object? raw) {
     if (raw is! Map) return null;
-    final kind = LiveSessionActionKind.parse(raw['kind'] as String?);
+    final kind = LiveSessionActionKind.parse(raw['kind']);
     final id = raw['id'];
     final at = raw['at'];
     if (kind == null || id is! String || at is! int) return null;

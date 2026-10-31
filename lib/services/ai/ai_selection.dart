@@ -17,15 +17,11 @@ class AiSelection {
   bool get isConfigured => apiKey != null;
 
   /// La key, o l'errore tipizzato che la UI traduce in "configura l'AI".
-  String requireApiKey() {
-    final key = apiKey;
-    if (key == null) {
-      throw AiConfigurationException(
+  String requireApiKey() =>
+      apiKey ??
+      (throw AiConfigurationException(
         'Nessuna API key ${provider.label} configurata.',
-      );
-    }
-    return key;
-  }
+      ));
 }
 
 /// Risolve provider, modello e key correnti a ogni chiamata.

@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:dio/dio.dart';
-
 import '../../../core/errors/ai_exception.dart';
 import '../ai_provider.dart';
 import '../ai_selection.dart';
@@ -72,29 +70,12 @@ Map<String, dynamic> _toGeminiSchema(Map<String, dynamic> node) {
 ///
 /// Structured output via `generationConfig.responseSchema` (con
 /// `responseMimeType: application/json`) per i modelli che lo dichiarano nel
-/// catalogo; per gli altri (o se il modello lo rifiuta a runtime, rischio
-/// S-02) la richiesta riparte senza schema e il JSON viene estratto dal testo
-/// dal [PlanParser].
-///
-/// Tutta la pipeline §6.2 (due fasi, retry, fallback) sta in
+/// catalogo. Tutta la pipeline §6.2 (due fasi, retry, fallback), e il ripiego
+/// senza schema quando il modello lo rifiuta a runtime (rischio S-02), sta in
 /// [ChatPlanProvider]: qui resta solo il protocollo.
 class GoogleProvider extends ChatPlanProvider {
-  GoogleProvider({
-    required super.selection,
-    Dio? dio,
-    super.parser = const PlanParser(),
-  }) : _dio =
-           dio ??
-           Dio(
-             BaseOptions(
-               baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
-               connectTimeout: const Duration(seconds: 15),
-               // Le estrazioni vision su schede dense possono essere lente.
-               receiveTimeout: const Duration(minutes: 3),
-             ),
-           );
-
-  final Dio _dio;
+  GoogleProvider({required super.selection, super.dio, super.parser})
+    : super(baseUrl: 'https://generativelanguage.googleapis.com/v1beta');
 
   /// Motivi di terminazione con cui il modello (o un filtro a monte) declina
   /// la richiesta: la risposta arriva con 200 e senza testo, e senza questo
@@ -111,35 +92,55 @@ class GoogleProvider extends ChatPlanProvider {
   @override
   AiProviderId get id => AiProviderId.google;
 
+  @override
+  String get providerName => 'Google';
+
+  @override
+  Map<String, String> authHeaders(String apiKey) => {'x-goog-api-key': apiKey};
+
   /// Verifica la key sull'elenco dei modelli: è la chiamata autenticata più
   /// economica dell'API (nessun token di generazione).
   @override
-  Future<void> testConnection() async {
-    final apiKey = (await requireSelection()).requireApiKey();
-    try {
-      await _dio.get<Object?>(
-        '/models',
-        queryParameters: {'pageSize': 1},
-        options: _authOptions(apiKey),
-      );
-    } on DioException catch (e) {
-      throw _mapDioException(e);
-    }
-  }
+  Future<void> testConnection() =>
+      getWithKey('/models', queryParameters: {'pageSize': 1});
 
+  /// Una chiamata `POST /models/{model}:generateContent`; ritorna testo e
+  /// `finishReason`.
   @override
   Future<AiChatResult> sendChat({
     required AiSelection selection,
     required String system,
     required List<AiChatTurn> turns,
     required bool structured,
-  }) {
-    return _generateContent(
+  }) async {
+    final model = selection.model;
+    // Su Gemini 3 il pensiero non si spegne, si dosa: `thinkingLevel` è
+    // l'equivalente del `reasoning: {effort: none}` di OpenRouter. Trascrivere
+    // e strutturare non richiede catena di ragionamento, e i token di
+    // pensiero consumano lo stesso budget di `maxOutputTokens`.
+    final effort = model.effort;
+    final data = await postJson(
+      '/models/${model.id}:generateContent',
       selection: selection,
-      system: system,
-      contents: [for (final turn in turns) _content(turn)],
       structured: structured,
+      body: {
+        'systemInstruction': {
+          'parts': [
+            {'text': system},
+          ],
+        },
+        'contents': [for (final turn in turns) _content(turn)],
+        'generationConfig': {
+          'maxOutputTokens': model.maxOutputTokens,
+          if (effort != null) 'thinkingConfig': {'thinkingLevel': effort},
+          if (structured) ...{
+            'responseMimeType': 'application/json',
+            'responseSchema': _planSchema,
+          },
+        },
+      },
     );
+    return _extractContent(data);
   }
 
   /// Un turno nel formato Gemini: `parts` con l'immagine (base64 inline)
@@ -163,87 +164,13 @@ class GoogleProvider extends ChatPlanProvider {
     };
   }
 
-  Options _authOptions(String apiKey) =>
-      Options(headers: {'x-goog-api-key': apiKey});
-
-  /// Una chiamata `POST /models/{model}:generateContent`; ritorna testo e
-  /// `finishReason`.
-  ///
-  /// Se il modello rifiuta lo structured output (HTTP 400/404/422 che non sia
-  /// un problema di key o di quota), la stessa richiesta riparte una volta in
-  /// modalità prompt-based (S-02).
-  Future<AiChatResult> _generateContent({
-    required AiSelection selection,
-    required String system,
-    required List<Map<String, dynamic>> contents,
-    required bool structured,
-  }) async {
-    final model = selection.model;
-    // Su Gemini 3 il pensiero non si spegne, si dosa: `thinkingLevel` è
-    // l'equivalente del `reasoning: {effort: none}` di OpenRouter. Trascrivere
-    // e strutturare non richiede catena di ragionamento, e i token di
-    // pensiero consumano lo stesso budget di `maxOutputTokens`.
-    final effort = model.effort;
-    final body = <String, dynamic>{
-      'systemInstruction': {
-        'parts': [
-          {'text': system},
-        ],
-      },
-      'contents': contents,
-      'generationConfig': {
-        'maxOutputTokens': model.maxOutputTokens,
-        if (effort != null) 'thinkingConfig': {'thinkingLevel': effort},
-        if (structured) ...{
-          'responseMimeType': 'application/json',
-          'responseSchema': _planSchema,
-        },
-      },
-    };
-
-    final Response<Object?> response;
-    try {
-      response = await _dio.post<Object?>(
-        '/models/${model.id}:generateContent',
-        data: body,
-        options: _authOptions(selection.requireApiKey()),
-      );
-    } on DioException catch (e) {
-      final mapped = _mapDioException(e);
-      final status = e.response?.statusCode;
-      // Google risponde 400 anche alla key invalida: solo un rifiuto della
-      // *richiesta* giustifica il secondo tentativo, o key e quota darebbero
-      // lo stesso errore due volte.
-      if (structured &&
-          (status == 400 || status == 404 || status == 422) &&
-          mapped is! AiAuthException &&
-          mapped is! AiQuotaException) {
-        return _generateContent(
-          selection: selection,
-          system: system,
-          contents: contents,
-          structured: false,
-        );
-      }
-      throw mapped;
-    }
-
-    return _extractContent(response.data);
-  }
-
-  AiChatResult _extractContent(Object? data) {
-    if (data is! Map<String, dynamic>) {
-      throw const AiResponseException(
-        'Risposta del provider non riconosciuta.',
-      );
-    }
-
+  AiChatResult _extractContent(Map<String, dynamic> data) {
     // Il filtro sul prompt scarta la richiesta prima di generare: nessun
     // candidato, e il motivo sta qui.
     final promptFeedback = data['promptFeedback'];
     if (promptFeedback is Map<String, dynamic> &&
         promptFeedback['blockReason'] != null) {
-      throw _refusal();
+      throw ChatPlanProvider.refusal;
     }
 
     final candidates = data['candidates'];
@@ -251,13 +178,11 @@ class GoogleProvider extends ChatPlanProvider {
         ? candidates.first
         : null;
     if (candidate is! Map<String, dynamic>) {
-      throw const AiResponseException(
-        'Il modello ha restituito una risposta vuota.',
-      );
+      throw ChatPlanProvider.emptyResponse;
     }
 
     final finishReason = candidate['finishReason'];
-    if (_refusalReasons.contains(finishReason)) throw _refusal();
+    if (_refusalReasons.contains(finishReason)) throw ChatPlanProvider.refusal;
 
     final content = candidate['content'];
     final parts = content is Map<String, dynamic> ? content['parts'] : null;
@@ -277,9 +202,7 @@ class GoogleProvider extends ChatPlanProvider {
       if (finishReason == 'MAX_TOKENS') {
         return const AiChatResult('', isTruncated: true);
       }
-      throw const AiResponseException(
-        'Il modello ha restituito una risposta vuota.',
-      );
+      throw ChatPlanProvider.emptyResponse;
     }
 
     logResponse(
@@ -290,47 +213,12 @@ class GoogleProvider extends ChatPlanProvider {
     return AiChatResult(textContent, isTruncated: finishReason == 'MAX_TOKENS');
   }
 
-  AiResponseException _refusal() => const AiResponseException(
-    'Il modello ha rifiutato di elaborare il contenuto inviato. '
-    'Riprova con una foto o un testo diverso, oppure cambia modello '
-    'nelle impostazioni AI.',
-  );
-
-  AiException _mapDioException(DioException e) {
-    final status = e.response?.statusCode;
-    if (status != null) {
-      final body = e.response?.data;
-      final message = body is Map<String, dynamic>
-          ? _errorMessageFromBody(body) ?? 'Errore HTTP $status dal provider.'
-          : 'Errore HTTP $status dal provider.';
-      return _exceptionForStatus(status, message);
-    }
-    // Un timeout in ricezione non è un problema di rete: il modello sta
-    // ancora generando (tipicamente perché è finito in un loop). Dirlo, o
-    // l'utente cerca il guasto dalla parte sbagliata.
-    if (e.type == DioExceptionType.receiveTimeout) {
-      return AiNetworkException(
-        'Il modello non ha completato la risposta entro il tempo massimo. '
-        'Riprova con meno foto per volta, o cambia modello nelle '
-        'impostazioni AI.',
-        cause: e,
-      );
-    }
-    return AiNetworkException(
-      'Impossibile raggiungere Google: controlla la connessione.',
-      cause: e,
-    );
-  }
-
-  String? _errorMessageFromBody(Map<String, dynamic> body) {
-    final error = body['error'];
-    if (error is Map<String, dynamic> && error['message'] is String) {
-      return error['message'] as String;
-    }
-    return null;
-  }
-
-  AiException _exceptionForStatus(int status, String message) {
+  @override
+  AiException exceptionForStatus(
+    int status,
+    String message, {
+    String? modelId,
+  }) {
     // La key invalida non ha uno stato dedicato: arriva come 400 con
     // `API_KEY_INVALID` nel messaggio. Senza riconoscerla finirebbe fra gli
     // errori generici — e farebbe pure ritentare la richiesta senza schema.

@@ -55,9 +55,9 @@ class SystemImageShareService implements ImageShareService {
     final names = pageFileNames(fileName, pages.length);
 
     final files = <XFile>[];
-    for (var i = 0; i < pages.length; i++) {
+    for (final (i, page) in pages.indexed) {
       final bytes = await renderer.renderPng(
-        widget: pages[i],
+        widget: page,
         width: image.pageWidth,
       );
       // `XFile.fromData` non tocca il disco qui: è share_plus a scriverlo

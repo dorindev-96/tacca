@@ -123,8 +123,8 @@ void main() {
 
   group('LiveActionPayload (Android)', () {
     test('fa andata e ritorno dentro il payload della notifica', () {
-      final encoded = LiveActionPayload.forSnapshot(
-        snapshot,
+      final encoded = LiveActionPayload(
+        snapshot: snapshot,
         queuePath: '/tmp/actions.json',
       ).encode();
 
@@ -139,8 +139,8 @@ void main() {
 
     test('su un giro intero l\'azione è la conferma del giro', () {
       final at = DateTime(2026, 8, 15, 18);
-      final giro = LiveActionPayload.forSnapshot(
-        LiveSessionSnapshot(
+      final giro = LiveActionPayload(
+        snapshot: LiveSessionSnapshot(
           logId: 3,
           exerciseName: 'Curl EZ + French press',
           entryIndex: 0,
@@ -154,8 +154,8 @@ void main() {
         ),
         queuePath: '/tmp/actions.json',
       );
-      final serie = LiveActionPayload.forSnapshot(
-        snapshot,
+      final serie = LiveActionPayload(
+        snapshot: snapshot,
         queuePath: '/tmp/actions.json',
       );
 
@@ -173,8 +173,8 @@ void main() {
 
     test('l\'id dell\'azione identifica la serie e il momento del tap', () {
       final at = DateTime(2026, 8, 15, 18);
-      final payload = LiveActionPayload.forSnapshot(
-        snapshot,
+      final payload = LiveActionPayload(
+        snapshot: snapshot,
         queuePath: '/tmp/actions.json',
       );
 

@@ -110,15 +110,12 @@ class LocalSessionNotifier implements SessionNotifier {
     await cancelPending();
     if (!_ready || times.isEmpty) return;
 
-    final capped = times.length > kMaxScheduledSignals
-        ? times.sublist(0, kMaxScheduledSignals)
-        : times;
-    for (var i = 0; i < capped.length; i++) {
+    for (final (i, time) in times.take(kMaxScheduledSignals).indexed) {
       try {
         await _host.plugin.zonedSchedule(
           id: kFirstSignalId + i,
           scheduledDate: tz.TZDateTime.from(
-            scheduledInstantFor(capped[i]),
+            scheduledInstantFor(time),
             tz.local,
           ),
           title: title,

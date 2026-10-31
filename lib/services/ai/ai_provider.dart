@@ -44,14 +44,11 @@ enum AiProviderId {
 
   final String value;
 
-  /// `null` se il valore non corrisponde a nessun provider implementato:
-  /// il catalogo scarta la voce invece di offrire un provider che non c'è.
-  static AiProviderId? fromValue(String? value) {
-    for (final id in values) {
-      if (id.value == value) return id;
-    }
-    return null;
-  }
+  /// `null` se il valore non corrisponde a nessun provider implementato (o
+  /// non è nemmeno una stringa): il catalogo scarta la voce invece di
+  /// offrire un provider che non c'è.
+  static AiProviderId? fromValue(Object? value) =>
+      values.where((id) => id.value == value).firstOrNull;
 }
 
 /// Contratto dei provider AI (§6.1), implementato da OpenRouter, Anthropic

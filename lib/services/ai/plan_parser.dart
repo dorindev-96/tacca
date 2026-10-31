@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../../core/errors/app_exception.dart';
+import '../../core/extensions/blank_text.dart';
 import '../../data/entities/block.dart';
 import '../../data/entities/exercise.dart';
 import '../../data/entities/workout_day.dart';
@@ -58,24 +59,18 @@ class PlanParser {
   /// coerenti col tipo, almeno un giorno. Ritorna i problemi trovati.
   List<String> validate(PlanDto dto) {
     final issues = <String>[];
-    if (dto.name == null || dto.name!.trim().isEmpty) {
+    if (dto.name.isBlank) {
       issues.add('the "name" field is missing or empty');
     }
     if (dto.days.isEmpty) {
       issues.add('the plan must have at least one day in "days"');
     }
-    for (var d = 0; d < dto.days.length; d++) {
-      final day = dto.days[d];
-      final dayRef = 'day ${d + 1}';
-      for (var b = 0; b < day.blocks.length; b++) {
-        final block = day.blocks[b];
-        final blockRef = '$dayRef, block ${b + 1}';
-        final typeName = block.type;
-        final type = typeName == null
-            ? null
-            : BlockType.values.asNameMap()[typeName];
+    for (final (d, day) in dto.days.indexed) {
+      for (final (b, block) in day.blocks.indexed) {
+        final blockRef = 'day ${d + 1}, block ${b + 1}';
+        final type = _blockTypes[block.type];
         if (type == null) {
-          issues.add('$blockRef: unknown block type "$typeName"');
+          issues.add('$blockRef: unknown block type "${block.type}"');
           continue;
         }
         switch (type) {
@@ -98,7 +93,7 @@ class PlanParser {
               );
             }
           case BlockType.freeText:
-            if (block.content == null || block.content!.trim().isEmpty) {
+            if (block.content.isBlank) {
               issues.add('$blockRef: freeText block without "content"');
             }
           case BlockType.standard:
@@ -107,9 +102,8 @@ class PlanParser {
           case BlockType.forTime:
             break;
         }
-        for (var e = 0; e < block.exercises.length; e++) {
-          final exercise = block.exercises[e];
-          if (exercise.name == null || exercise.name!.trim().isEmpty) {
+        for (final (e, exercise) in block.exercises.indexed) {
+          if (exercise.name.isBlank) {
             issues.add('$blockRef, exercise ${e + 1}: "name" missing');
           }
         }
@@ -122,9 +116,7 @@ class PlanParser {
   /// grezzo della risposta diventa un blocco `freeText` editabile.
   PlanDto fallback(String raw, {String? planName}) {
     return PlanDto(
-      name: planName == null || planName.trim().isEmpty
-          ? 'Scheda importata'
-          : planName.trim(),
+      name: planName.trimmedOrNull ?? 'Scheda importata',
       days: [
         DayDto(
           label: 'Giorno unico',
@@ -147,29 +139,21 @@ class PlanParser {
       imagePaths: List.of(imagePaths),
     );
 
-    for (var d = 0; d < dto.days.length; d++) {
-      final dayDto = dto.days[d];
+    for (final (d, dayDto) in dto.days.indexed) {
       final day = WorkoutDay(
-        label: dayDto.label?.trim().isNotEmpty ?? false
-            ? dayDto.label!.trim()
-            : 'Giorno ${d + 1}',
+        label: dayDto.label.trimmedOrNull ?? 'Giorno ${d + 1}',
         notes: dayDto.notes,
         sortOrder: d,
       );
-      for (var b = 0; b < dayDto.blocks.length; b++) {
-        final blockDto = dayDto.blocks[b];
-        final type =
-            BlockType.values.asNameMap()[blockDto.type] ?? BlockType.freeText;
+      for (final (b, blockDto) in dayDto.blocks.indexed) {
+        final type = _blockTypes[blockDto.type] ?? BlockType.freeText;
         final block = Block.ofType(type, sortOrder: b, notes: blockDto.notes);
         switch (type) {
           case BlockType.standard:
             break;
+          // Anche il superset ha un recupero fra un giro e l'altro: era il
+          // dato che nella scheda sta in fondo alla riga ("... x4 1'").
           case BlockType.superset:
-            // Anche il superset ha un recupero fra un giro e l'altro: era il
-            // dato che nella scheda sta in fondo alla riga ("... x4 1'").
-            block
-              ..rounds = blockDto.rounds
-              ..restBetweenRoundsSeconds = blockDto.restBetweenRoundsSeconds;
           case BlockType.circuit:
             block
               ..rounds = blockDto.rounds
@@ -190,8 +174,7 @@ class PlanParser {
           case BlockType.freeText:
             block.freeTextContent = blockDto.content ?? '';
         }
-        for (var e = 0; e < blockDto.exercises.length; e++) {
-          final exerciseDto = blockDto.exercises[e];
+        for (final (e, exerciseDto) in blockDto.exercises.indexed) {
           block.exercises.add(
             Exercise(
               name: exerciseDto.name?.trim() ?? '',
@@ -422,6 +405,10 @@ class PlanParser {
     return source.replaceAll(_typographicQuotes, '"');
   }
 }
+
+/// I tipi di blocco per nome, come li scrive il modello. Una chiave assente o
+/// `null` non trova niente.
+final _blockTypes = BlockType.values.asNameMap();
 
 /// Un blocco recintato con il suo eventuale linguaggio (```json, ```JSON, ```).
 final _fencedBlock = RegExp(r'```[a-zA-Z]*[ \t]*\n?([\s\S]*?)```');

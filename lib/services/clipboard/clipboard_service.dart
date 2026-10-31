@@ -21,8 +21,6 @@ class SystemClipboardService implements ClipboardService {
       Clipboard.setData(ClipboardData(text: text));
 
   @override
-  Future<String?> read() async {
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    return data?.text;
-  }
+  Future<String?> read() async =>
+      (await Clipboard.getData(Clipboard.kTextPlain))?.text;
 }

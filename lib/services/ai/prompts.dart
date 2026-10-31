@@ -3,6 +3,8 @@
 /// Centralizzati qui: provider e parser non contengono testo di prompt.
 library;
 
+import '../../core/extensions/blank_text.dart';
+
 /// Fase 1 dell'import da foto: trascrizione, senza structured output.
 ///
 /// Chiedere lettura e strutturazione nella stessa risposta si è rivelato
@@ -195,49 +197,30 @@ $_extractionRules''';
 /// produce davvero) e il divieto di fermarsi a metà, che è il modo in cui le
 /// schede lunghe arrivano tronche.
 String externalChatPrompt({required String text, String? userHint}) {
-  final buffer = StringBuffer()
-    ..writeln('You are an assistant that digitises gym workout plans.')
-    ..writeln(
-      'At the bottom of this message, after the "=== WORKOUT PLAN ===" line, '
-      'you will find',
-    )
-    ..writeln('the text of a workout plan: convert it into JSON.')
-    ..writeln()
-    ..writeln('How to answer (an application reads your reply, not a person):')
-    ..writeln(
-      '- Reply with ONE SINGLE ```json block and nothing else: no greeting, '
-      'no',
-    )
-    ..writeln('  explanation before or after, no questions.')
-    ..writeln(
-      '- Inside the block, one single valid JSON object: straight quotes ("),',
-    )
-    ..writeln(
-      '  no comments, no trailing comma after the last element of an object '
-      'or of',
-    )
-    ..writeln('  an array.')
-    ..writeln(
-      '- Do not cut the answer short: if the plan is long, write it out in '
-      'full',
-    )
-    ..writeln('  anyway.')
-    ..writeln()
-    ..writeln('Binding rules:')
-    ..writeln(_extractionRules)
-    ..writeln('=== WORKOUT PLAN ===')
-    ..writeln(text.trim())
-    ..writeln('=== END OF WORKOUT PLAN ===');
-  if (userHint != null && userHint.trim().isNotEmpty) {
-    buffer
-      ..writeln()
-      ..writeln(
-        'Notes from the person writing to you (they may be in another '
-        'language):',
-      )
-      ..writeln(userHint.trim());
-  }
-  return buffer.toString().trim();
+  final hint = userHint.trimmedOrNull;
+  final notes = hint == null
+      ? ''
+      : '\n\nNotes from the person writing to you (they may be in another '
+            'language):\n$hint';
+  return '''
+You are an assistant that digitises gym workout plans.
+At the bottom of this message, after the "=== WORKOUT PLAN ===" line, you will find
+the text of a workout plan: convert it into JSON.
+
+How to answer (an application reads your reply, not a person):
+- Reply with ONE SINGLE ```json block and nothing else: no greeting, no
+  explanation before or after, no questions.
+- Inside the block, one single valid JSON object: straight quotes ("),
+  no comments, no trailing comma after the last element of an object or of
+  an array.
+- Do not cut the answer short: if the plan is long, write it out in full
+  anyway.
+
+Binding rules:
+$_extractionRules
+=== WORKOUT PLAN ===
+${text.trim()}
+=== END OF WORKOUT PLAN ===$notes''';
 }
 
 /// Il messaggio correttivo da rimandare nella stessa chat quando la risposta
@@ -264,12 +247,8 @@ const Map<String, dynamic> planJsonSchema = {
   'required': ['name', 'days'],
   'properties': {
     'name': {'type': 'string'},
-    'description': {
-      'type': ['string', 'null'],
-    },
-    'notes': {
-      'type': ['string', 'null'],
-    },
+    'description': _nullableString,
+    'notes': _nullableString,
     'days': {
       'type': 'array',
       'minItems': 1,
@@ -279,9 +258,7 @@ const Map<String, dynamic> planJsonSchema = {
         'required': ['label', 'blocks'],
         'properties': {
           'label': {'type': 'string'},
-          'notes': {
-            'type': ['string', 'null'],
-          },
+          'notes': _nullableString,
           'blocks': {
             'type': 'array',
             'description':
@@ -318,33 +295,15 @@ const Map<String, dynamic> planJsonSchema = {
                       'heading), in the language of the plan. Anything about '
                       'a single exercise goes in that exercise\'s "notes".',
                 },
-                'intervalSeconds': {
-                  'type': ['integer', 'null'],
-                },
-                'totalMinutes': {
-                  'type': ['integer', 'null'],
-                },
-                'durationSeconds': {
-                  'type': ['integer', 'null'],
-                },
-                'workSeconds': {
-                  'type': ['integer', 'null'],
-                },
-                'restSeconds': {
-                  'type': ['integer', 'null'],
-                },
-                'rounds': {
-                  'type': ['integer', 'null'],
-                },
-                'restBetweenRoundsSeconds': {
-                  'type': ['integer', 'null'],
-                },
-                'timeCapSeconds': {
-                  'type': ['integer', 'null'],
-                },
-                'content': {
-                  'type': ['string', 'null'],
-                },
+                'intervalSeconds': _nullableInteger,
+                'totalMinutes': _nullableInteger,
+                'durationSeconds': _nullableInteger,
+                'workSeconds': _nullableInteger,
+                'restSeconds': _nullableInteger,
+                'rounds': _nullableInteger,
+                'restBetweenRoundsSeconds': _nullableInteger,
+                'timeCapSeconds': _nullableInteger,
+                'content': _nullableString,
                 'exercises': {
                   'type': 'array',
                   'description':
@@ -357,24 +316,12 @@ const Map<String, dynamic> planJsonSchema = {
                     'required': ['name'],
                     'properties': {
                       'name': {'type': 'string'},
-                      'sets': {
-                        'type': ['integer', 'null'],
-                      },
-                      'reps': {
-                        'type': ['string', 'null'],
-                      },
-                      'load': {
-                        'type': ['string', 'null'],
-                      },
-                      'restSeconds': {
-                        'type': ['integer', 'null'],
-                      },
-                      'durationSeconds': {
-                        'type': ['integer', 'null'],
-                      },
-                      'notes': {
-                        'type': ['string', 'null'],
-                      },
+                      'sets': _nullableInteger,
+                      'reps': _nullableString,
+                      'load': _nullableString,
+                      'restSeconds': _nullableInteger,
+                      'durationSeconds': _nullableInteger,
+                      'notes': _nullableString,
                     },
                   },
                 },
@@ -385,6 +332,15 @@ const Map<String, dynamic> planJsonSchema = {
       },
     },
   },
+};
+
+/// Un campo facoltativo dello schema: lo structured output strict pretende
+/// comunque un tipo, e `null` è il modo di dire che il dato non c'è.
+const _nullableString = {
+  'type': ['string', 'null'],
+};
+const _nullableInteger = {
+  'type': ['integer', 'null'],
 };
 
 /// Testo del messaggio utente della fase di trascrizione.
@@ -421,15 +377,15 @@ String extractionUserText({
       'day, use that day\'s heading as the "label", exactly as it appears.',
     );
   }
-  if (text != null && text.trim().isNotEmpty) {
+  if (text.trimmedOrNull case final source?) {
     buffer
       ..writeln('Workout plan to convert into JSON:')
-      ..writeln(text.trim());
+      ..writeln(source);
   }
-  if (userHint != null && userHint.trim().isNotEmpty) {
+  if (userHint.trimmedOrNull case final hint?) {
     buffer
       ..writeln('Notes from the user (they may be in another language):')
-      ..writeln(userHint.trim());
+      ..writeln(hint);
   }
   return buffer.toString().trim();
 }
