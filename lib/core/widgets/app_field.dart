@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../design/app_radius.dart';
 import '../design/app_spacing.dart';
+import '../design/linear_icons.dart';
 import '../design/theme_context.dart';
+import 'linear_icon.dart';
 
 /// Le due forme di campo del restyling.
 ///
@@ -68,6 +70,45 @@ abstract final class AppField {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(radius),
       borderSide: color == null ? BorderSide.none : BorderSide(color: color),
+    );
+  }
+}
+
+/// L'unica forma di tendina dell'app: testo da riga, freccia lineare, menu
+/// col raggio dei campi. Il campo intorno è una delle due forme di [AppField]
+/// e lo sceglie chi la usa ([decoration]).
+///
+/// Flutter non ha un tema per `DropdownButtonFormField`: senza questo widget
+/// freccia, stile e raggio del menu andrebbero ripetuti a ogni tendina.
+class AppDropdown<T> extends StatelessWidget {
+  const AppDropdown({
+    required this.value,
+    required this.items,
+    required this.onChanged,
+    required this.decoration,
+    super.key,
+  });
+
+  final T? value;
+  final List<DropdownMenuItem<T>> items;
+  final ValueChanged<T?> onChanged;
+  final InputDecoration decoration;
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButtonFormField<T>(
+      initialValue: value,
+      isExpanded: true,
+      style: context.type.row,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      icon: LinearIcon(
+        AppIcons.chevronDown,
+        size: 20,
+        color: context.colors.muted,
+      ),
+      decoration: decoration,
+      items: items,
+      onChanged: onChanged,
     );
   }
 }

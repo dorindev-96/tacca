@@ -70,7 +70,7 @@ Type is Lato for the interface and the platform font for paragraphs — a long p
 
 Icons come from `AppIcons` (the design's own set, drawn by `LinearIcon` from SVG paths). Do not reach for `Icons.*` in the UI; if a glyph is missing, take it from the design file rather than substituting a Material one.
 
-Recurring pieces live in `lib/core/widgets/`: `AppScaffold` (page shell: header of square icon buttons, big title, docked pill), `PillButton`, `SquareIconButton`/`GhostIconButton`, `SurfaceCard`, `MetaChip`, `Section`, `EmptyState`, `InfoBanner`, `AppSheet`/`showAppSheet`, `AppField`, `AppMenuButton`, `showConfirmDialog`. Tap targets stay ≥ 48dp even where the design draws 40 — `SquareIconButton` paints 40 inside a 48 target on purpose.
+Recurring pieces live in `lib/core/widgets/`: `AppScaffold` (page shell: header of square icon buttons, big title, docked pill), `PillButton`, `SquareIconButton`/`GhostIconButton`, `SurfaceCard`/`ProseCard`, `IconDisc`, `MetaChip`, `Section`, `EmptyState`, `InfoBanner`, `AppSheet`/`showAppSheet`, `AppField`/`AppDropdown`, `AppMenuButton`, `showConfirmDialog`, `showMessage` (snackbars). Tap targets stay ≥ 48dp even where the design draws 40 — `SquareIconButton` paints 40 inside a 48 target on purpose.
 
 Bottom sheets must open on the **root** navigator (`showAppSheet` does): the floating tab bar lives in the shell's `Stack`, so a sheet opened on the branch navigator renders underneath it.
 

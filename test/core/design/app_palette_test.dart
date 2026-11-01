@@ -44,6 +44,7 @@ Map<String, TextStyle> _styles(AppTypography t) => {
   'numericField': t.numericField,
   'paragraph': t.paragraph,
   'paragraphSmall': t.paragraphSmall,
+  'fieldProse': t.fieldProse,
   'caption': t.caption,
 };
 

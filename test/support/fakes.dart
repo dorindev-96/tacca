@@ -142,8 +142,13 @@ class FakeWorkoutLogRepository implements WorkoutLogRepository {
     yield* _inProgressController.stream;
   }
 
+  /// Come il repository vero, restituisce entry e serie già ordinate.
   @override
-  WorkoutLog? getById(int id) => logs[id];
+  WorkoutLog? getById(int id) {
+    final log = logs[id];
+    if (log != null) sortLogTree(log);
+    return log;
+  }
 
   @override
   Stream<List<WorkoutLog>> watchFinished() async* {

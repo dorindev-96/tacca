@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/block_type_labels.dart';
-import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/linear_icons.dart';
 import '../../../core/design/theme_context.dart';
+import '../../../core/extensions/blank_text.dart';
 import '../../../core/widgets/app_field.dart';
-import '../../../core/widgets/linear_icon.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/square_icon_button.dart';
 import '../../../core/widgets/surface_card.dart';
@@ -91,16 +90,8 @@ class BlockCard extends StatelessWidget {
                   children: [
                     LabeledField(
                       label: l10n.planEditorBlockTypeLabel,
-                      child: DropdownButtonFormField<BlockType>(
-                        initialValue: block.type,
-                        isExpanded: true,
-                        style: context.type.row,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        icon: LinearIcon(
-                          AppIcons.chevronDown,
-                          size: 20,
-                          color: context.colors.muted,
-                        ),
+                      child: AppDropdown<BlockType>(
+                        value: block.type,
                         decoration: AppField.inset(context),
                         items: [
                           for (final type in BlockType.values)
@@ -130,9 +121,7 @@ class BlockCard extends StatelessWidget {
                         child: TextFormField(
                           key: ValueKey('block-notes-$instanceKey'),
                           initialValue: block.notes ?? '',
-                          style: context.type.paragraph.copyWith(
-                            color: context.colors.ink,
-                          ),
+                          style: context.type.fieldProse,
                           decoration: AppField.inset(context),
                           onChanged: (v) =>
                               cubit.updateBlockNotes(dayIndex, index, v),
@@ -169,7 +158,7 @@ class BlockCard extends StatelessWidget {
   String _summary(AppLocalizations l10n) {
     if (block.type == BlockType.freeText) {
       final content = block.freeTextContent ?? '';
-      return content.trim().isEmpty ? l10n.planEditorFreeTextHint : content;
+      return content.isBlank ? l10n.planEditorFreeTextHint : content;
     }
     return l10n.planEditorExercisesCount(block.exercises.length);
   }

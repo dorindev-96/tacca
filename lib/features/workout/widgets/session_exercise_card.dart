@@ -117,6 +117,9 @@ class SessionExerciseCard extends StatelessWidget {
         ? _CardPalette.current(context.colors)
         : _CardPalette.normal(context.colors);
     final sets = item.displayedSets;
+    final checkable = item.checkableSets;
+    final done = item.entry.sets.length;
+    final prescription = _prescription;
 
     // Nei blocchi a giri una "serie" è un giro del gruppo: chiamarla col suo
     // nome è ciò che rende leggibile un superset durante l'allenamento.
@@ -125,8 +128,8 @@ class SessionExerciseCard extends StatelessWidget {
         rounds ? l10n.workoutRoundLabel(number) : l10n.workoutSetLabel(number);
 
     final counter = rounds
-        ? l10n.workoutRoundsDone(item.completedSets.length, sets)
-        : l10n.workoutSetsDone(item.completedSets.length, sets);
+        ? l10n.workoutRoundsDone(done, sets)
+        : l10n.workoutSetsDone(done, sets);
 
     return SurfaceCard(
       color: palette.background,
@@ -162,10 +165,10 @@ class SessionExerciseCard extends StatelessWidget {
               ],
             ],
           ),
-          if (_prescription.isNotEmpty) ...[
+          if (prescription.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
             Text(
-              _prescription,
+              prescription,
               style: context.type.row.copyWith(color: palette.foreground),
             ),
           ],
@@ -186,7 +189,7 @@ class SessionExerciseCard extends StatelessWidget {
           // comunque la prima. La chip del conteggio invece resta legata a
           // quelle prescritte, che lì sono zero e non ci sarebbe niente da
           // contare.
-          for (var number = 1; number <= item.checkableSets; number++) ...[
+          for (var number = 1; number <= checkable; number++) ...[
             if (number > 1) const SizedBox(height: AppSpacing.sm),
             _SetRow(
               label: setLabel(number),
@@ -275,9 +278,9 @@ class _LastTimeLine extends StatelessWidget {
       return Text(l10n.workoutLastTimeNever, style: style);
     }
 
-    final summary = performance.sets.map((set) => set.summary).join(' · ');
     return Text(
-      '${l10n.workoutLastTime(performance.performedAt)}: $summary',
+      '${l10n.workoutLastTime(performance.performedAt)}: '
+      '${performance.sets.summary}',
       style: style,
     );
   }

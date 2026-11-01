@@ -22,18 +22,30 @@ class PlanImageThumbnail extends StatelessWidget {
   final Uint8List bytes;
   final VoidCallback onRemove;
 
+  static const double _size = 104;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    // Una foto da 12 MP decodificata intera occupa circa 48 MB, e qui ne
+    // servono 104 punti: si decodifica già ridotta. Il doppio del lato basta
+    // a riempire il quadrato ritagliato (`cover`) fino a foto di 2:1; gli
+    // originali da salvare e da mandare al modello non passano di qui.
+    final pixels = (2 * _size * MediaQuery.devicePixelRatioOf(context)).round();
 
     return Stack(
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          child: Image.memory(
-            bytes,
-            width: 104,
-            height: 104,
+          child: Image(
+            image: ResizeImage(
+              MemoryImage(bytes),
+              width: pixels,
+              height: pixels,
+              policy: ResizeImagePolicy.fit,
+            ),
+            width: _size,
+            height: _size,
             fit: BoxFit.cover,
           ),
         ),

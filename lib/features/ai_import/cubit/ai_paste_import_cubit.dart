@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/extensions/blank_text.dart';
 import '../../../services/ai/dto/plan_dto.dart';
 import '../../../services/ai/plan_parser.dart';
 import '../../../services/ai/prompts.dart';
@@ -78,7 +79,7 @@ class AiPasteImportCubit extends Cubit<AiPasteImportState> {
     if (!state.canContinue) return;
     final prompt = externalChatPrompt(
       text: state.text,
-      userHint: _blankToNull(state.hint),
+      userHint: state.hint.trimmedOrNull,
     );
     await _clipboard.write(prompt);
     emit(
@@ -111,7 +112,7 @@ class AiPasteImportCubit extends Cubit<AiPasteImportState> {
   /// dall'app della chat.
   Future<void> pasteResponse() async {
     final text = await _clipboard.read();
-    if (text == null || text.trim().isEmpty) return;
+    if (text == null || text.isBlank) return;
     emit(state.copyWith(response: text, error: null, parseError: null));
   }
 
@@ -138,7 +139,7 @@ class AiPasteImportCubit extends Cubit<AiPasteImportState> {
   /// (RNF-05): la risposta diventa un blocco di testo libero da sistemare
   /// nell'editor, invece di essere buttata.
   Future<void> keepAsFreeText() async {
-    if (state.response.trim().isEmpty || state.isParsing) return;
+    if (state.response.isBlank || state.isParsing) return;
     emit(state.copyWith(isParsing: true));
     await _emitDraft(_parser.fallback(state.response), usedFallback: true);
   }
@@ -162,17 +163,10 @@ class AiPasteImportCubit extends Cubit<AiPasteImportState> {
     );
 
     // Una foto illeggibile non deve far perdere le altre (RNF-05).
-    final recognized = <String>[];
-    for (final bytes in added) {
-      String text;
-      try {
-        text = await _ocr.recognizeText(bytes);
-      } catch (_) {
-        text = '';
-      }
-      text = text.trim();
-      if (text.isNotEmpty) recognized.add(text);
-    }
+    final recognized = [
+      for (final page in await _ocr.recognizePages(added))
+        if (page.isNotEmpty) page,
+    ];
 
     if (recognized.isEmpty) {
       emit(
@@ -189,7 +183,7 @@ class AiPasteImportCubit extends Cubit<AiPasteImportState> {
         isReadingImages: false,
         usedOcr: true,
         text: [
-          if (state.text.trim().isNotEmpty) state.text.trimRight(),
+          if (!state.text.isBlank) state.text.trimRight(),
           ...recognized,
         ].join('\n\n'),
       ),
@@ -209,7 +203,7 @@ class AiPasteImportCubit extends Cubit<AiPasteImportState> {
     }
 
     final draft = _parser.toEntity(dto, imagePaths: imagePaths);
-    if (draft.name.trim().isEmpty) draft.name = 'Scheda importata';
+    if (draft.name.isBlank) draft.name = 'Scheda importata';
 
     emit(
       state.copyWith(
@@ -218,10 +212,5 @@ class AiPasteImportCubit extends Cubit<AiPasteImportState> {
         usedFallback: usedFallback,
       ),
     );
-  }
-
-  String? _blankToNull(String value) {
-    final trimmed = value.trim();
-    return trimmed.isEmpty ? null : trimmed;
   }
 }

@@ -8,6 +8,7 @@ import '../../../core/design/linear_icons.dart';
 import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/linear_icon.dart';
 import '../../../core/widgets/meta_chip.dart';
+import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/surface_card.dart';
 import '../../../data/entities/workout_plan.dart';
 import '../../../l10n/app_localizations.dart';
@@ -183,13 +184,17 @@ sealed class PlanSharePiece {
 
     return [
       for (final kind in PlanShareText.values)
-        for (var line = 0; line < kind.linesOf(plan).length; line++)
+        for (final (line, _) in kind.linesOf(plan).indexed)
           PlanShareTextLine(kind, line),
       for (var day = 0; day < days.length; day++) ...[
         if (showDayLabels) PlanShareDayLabel(day),
         if (days[day].blocks.isEmpty && !showDayLabels) PlanShareEmptyDay(day),
         for (final (index, block) in days[day].blocks.indexed)
-          for (var row = 0; row < PlanBlockCard.rowCountOf(block); row++)
+          for (
+            var row = 0, rows = PlanBlockCard.rowCountOf(block);
+            row < rows;
+            row++
+          )
             PlanShareBlockRow(day: day, block: index, row: row),
       ],
     ];
@@ -353,16 +358,20 @@ class PlanSharePage extends StatelessWidget {
           j++;
         }
         final lines = first.text.linesOf(plan);
+        // La label si ripete anche in cima alla pagina che riprende un
+        // testo a metà: ogni pagina viaggia da sola in una chat.
         widgets.add(
-          _TextSection(
+          Section(
             label: switch (first.text) {
               PlanShareText.description => l10n.planDetailDescriptionLabel,
               PlanShareText.notes => l10n.planDetailNotesLabel,
             },
-            text: [
-              for (final piece in pieces.sublist(i, j))
-                lines[(piece as PlanShareTextLine).line],
-            ].join('\n'),
+            child: ProseCard(
+              [
+                for (final piece in pieces.sublist(i, j))
+                  lines[(piece as PlanShareTextLine).line],
+              ].join('\n'),
+            ),
           ),
         );
       } else {
@@ -416,40 +425,6 @@ class PlanSharePage extends StatelessWidget {
     return PlanDayPart(
       opensDay: pieces.first is! PlanShareBlockRow,
       blocks: blocks,
-    );
-  }
-}
-
-/// Descrizione o note: label grigia + riquadro bianco, come nel dettaglio.
-///
-/// Non usa `Section` perché quello imposta `crossAxisAlignment.stretch` su una
-/// colonna che qui è già stirata, e soprattutto perché la label qui deve
-/// restare attaccata al testo anche senza il resto della pagina intorno — la
-/// si ripete anche in cima alla pagina che riprende un testo a metà.
-class _TextSection extends StatelessWidget {
-  const _TextSection({required this.label, required this.text});
-
-  final String label;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(label, style: context.type.sectionLabel),
-          const SizedBox(height: AppSpacing.md),
-          SurfaceCard(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.card,
-              vertical: AppSpacing.lg,
-            ),
-            child: Text(text, style: context.type.paragraph),
-          ),
-        ],
-      ),
     );
   }
 }

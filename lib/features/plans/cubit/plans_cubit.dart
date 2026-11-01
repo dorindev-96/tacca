@@ -47,11 +47,9 @@ class PlansCubit extends Cubit<PlansState> {
   void duplicatePlan(int planId) =>
       _guard(() => _repository.duplicatePlan(planId));
 
-  void archivePlan(int planId) =>
-      _guard(() => _repository.setArchived(planId, archived: true));
-
-  void restorePlan(int planId) =>
-      _guard(() => _repository.setArchived(planId, archived: false));
+  /// Archivia ([archived] `true`) o ripristina la scheda.
+  void setArchived(int planId, {required bool archived}) =>
+      _guard(() => _repository.setArchived(planId, archived: archived));
 
   void deletePlan(int planId) => _guard(() => _repository.deletePlan(planId));
 

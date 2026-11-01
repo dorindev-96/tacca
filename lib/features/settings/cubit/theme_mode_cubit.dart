@@ -61,10 +61,5 @@ class ThemeModeCubit extends Cubit<ThemeMode> {
   /// Un nome sconosciuto (storage manomesso, o una versione futura che ne
   /// aggiunge uno) non deve far esplodere l'avvio: vale come "mai scelto".
   @visibleForTesting
-  static ThemeMode? parse(String name) {
-    for (final mode in ThemeMode.values) {
-      if (mode.name == name) return mode;
-    }
-    return null;
-  }
+  static ThemeMode? parse(String name) => ThemeMode.values.asNameMap()[name];
 }

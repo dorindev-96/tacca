@@ -5,9 +5,10 @@ import 'package:go_router/go_router.dart' hide Block;
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/linear_icons.dart';
 import '../../../core/design/theme_context.dart';
+import '../../../core/extensions/share_origin.dart';
 import '../../../core/widgets/app_menu.dart';
 import '../../../core/widgets/app_scaffold.dart';
-import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/linear_icon.dart';
 import '../../../core/widgets/meta_chip.dart';
@@ -22,11 +23,9 @@ import '../../workout/cubit/active_session_cubit.dart';
 import '../../workout/widgets/active_session_sheet.dart';
 import '../../workout/widgets/day_picker_sheet.dart';
 import '../cubit/plans_cubit.dart';
-import '../cubit/plans_state.dart';
 import '../widgets/plan_day_view.dart';
+import '../widgets/plan_list_tile.dart';
 import '../widgets/plan_share_image.dart';
-
-enum _DetailAction { setActive, duplicate, archiveToggle, share, delete }
 
 /// Consultazione di una scheda (RF-01): sola lettura, con azioni di lista
 /// disponibili anche da qui. Legge da [PlansCubit] (già in memoria, niente
@@ -39,21 +38,10 @@ class PlanDetailPage extends StatelessWidget {
 
   final int planId;
 
-  WorkoutPlan? _findPlan(PlansState state) {
-    for (final plan in state.activePlans) {
-      if (plan.id == planId) return plan;
-    }
-    for (final plan in state.archivedPlans) {
-      if (plan.id == planId) return plan;
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final state = context.watch<PlansCubit>().state;
-    final plan = _findPlan(state);
+    final plan = context.watch<PlansCubit>().state.planById(planId);
 
     if (plan == null) {
       return AppScaffold(
@@ -76,35 +64,10 @@ class PlanDetailPage extends StatelessWidget {
           tooltip: l10n.planDetailEditAction,
           onPressed: () => context.push('/plans/${plan.id}/edit'),
         ),
-        AppMenuButton<_DetailAction>(
+        AppMenuButton<PlanAction>(
           onSelected: (action) => _handle(context, cubit, plan, action, l10n),
-          itemBuilder: (context) => [
-            if (!plan.isActive && !plan.isArchived)
-              appMenuItem(
-                value: _DetailAction.setActive,
-                label: l10n.plansActionSetActive,
-              ),
-            appMenuItem(
-              value: _DetailAction.duplicate,
-              label: l10n.plansActionDuplicate,
-            ),
-            appMenuItem(
-              value: _DetailAction.archiveToggle,
-              label: plan.isArchived
-                  ? l10n.plansActionRestore
-                  : l10n.plansActionArchive,
-            ),
-            appMenuItem(
-              value: _DetailAction.share,
-              label: l10n.plansActionShare,
-            ),
-            appMenuItem(
-              value: _DetailAction.delete,
-              label: l10n.plansActionDelete,
-              icon: AppIcons.trash,
-              destructive: true,
-            ),
-          ],
+          // La modifica qui non sta nel menu: è il pulsante accanto.
+          itemBuilder: (context) => planMenuItems(l10n, plan, share: true),
         ),
       ],
       dock: plan.days.isEmpty
@@ -152,12 +115,12 @@ class PlanDetailPage extends StatelessWidget {
           if ((plan.description ?? '').isNotEmpty)
             Section(
               label: l10n.planDetailDescriptionLabel,
-              child: _TextCard(text: plan.description!),
+              child: ProseCard(plan.description!),
             ),
           if ((plan.notes ?? '').isNotEmpty)
             Section(
               label: l10n.planDetailNotesLabel,
-              child: _TextCard(text: plan.notes!),
+              child: ProseCard(plan.notes!),
             ),
           if (plan.imagePaths.isNotEmpty)
             Section(
@@ -254,10 +217,7 @@ class PlanDetailPage extends StatelessWidget {
       locale: Localizations.localeOf(context),
       brightness: Theme.of(context).brightness,
     );
-    final box = context.findRenderObject() as RenderBox?;
-    final origin = box != null && box.hasSize
-        ? box.localToGlobal(Offset.zero) & box.size
-        : null;
+    final origin = context.shareOrigin;
 
     try {
       await sharer.sharePagedImage(
@@ -267,9 +227,7 @@ class PlanDetailPage extends StatelessWidget {
         originRect: origin,
       );
     } on Exception {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(l10n.planShareFailed)));
+      messenger.showMessage(l10n.planShareFailed);
     }
   }
 
@@ -289,53 +247,25 @@ class PlanDetailPage extends StatelessWidget {
     BuildContext context,
     PlansCubit cubit,
     WorkoutPlan plan,
-    _DetailAction action,
+    PlanAction action,
     AppLocalizations l10n,
   ) async {
     switch (action) {
-      case _DetailAction.setActive:
+      case PlanAction.setActive:
         cubit.setActivePlan(plan.id);
-      case _DetailAction.duplicate:
+      case PlanAction.edit:
+        context.push('/plans/${plan.id}/edit');
+      case PlanAction.duplicate:
         cubit.duplicatePlan(plan.id);
-      case _DetailAction.archiveToggle:
-        if (plan.isArchived) {
-          cubit.restorePlan(plan.id);
-        } else {
-          cubit.archivePlan(plan.id);
-        }
-      case _DetailAction.share:
+      case PlanAction.archiveToggle:
+        cubit.setArchived(plan.id, archived: !plan.isArchived);
+      case PlanAction.share:
         await _shareAsImage(context, plan, l10n);
-      case _DetailAction.delete:
-        final confirmed = await showConfirmDialog(
-          context,
-          title: l10n.plansDeleteConfirmTitle,
-          message: l10n.plansDeleteConfirmBody(plan.name),
-          confirmLabel: l10n.commonDelete,
-          destructive: true,
-        );
-        if (confirmed && context.mounted) {
+      case PlanAction.delete:
+        if (await confirmPlanDelete(context, plan) && context.mounted) {
           cubit.deletePlan(plan.id);
           Navigator.of(context).pop();
         }
     }
-  }
-}
-
-/// Descrizione e note della scheda: prosa, quindi carattere di sistema dentro
-/// una card bianca.
-class _TextCard extends StatelessWidget {
-  const _TextCard({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return SurfaceCard(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.card,
-        vertical: AppSpacing.lg,
-      ),
-      child: Text(text, style: context.type.paragraph),
-    );
   }
 }

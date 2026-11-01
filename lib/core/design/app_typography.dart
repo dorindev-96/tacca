@@ -56,6 +56,7 @@ final class AppTypography {
     required this.numericField,
     required this.paragraph,
     required this.paragraphSmall,
+    required this.fieldProse,
     required this.caption,
   });
 
@@ -84,6 +85,9 @@ final class AppTypography {
     numericField: _numericField.copyWith(color: palette.ink),
     paragraph: _paragraph.copyWith(color: palette.body),
     paragraphSmall: _paragraphSmall.copyWith(color: palette.muted),
+    // Ciò che si scrive è inchiostro, come il resto dei campi: il grigio della
+    // prosa è per ciò che si legge.
+    fieldProse: _paragraph.copyWith(color: palette.ink),
     caption: _caption.copyWith(color: palette.muted),
   );
 
@@ -159,6 +163,10 @@ final class AppTypography {
 
   /// Paragrafo secondario (note di un blocco, sottotitolo di una riga).
   final TextStyle paragraphSmall;
+
+  /// Prosa scritta in un campo (note, descrizioni, il testo da importare): le
+  /// misure di [paragraph], in inchiostro.
+  final TextStyle fieldProse;
 
   /// Riga di servizio sotto una card ("Ultima volta (12/08): …").
   final TextStyle caption;

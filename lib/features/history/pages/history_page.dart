@@ -8,8 +8,9 @@ import '../../../core/design/theme_context.dart';
 import '../../../core/extensions/duration_format.dart';
 import '../../../core/widgets/app_field.dart';
 import '../../../core/widgets/app_scaffold.dart';
-import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/icon_disc.dart';
 import '../../../core/widgets/linear_icon.dart';
 import '../../../core/widgets/meta_chip.dart';
 import '../../../core/widgets/square_icon_button.dart';
@@ -18,6 +19,7 @@ import '../../../data/entities/workout_log.dart';
 import '../../../l10n/app_localizations.dart';
 import '../cubit/history_cubit.dart';
 import '../cubit/history_state.dart';
+import '../widgets/log_delete_dialog.dart';
 
 /// Storico allenamenti (RF-07): sessioni per data, filtro per scheda,
 /// eliminazione con conferma.
@@ -33,9 +35,7 @@ class HistoryPage extends StatelessWidget {
           previous.errorMessage != current.errorMessage,
       listener: (context, state) {
         if (state.errorMessage != null) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+          ScaffoldMessenger.of(context).showMessage(state.errorMessage!);
           context.read<HistoryCubit>().dismissError();
         }
       },
@@ -95,16 +95,8 @@ class _PlanFilter extends StatelessWidget {
         AppSpacing.xl,
         AppSpacing.card,
       ),
-      child: DropdownButtonFormField<String?>(
-        initialValue: state.planFilter,
-        isExpanded: true,
-        style: context.type.row,
-        borderRadius: BorderRadius.circular(AppSpacing.card),
-        icon: LinearIcon(
-          AppIcons.chevronDown,
-          size: 20,
-          color: context.colors.muted,
-        ),
+      child: AppDropdown<String?>(
+        value: state.planFilter,
         decoration: AppField.onBackground(
           context,
           prefixIcon: LinearIcon(
@@ -152,20 +144,12 @@ class _HistoryTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            height: 32,
-            width: 32,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: context.colors.fill,
-            ),
-            child: Center(
-              child: LinearIcon(
-                aborted ? AppIcons.close : AppIcons.check,
-                size: 18,
-                color: aborted ? context.colors.danger : context.colors.ink,
-              ),
-            ),
+          IconDisc(
+            aborted ? AppIcons.close : AppIcons.check,
+            size: 32,
+            iconSize: 18,
+            color: context.colors.fill,
+            iconColor: aborted ? context.colors.danger : context.colors.ink,
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -211,25 +195,15 @@ class _HistoryTile extends StatelessWidget {
             icon: AppIcons.trash,
             tooltip: l10n.commonDelete,
             foreground: context.colors.muted,
-            onPressed: () => _confirmDelete(context, l10n),
+            onPressed: () => _delete(context),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _confirmDelete(
-    BuildContext context,
-    AppLocalizations l10n,
-  ) async {
+  Future<void> _delete(BuildContext context) async {
     final cubit = context.read<HistoryCubit>();
-    final confirmed = await showConfirmDialog(
-      context,
-      title: l10n.historyDeleteConfirmTitle,
-      message: l10n.historyDeleteConfirmBody(log.startedAt),
-      confirmLabel: l10n.commonDelete,
-      destructive: true,
-    );
-    if (confirmed) cubit.deleteLog(log.id);
+    if (await confirmLogDelete(context, log)) cubit.deleteLog(log.id);
   }
 }

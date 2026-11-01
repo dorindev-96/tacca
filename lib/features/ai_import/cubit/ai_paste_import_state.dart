@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../../core/extensions/blank_text.dart';
 import '../../../data/entities/workout_plan.dart';
 
 part 'ai_paste_import_state.freezed.dart';
@@ -58,7 +59,7 @@ sealed class AiPasteImportState with _$AiPasteImportState {
 
   /// Senza testo non c'è niente da far leggere a una chat: le foto da sole
   /// non bastano, perché negli appunti ci va del testo.
-  bool get canContinue => text.trim().isNotEmpty && !isReadingImages;
+  bool get canContinue => !text.isBlank && !isReadingImages;
 
-  bool get canFinish => response.trim().isNotEmpty && !isParsing;
+  bool get canFinish => !response.isBlank && !isParsing;
 }

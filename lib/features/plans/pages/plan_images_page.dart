@@ -13,11 +13,21 @@ import '../../../services/images/plan_image_store.dart';
 
 /// Visualizzazione delle immagini originali allegate a una scheda (RF-03:
 /// "dalla scheda salvata è possibile riaprire l'immagine originale").
-class PlanImagesPage extends StatelessWidget {
+class PlanImagesPage extends StatefulWidget {
   const PlanImagesPage({required this.imagePaths, super.key});
 
   /// Path relativi come salvati in `WorkoutPlan.imagePaths`.
   final List<String> imagePaths;
+
+  @override
+  State<PlanImagesPage> createState() => _PlanImagesPageState();
+}
+
+class _PlanImagesPageState extends State<PlanImagesPage> {
+  /// Il file di ogni pagina si risolve una volta sola: il `PageView` ricrea
+  /// le pagine che escono di vista, e un future nuovo a ogni ritorno voleva
+  /// dire rivedere lo spinner sopra una foto già aperta.
+  final Map<int, Future<File>> _files = {};
 
   @override
   Widget build(BuildContext context) {
@@ -28,9 +38,11 @@ class PlanImagesPage extends StatelessWidget {
       leading: const AppBackButton(),
       title: l10n.planImagesTitle,
       body: PageView.builder(
-        itemCount: imagePaths.length,
+        itemCount: widget.imagePaths.length,
         itemBuilder: (context, index) => FutureBuilder<File>(
-          future: imageStore.fileForRelativePath(imagePaths[index]),
+          future: _files[index] ??= imageStore.fileForRelativePath(
+            widget.imagePaths[index],
+          ),
           builder: (context, snapshot) {
             final file = snapshot.data;
             if (file == null) {

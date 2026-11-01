@@ -8,6 +8,7 @@ import '../../../core/design/linear_icons.dart';
 import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_menu.dart';
 import '../../../core/widgets/app_scaffold.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/info_banner.dart';
@@ -17,6 +18,7 @@ import '../../../core/widgets/square_icon_button.dart';
 import '../../../data/entities/block.dart';
 import '../../../data/entities/workout_log.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../services/timer/timer_engine.dart';
 import '../bloc/block_timer_spec.dart';
 import '../bloc/session_item.dart';
 import '../bloc/workout_session_bloc.dart';
@@ -106,11 +108,14 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage>
           previous.errorMessage != current.errorMessage ||
           previous.pendingTimerRequest != current.pendingTimerRequest ||
           previous.status != current.status,
+      // Il timer batte quattro volte al secondo e lo disegna solo la sua
+      // barra, che lo ascolta da sé: per tutto il resto un tick non cambia
+      // niente, e ridisegnare la sessione intera a ogni tick è lavoro buttato.
+      buildWhen: (previous, current) =>
+          previous.copyWith(timer: current.timer) != current,
       listener: (context, state) {
         if (state.errorMessage != null) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+          ScaffoldMessenger.of(context).showMessage(state.errorMessage!);
           context.read<WorkoutSessionBloc>().add(const SessionErrorDismissed());
         }
         if (state.pendingTimerRequest != null) {
@@ -180,6 +185,7 @@ class _SessionScaffold extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final bloc = context.read<WorkoutSessionBloc>();
     final items = state.items;
+    final completed = items.completedCount;
     final log = state.log;
     final round = state.status == WorkoutSessionStatus.ready
         ? state.currentRound
@@ -199,7 +205,7 @@ class _SessionScaffold extends StatelessWidget {
           PillButton.compact(
             label: l10n.workoutFinishAction,
             tone: PillTone.surface,
-            onPressed: () => _finish(context, bloc, l10n),
+            onPressed: () => _finish(context, bloc),
           ),
           const SizedBox(width: AppSpacing.xs),
           AppMenuButton<_SessionMenuAction>(
@@ -237,19 +243,28 @@ class _SessionScaffold extends StatelessWidget {
               if (items.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  l10n.workoutProgress(state.completedExercises, items.length),
+                  l10n.workoutProgress(completed, items.length),
                   style: context.type.fieldLabel,
                 ),
                 const SizedBox(height: AppSpacing.md),
-                ProgressLine(value: state.completedExercises / items.length),
+                ProgressLine(value: completed / items.length),
               ],
-              if (state.timer case final timer?) ...[
-                const SizedBox(height: AppSpacing.lg),
-                TimerBar(
-                  timer: timer,
-                  onStop: () => bloc.add(const TimerStopped()),
-                ),
-              ],
+              BlocSelector<
+                WorkoutSessionBloc,
+                WorkoutSessionState,
+                TimerState?
+              >(
+                selector: (state) => state.timer,
+                builder: (context, timer) => timer == null
+                    ? const SizedBox.shrink()
+                    : Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.lg),
+                        child: TimerBar(
+                          timer: timer,
+                          onStop: () => bloc.add(const TimerStopped()),
+                        ),
+                      ),
+              ),
             ],
           ),
         ),
@@ -309,7 +324,7 @@ class _SessionScaffold extends StatelessWidget {
     for (final block in state.blocks) {
       if (block.type == BlockType.freeText) {
         widgets
-          ..add(_BlockHeader(block: block, state: state))
+          ..add(_BlockHeader(block: block))
           ..add(
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.xl),
@@ -328,12 +343,9 @@ class _SessionScaffold extends StatelessWidget {
       // Superset e circuiti si eseguono insieme: la lettera A/B sulla card e
       // la nota sotto l'intestazione dicono che vanno alternati — nel design
       // non c'è alcun riquadro attorno al gruppo.
-      final grouped =
-          (block.type == BlockType.superset ||
-              block.type == BlockType.circuit) &&
-          blockItems.length > 1;
+      final grouped = blockItems.length > 1 && blockItems.first.isRoundBased;
 
-      widgets.add(_BlockHeader(block: block, state: state, inGroup: grouped));
+      widgets.add(_BlockHeader(block: block, inGroup: grouped));
       for (var i = 0; i < blockItems.length; i++) {
         widgets.add(
           Padding(
@@ -373,7 +385,7 @@ class _SessionScaffold extends StatelessWidget {
     SessionItem item, {
     String? groupMarker,
   }) {
-    final rest = restTimerSpec(item, label: item.name);
+    final rest = restTimerSpec(item);
     return SessionExerciseCard(
       key: ValueKey('session-item-${item.index}'),
       item: item,
@@ -431,20 +443,13 @@ class _SessionScaffold extends StatelessWidget {
     }
   }
 
-  Future<void> _finish(
-    BuildContext context,
-    WorkoutSessionBloc bloc,
-    AppLocalizations l10n,
-  ) async {
+  Future<void> _finish(BuildContext context, WorkoutSessionBloc bloc) async {
     final log = state.log;
     if (log == null) return;
 
     final result = await showSessionSummarySheet(
       context,
       elapsed: log.duration(),
-      completedExercises: state.completedExercises,
-      totalExercises: state.items.length,
-      loggedSets: state.loggedSets,
       items: state.items,
       initialNotes: log.notes,
     );
@@ -494,14 +499,9 @@ enum _SessionMenuAction { toggleAutoRest, abort }
 /// Intestazione di un blocco: tipo, parametri e, dove esiste, il timer che
 /// guida l'esecuzione dell'intero blocco.
 class _BlockHeader extends StatelessWidget {
-  const _BlockHeader({
-    required this.block,
-    required this.state,
-    this.inGroup = false,
-  });
+  const _BlockHeader({required this.block, this.inGroup = false});
 
   final Block block;
-  final WorkoutSessionState state;
 
   /// Il blocco si esegue a giri: sotto l'intestazione compare la nota che
   /// spiega come alternare gli esercizi.

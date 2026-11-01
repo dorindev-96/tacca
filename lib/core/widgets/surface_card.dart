@@ -48,3 +48,25 @@ class SurfaceCard extends StatelessWidget {
     );
   }
 }
+
+/// Un paragrafo dentro una card: descrizione e note di una scheda, note di
+/// una sessione. È prosa, quindi carattere di sistema (`type.paragraph`).
+///
+/// Il dettaglio di una scheda e l'immagine che la condivide la disegnano con
+/// lo stesso widget: due copie vorrebbero dire due schede diverse.
+class ProseCard extends StatelessWidget {
+  const ProseCard(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return SurfaceCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.card,
+        vertical: AppSpacing.lg,
+      ),
+      child: Text(text, style: context.type.paragraph),
+    );
+  }
+}

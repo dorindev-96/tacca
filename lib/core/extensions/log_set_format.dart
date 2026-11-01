@@ -17,6 +17,11 @@ extension LogSetFormat on LogSet {
   }
 }
 
+/// Le serie di un esercizio in una riga: `80 kg × 8 · 80 kg × 6`.
+extension LogSetsFormat on Iterable<LogSet> {
+  String get summary => map((set) => set.summary).join(' · ');
+}
+
 /// Carico senza decimali inutili: in palestra i pesi sono interi o mezzi kg.
 String formatWeightKg(double value) => value == value.roundToDouble()
     ? value.toStringAsFixed(0)

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../design/app_spacing.dart';
 import '../design/linear_icons.dart';
 import '../design/theme_context.dart';
-import 'linear_icon.dart';
+import 'icon_disc.dart';
 
 /// Stato vuoto uniforme: disco bianco con l'icona, messaggio e — quando
 /// esiste una sola cosa sensata da fare — l'azione che lo risolve.
@@ -34,16 +34,12 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              height: 64,
-              width: 64,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: context.colors.surface,
-              ),
-              child: Center(
-                child: LinearIcon(icon, color: context.colors.muted),
-              ),
+            IconDisc(
+              icon,
+              size: 64,
+              iconSize: 24,
+              color: context.colors.surface,
+              iconColor: context.colors.muted,
             ),
             const SizedBox(height: AppSpacing.card),
             Text(

@@ -33,6 +33,7 @@ Future<ActiveSessionChoice?> showActiveSessionSheet(
 
       return AppSheet(
         title: l10n.workoutConflictTitle,
+        spacing: AppSpacing.sm,
         children: [
           SheetOption(
             icon: AppIcons.play,
@@ -44,7 +45,6 @@ Future<ActiveSessionChoice?> showActiveSessionSheet(
             highlighted: true,
             onTap: () => Navigator.of(context).pop(ActiveSessionChoice.resume),
           ),
-          const SizedBox(height: AppSpacing.sm),
           SheetOption(
             icon: AppIcons.add,
             title: l10n.workoutConflictReplace,

@@ -53,10 +53,9 @@ class ExerciseTile extends StatelessWidget {
       required String label,
       required int? value,
       required ValueChanged<int?> onChanged,
-      double width = 128,
     }) {
       return SizedBox(
-        width: width,
+        width: 128,
         child: LabeledField(
           label: label,
           child: TextFormField(
@@ -187,9 +186,7 @@ class ExerciseTile extends StatelessWidget {
               child: TextFormField(
                 key: ValueKey('ex-notes-$instanceKey'),
                 initialValue: exercise.notes ?? '',
-                style: context.type.paragraph.copyWith(
-                  color: context.colors.ink,
-                ),
+                style: context.type.fieldProse,
                 decoration: AppField.onBackground(context),
                 onChanged: onNotesChanged,
               ),

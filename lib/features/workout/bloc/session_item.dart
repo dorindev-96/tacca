@@ -63,11 +63,11 @@ class SessionItem {
   /// Numero di serie da mostrare: quelle previste, ma mai meno di quelle già
   /// registrate (l'utente può averne fatta una in più).
   int get displayedSets {
-    final logged = completedSets.isEmpty
-        ? 0
-        : completedSets.map((s) => s.setNumber).reduce((a, b) => a > b ? a : b);
-    final planned = plannedSets;
-    return planned > logged ? planned : logged;
+    var shown = plannedSets;
+    for (final set in entry.sets) {
+      if (set.setNumber > shown) shown = set.setNumber;
+    }
+    return shown;
   }
 
   /// Serie che si possono spuntare: [displayedSets], ma mai meno di una.
@@ -84,12 +84,8 @@ class SessionItem {
   List<LogSet> get completedSets =>
       entry.sets.toList()..sort((a, b) => a.setNumber.compareTo(b.setNumber));
 
-  LogSet? setNumbered(int setNumber) {
-    for (final set in entry.sets) {
-      if (set.setNumber == setNumber) return set;
-    }
-    return null;
-  }
+  LogSet? setNumbered(int setNumber) =>
+      entry.sets.where((set) => set.setNumber == setNumber).firstOrNull;
 
   bool isSetDone(int setNumber) => setNumbered(setNumber) != null;
 
@@ -99,4 +95,14 @@ class SessionItem {
     if (entry.sets.isEmpty) return false;
     return entry.sets.length >= displayedSets;
   }
+}
+
+/// L'avanzamento di una sessione, contato sulle sue righe.
+extension SessionProgress on Iterable<SessionItem> {
+  /// Esercizi svolti ([SessionItem.isDone]).
+  int get completedCount => where((item) => item.isDone).length;
+
+  /// Serie registrate in tutto.
+  int get loggedSetCount =>
+      fold(0, (total, item) => total + item.entry.sets.length);
 }

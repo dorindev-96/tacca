@@ -5,6 +5,7 @@ import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/linear_icons.dart';
 import '../../../core/design/theme_context.dart';
+import '../../../core/extensions/blank_text.dart';
 import '../../../core/extensions/log_set_format.dart';
 import '../../../core/widgets/app_field.dart';
 import '../../../core/widgets/app_sheet.dart';
@@ -160,7 +161,7 @@ class _SetLogSheetState extends State<_SetLogSheet> {
         TextField(
           key: const ValueKey('set-notes'),
           controller: _notes,
-          style: context.type.paragraph.copyWith(color: context.colors.ink),
+          style: context.type.fieldProse,
           decoration: AppField.inset(context),
         ),
         const SizedBox(height: AppSpacing.card),
@@ -182,8 +183,8 @@ class _SetLogSheetState extends State<_SetLogSheet> {
                 onPressed: () => Navigator.of(context).pop(
                   SetLogSaved(
                     weightKg: _parsedWeight,
-                    reps: _blankToNull(_reps.text),
-                    notes: _blankToNull(_notes.text),
+                    reps: _reps.text.trimmedOrNull,
+                    notes: _notes.text.trimmedOrNull,
                   ),
                 ),
               ),
@@ -193,9 +194,6 @@ class _SetLogSheetState extends State<_SetLogSheet> {
       ],
     );
   }
-
-  String? _blankToNull(String value) =>
-      value.trim().isEmpty ? null : value.trim();
 }
 
 /// Campo numerico grande e centrato: si legge da lontano e si corregge con

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/extensions/blank_text.dart';
 import '../../../data/entities/log_entry.dart';
 import '../../../data/entities/log_set.dart';
 import '../../../data/entities/workout_day.dart';
@@ -122,13 +123,7 @@ class WorkoutSessionBloc
     Emitter<WorkoutSessionState> emit,
   ) async {
     final plan = _planRepository.getById(event.planId);
-    WorkoutDay? day;
-    for (final candidate in plan?.days ?? const <WorkoutDay>[]) {
-      if (candidate.id == event.dayId) {
-        day = candidate;
-        break;
-      }
-    }
+    final day = plan?.days.where((day) => day.id == event.dayId).firstOrNull;
     if (plan == null || day == null) {
       emit(state.copyWith(status: WorkoutSessionStatus.notFound));
       return;
@@ -330,18 +325,9 @@ class WorkoutSessionBloc
     final item = _itemAt(entryIndex);
     if (item == null || item.isSetDone(setNumber)) return;
 
-    final prefill = _prefillFor(item, setNumber);
-    item.entry.sets.add(
-      LogSet(
-        setNumber: setNumber,
-        reps: prefill.reps,
-        weightKg: prefill.weightKg,
-        completedAt: at,
-      ),
-    );
-
+    _addSet(item, setNumber, at);
     _persist(emit, currentIndex: entryIndex);
-    _autoStartRest(restTimerSpec(item, label: item.name), at: at);
+    _autoStartRest(restTimerSpec(item), at: at);
   }
 
   /// Chiude il giro [round] del superset o del circuito di cui fa parte
@@ -372,15 +358,7 @@ class WorkoutSessionBloc
     final rest = stepRestSpec(step);
 
     for (final item in pending) {
-      final prefill = _prefillFor(item, round);
-      item.entry.sets.add(
-        LogSet(
-          setNumber: round,
-          reps: prefill.reps,
-          weightKg: prefill.weightKg,
-          completedAt: at,
-        ),
-      );
+      _addSet(item, round, at);
     }
 
     _persist(emit, currentIndex: _focusAfter(step));
@@ -453,27 +431,22 @@ class WorkoutSessionBloc
     _publishLive();
   }
 
-  ({double? weightKg, String? reps}) _prefillFor(
-    SessionItem item,
-    int setNumber,
-  ) {
-    // Minimo attrito (RF-06): si riparte dall'ultimo valore usato in questa
-    // sessione, poi da quello dell'ultima volta, infine dalla prescrizione.
-    final earlier = item.completedSets
-        .where((s) => s.setNumber < setNumber)
-        .toList();
-    if (earlier.isNotEmpty) {
-      final previous = earlier.last;
-      return (weightKg: previous.weightKg, reps: previous.reps);
-    }
-
-    final last = state.lastPerformances[item.name];
-    if (last != null && last.sets.isNotEmpty) {
-      final reference = last.sets.last;
-      return (weightKg: reference.weightKg, reps: reference.reps);
-    }
-
-    return (weightKg: null, reps: item.exercise?.reps);
+  /// Spunta la serie [setNumber] di [item], svolta a [at], già compilata.
+  ///
+  /// Minimo attrito (RF-06): si riparte dall'ultimo valore usato in questa
+  /// sessione, poi da quello dell'ultima volta, infine dalla prescrizione.
+  void _addSet(SessionItem item, int setNumber, DateTime at) {
+    final reference =
+        item.completedSets.where((s) => s.setNumber < setNumber).lastOrNull ??
+        state.lastPerformances[item.name]?.sets.lastOrNull;
+    item.entry.sets.add(
+      LogSet(
+        setNumber: setNumber,
+        reps: reference == null ? item.exercise?.reps : reference.reps,
+        weightKg: reference?.weightKg,
+        completedAt: at,
+      ),
+    );
   }
 
   // --- timer ---
@@ -578,11 +551,10 @@ class WorkoutSessionBloc
   ) async {
     final log = state.log;
     if (log != null) {
-      final notes = event.notes?.trim();
       log
         ..status = event.status
         ..finishedAt = _now()
-        ..notes = (notes == null || notes.isEmpty) ? null : notes;
+        ..notes = event.notes.trimmedOrNull;
       _save(log);
     }
 

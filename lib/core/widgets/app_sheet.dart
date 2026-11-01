@@ -36,11 +36,16 @@ class AppSheet extends StatelessWidget {
     required this.title,
     required this.children,
     this.scrollable = false,
+    this.spacing = 0,
     super.key,
   });
 
   final String title;
   final List<Widget> children;
+
+  /// Spazio fra un figlio e l'altro: un pannello fatto solo di [SheetOption]
+  /// le stacca di `AppSpacing.sm`.
+  final double spacing;
 
   /// True quando i figli possono superare l'altezza dello schermo (elenchi
   /// lunghi): il corpo diventa scorrevole e la testata resta ferma.
@@ -64,6 +69,7 @@ class AppSheet extends StatelessWidget {
     final body = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
+      spacing: spacing,
       children: children,
     );
 
