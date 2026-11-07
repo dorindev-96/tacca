@@ -66,6 +66,7 @@
   "aiSettingsTestSuccess": "Conexión correcta: la clave es válida.",
   "aiSettingsPrivacyNotice": "Las imágenes y los textos que envías para digitalizar se transmiten a {provider} y al modelo seleccionado.",
   "aiSettingsDisabledBanner": "Las funciones de IA están desactivadas hasta que guardes una clave API.",
+  "aiSettingsLoadFailed": "No se pudieron leer los ajustes guardados: lo que ves abajo son los valores predeterminados, no los tuyos. Cierra y vuelve a abrir esta página para intentarlo de nuevo.",
 
   "aiImportTitle": "Nueva rutina con IA",
   "aiImportSourceCamera": "Hacer foto",

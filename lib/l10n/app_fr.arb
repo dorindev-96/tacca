@@ -66,6 +66,7 @@
   "aiSettingsTestSuccess": "Connexion réussie : la clé est valide.",
   "aiSettingsPrivacyNotice": "Les images et les textes envoyés pour la numérisation sont transmis à {provider} et au modèle sélectionné.",
   "aiSettingsDisabledBanner": "Les fonctions IA sont désactivées tant que tu n'as pas enregistré de clé API.",
+  "aiSettingsLoadFailed": "Impossible de lire tes réglages enregistrés : ce qui s'affiche ci-dessous, ce sont les valeurs par défaut, pas les tiennes. Ferme et rouvre cette page pour réessayer.",
 
   "aiImportTitle": "Nouveau programme avec l'IA",
   "aiImportSourceCamera": "Prendre une photo",

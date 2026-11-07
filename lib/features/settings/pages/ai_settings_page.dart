@@ -73,7 +73,16 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
               // Avviso esplicito richiesto da RF-08: i contenuti inviati
               // all'AI lasciano il dispositivo, e verso chi.
               InfoBanner(message: l10n.aiSettingsPrivacyNotice(provider.label)),
-              if (!state.hasApiKey) ...[
+              if (state.failure == SettingsFailure.loadFailed) ...[
+                const SizedBox(height: AppSpacing.sm),
+                InfoBanner(
+                  tone: InfoBannerTone.alert,
+                  message: l10n.aiSettingsLoadFailed,
+                ),
+              ]
+              // Se la lettura è fallita non si sa se una key c'è: dire che
+              // le funzioni AI sono spente sarebbe un'altra affermazione falsa.
+              else if (!state.hasApiKey) ...[
                 const SizedBox(height: AppSpacing.sm),
                 InfoBanner(
                   icon: AppIcons.lock,

@@ -79,6 +79,23 @@ void main() {
     },
   );
 
+  test('un errore del secure storage diventa un fallimento, non un '
+      '"nessuna key"', () async {
+    settings.aiReadError = Exception('keystore bloccato');
+    final cubit = buildCubit();
+    await pumpEventQueue();
+
+    expect(cubit.state.isLoading, isFalse);
+    expect(cubit.state.failure, SettingsFailure.loadFailed);
+  });
+
+  test('un caricamento riuscito non ha fallimenti', () async {
+    final cubit = buildCubit();
+    await pumpEventQueue();
+
+    expect(cubit.state.failure, isNull);
+  });
+
   test('carica key e modello salvati', () async {
     settings
       ..apiKey = 'sk-or-x'

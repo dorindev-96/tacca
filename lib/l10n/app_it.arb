@@ -159,6 +159,8 @@
   },
   "aiSettingsDisabledBanner": "Le funzioni AI sono disabilitate finché non salvi una API key.",
   "@aiSettingsDisabledBanner": { "description": "Banner mostrato quando nessuna key è configurata." },
+  "aiSettingsLoadFailed": "Non riesco a leggere le impostazioni salvate: quelle qui sotto sono i valori predefiniti, non le tue. Chiudi e riapri la pagina per riprovare.",
+  "@aiSettingsLoadFailed": { "description": "Banner di errore quando il secure storage non risponde all'apertura delle impostazioni AI: i valori mostrati sono i default." },
 
   "aiImportTitle": "Nuova scheda con AI",
   "@aiImportTitle": { "description": "Titolo della pagina di import AI (RF-03)." },

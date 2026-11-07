@@ -66,6 +66,7 @@
   "aiSettingsTestSuccess": "Connection successful: the key is valid.",
   "aiSettingsPrivacyNotice": "Images and text sent for digitization are transmitted to {provider} and the selected model.",
   "aiSettingsDisabledBanner": "AI features are disabled until you save an API key.",
+  "aiSettingsLoadFailed": "Couldn't read your saved settings: what you see below are the defaults, not yours. Close and reopen this page to try again.",
 
   "aiImportTitle": "New plan with AI",
   "aiImportSourceCamera": "Take photo",

@@ -48,8 +48,12 @@ class SettingsCubit extends Cubit<SettingsState> {
           selectedModelId: selection.model.id,
         ),
       );
-    } catch (e) {
-      emit(state.copyWith(isLoading: false, errorMessage: e.toString()));
+    } catch (_) {
+      // Senza dire niente la pagina si aprirebbe come se non ci fosse
+      // nessuna key salvata: l'utente penserebbe di averla persa.
+      emit(
+        state.copyWith(isLoading: false, failure: SettingsFailure.loadFailed),
+      );
     }
   }
 
@@ -125,6 +129,4 @@ class SettingsCubit extends Cubit<SettingsState> {
       );
     }
   }
-
-  void dismissError() => emit(state.copyWith(errorMessage: null));
 }

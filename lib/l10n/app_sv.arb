@@ -66,6 +66,7 @@
   "aiSettingsTestSuccess": "Anslutningen lyckades: nyckeln är giltig.",
   "aiSettingsPrivacyNotice": "Bilderna och texterna du skickar för digitalisering överförs till {provider} och den valda modellen.",
   "aiSettingsDisabledBanner": "AI-funktionerna är avstängda tills du sparar en API-nyckel.",
+  "aiSettingsLoadFailed": "Det gick inte att läsa dina sparade inställningar: det du ser nedan är standardvärdena, inte dina. Stäng och öppna sidan igen för att försöka på nytt.",
 
   "aiImportTitle": "Nytt program med AI",
   "aiImportSourceCamera": "Ta ett foto",

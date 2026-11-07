@@ -66,6 +66,7 @@
   "aiSettingsTestSuccess": "Verbindung erfolgreich: Der Key ist gültig.",
   "aiSettingsPrivacyNotice": "Die zur Digitalisierung gesendeten Bilder und Texte werden an {provider} und das ausgewählte Modell übertragen.",
   "aiSettingsDisabledBanner": "Die KI-Funktionen sind deaktiviert, solange kein API-Key gespeichert ist.",
+  "aiSettingsLoadFailed": "Die gespeicherten Einstellungen konnten nicht gelesen werden: Unten stehen die Standardwerte, nicht deine. Schließe die Seite und öffne sie erneut, um es noch einmal zu versuchen.",
 
   "aiImportTitle": "Neuer Plan mit KI",
   "aiImportSourceCamera": "Foto aufnehmen",

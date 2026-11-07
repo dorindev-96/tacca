@@ -408,6 +408,16 @@ class FakeSettingsRepository implements SettingsRepository {
   final Map<String, String> apiKeys = {};
   final Map<String, String> modelIds = {};
 
+  /// Se impostato, ogni lettura delle impostazioni AI lo lancia: è il secure
+  /// storage che non risponde.
+  Object? aiReadError;
+
+  Future<String?> _readAi(String? value) async {
+    final error = aiReadError;
+    if (error != null) throw error;
+    return value;
+  }
+
   @override
   Future<String?> getLocaleCode() async => localeCode;
 
@@ -430,20 +440,21 @@ class FakeSettingsRepository implements SettingsRepository {
   set modelId(String? value) => _put(modelIds, defaultProviderId, value);
 
   @override
-  Future<String?> getAiProviderId() async => providerId;
+  Future<String?> getAiProviderId() => _readAi(providerId);
 
   @override
   Future<void> setAiProviderId(String? id) async => providerId = id;
 
   @override
-  Future<String?> getApiKey(String providerId) async => apiKeys[providerId];
+  Future<String?> getApiKey(String providerId) => _readAi(apiKeys[providerId]);
 
   @override
   Future<void> setApiKey(String providerId, String? key) async =>
       _put(apiKeys, providerId, key);
 
   @override
-  Future<String?> getModelId(String providerId) async => modelIds[providerId];
+  Future<String?> getModelId(String providerId) =>
+      _readAi(modelIds[providerId]);
 
   @override
   Future<void> setModelId(String providerId, String? modelId) async =>
