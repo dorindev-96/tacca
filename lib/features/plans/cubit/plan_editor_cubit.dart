@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/block_params.dart';
 import '../../../core/extensions/blank_text.dart';
 import '../../../data/entities/block.dart';
 import '../../../data/entities/exercise.dart';
@@ -167,36 +168,14 @@ class PlanEditorCubit extends Cubit<PlanEditorState> {
   void updateBlockNotes(int dayIndex, int blockIndex, String? notes) =>
       _mutateBlock(dayIndex, blockIndex, (b) => b.notes = _blankToNull(notes));
 
-  void setBlockIntervalSeconds(int dayIndex, int blockIndex, int? value) =>
-      _mutateBlock(dayIndex, blockIndex, (b) => b.intervalSeconds = value);
-
-  void setBlockTotalMinutes(int dayIndex, int blockIndex, int? value) =>
-      _mutateBlock(dayIndex, blockIndex, (b) => b.totalMinutes = value);
-
-  void setBlockDurationSeconds(int dayIndex, int blockIndex, int? value) =>
-      _mutateBlock(dayIndex, blockIndex, (b) => b.durationSeconds = value);
-
-  void setBlockWorkSeconds(int dayIndex, int blockIndex, int? value) =>
-      _mutateBlock(dayIndex, blockIndex, (b) => b.workSeconds = value);
-
-  void setBlockRestSeconds(int dayIndex, int blockIndex, int? value) =>
-      _mutateBlock(dayIndex, blockIndex, (b) => b.restSeconds = value);
-
-  void setBlockRounds(int dayIndex, int blockIndex, int? value) =>
-      _mutateBlock(dayIndex, blockIndex, (b) => b.rounds = value);
-
-  void setBlockRestBetweenRoundsSeconds(
+  /// Scrive un parametro numerico del blocco: uno solo per tutti, perché
+  /// cosa sia ogni parametro lo dice [BlockParam].
+  void setBlockParam(
     int dayIndex,
     int blockIndex,
+    BlockParam param,
     int? value,
-  ) => _mutateBlock(
-    dayIndex,
-    blockIndex,
-    (b) => b.restBetweenRoundsSeconds = value,
-  );
-
-  void setBlockTimeCapSeconds(int dayIndex, int blockIndex, int? value) =>
-      _mutateBlock(dayIndex, blockIndex, (b) => b.timeCapSeconds = value);
+  ) => _mutateBlock(dayIndex, blockIndex, (b) => param.write(b, value));
 
   void setBlockFreeText(int dayIndex, int blockIndex, String? value) =>
       _mutateBlock(dayIndex, blockIndex, (b) => b.freeTextContent = value);
@@ -402,48 +381,17 @@ class PlanEditorCubit extends Cubit<PlanEditorState> {
   }
 
   void _clearTypeParams(Block block) {
-    block
-      ..intervalSeconds = null
-      ..totalMinutes = null
-      ..durationSeconds = null
-      ..workSeconds = null
-      ..restSeconds = null
-      ..rounds = null
-      ..restBetweenRoundsSeconds = null
-      ..timeCapSeconds = null
-      ..freeTextContent = null;
+    for (final param in BlockParam.values) {
+      param.write(block, null);
+    }
+    block.freeTextContent = null;
   }
 
   void _applyDefaultParams(Block block, BlockType type) {
-    switch (type) {
-      case BlockType.standard:
-        break;
-      case BlockType.superset:
-      case BlockType.circuit:
-        block
-          ..rounds = 3
-          ..restBetweenRoundsSeconds = 60;
-        break;
-      case BlockType.emom:
-        block
-          ..intervalSeconds = 60
-          ..totalMinutes = 10;
-        break;
-      case BlockType.amrap:
-        block.durationSeconds = 900;
-        break;
-      case BlockType.tabata:
-        block
-          ..workSeconds = 20
-          ..restSeconds = 10
-          ..rounds = 8;
-        break;
-      case BlockType.forTime:
-        break; // timeCapSeconds è opzionale (§5.2)
-      case BlockType.freeText:
-        block.freeTextContent = '';
-        break;
+    for (final param in BlockParam.of(type)) {
+      param.write(block, param.defaultFor(type));
     }
+    if (type == BlockType.freeText) block.freeTextContent = '';
   }
 
   static String _dayLetter(int zeroBasedIndex) {

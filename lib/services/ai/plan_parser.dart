@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../../core/block_params.dart';
 import '../../core/errors/app_exception.dart';
 import '../../core/extensions/blank_text.dart';
 import '../../data/entities/block.dart';
@@ -148,31 +149,15 @@ class PlanParser {
       for (final (b, blockDto) in dayDto.blocks.indexed) {
         final type = _blockTypes[blockDto.type] ?? BlockType.freeText;
         final block = Block.ofType(type, sortOrder: b, notes: blockDto.notes);
-        switch (type) {
-          case BlockType.standard:
-            break;
-          // Anche il superset ha un recupero fra un giro e l'altro: era il
-          // dato che nella scheda sta in fondo alla riga ("... x4 1'").
-          case BlockType.superset:
-          case BlockType.circuit:
-            block
-              ..rounds = blockDto.rounds
-              ..restBetweenRoundsSeconds = blockDto.restBetweenRoundsSeconds;
-          case BlockType.emom:
-            block
-              ..intervalSeconds = blockDto.intervalSeconds
-              ..totalMinutes = blockDto.totalMinutes;
-          case BlockType.amrap:
-            block.durationSeconds = blockDto.durationSeconds;
-          case BlockType.tabata:
-            block
-              ..workSeconds = blockDto.workSeconds
-              ..restSeconds = blockDto.restSeconds
-              ..rounds = blockDto.rounds;
-          case BlockType.forTime:
-            block.timeCapSeconds = blockDto.timeCapSeconds;
-          case BlockType.freeText:
-            block.freeTextContent = blockDto.content ?? '';
+        // Solo i parametri del tipo: un `rounds` arrivato su un EMOM resta
+        // fuori, come se il modello non l'avesse scritto. Anche il superset
+        // ha un recupero fra un giro e l'altro: era il dato che nella scheda
+        // sta in fondo alla riga ("... x4 1'").
+        for (final param in BlockParam.of(type)) {
+          param.write(block, _dtoParam(blockDto, param));
+        }
+        if (type == BlockType.freeText) {
+          block.freeTextContent = blockDto.content ?? '';
         }
         for (final (e, exerciseDto) in blockDto.exercises.indexed) {
           block.exercises.add(
@@ -414,3 +399,16 @@ final _blockTypes = BlockType.values.asNameMap();
 final _fencedBlock = RegExp(r'```[a-zA-Z]*[ \t]*\n?([\s\S]*?)```');
 
 final _typographicQuotes = RegExp('[“”„‟″]');
+
+/// Il campo del DTO che porta [param]. Lo `switch` è esaustivo apposta: un
+/// parametro nuovo in [BlockParam] non compila finché non dice da dove arriva.
+int? _dtoParam(BlockDto dto, BlockParam param) => switch (param) {
+  BlockParam.rounds => dto.rounds,
+  BlockParam.restBetweenRounds => dto.restBetweenRoundsSeconds,
+  BlockParam.interval => dto.intervalSeconds,
+  BlockParam.totalMinutes => dto.totalMinutes,
+  BlockParam.duration => dto.durationSeconds,
+  BlockParam.work => dto.workSeconds,
+  BlockParam.rest => dto.restSeconds,
+  BlockParam.timeCap => dto.timeCapSeconds,
+};

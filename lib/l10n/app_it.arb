@@ -531,14 +531,44 @@
     "description": "Giri completati su giri previsti per un esercizio di superset o circuito.",
     "placeholders": { "done": { "type": "int" }, "total": { "type": "int" } }
   },
-  "workoutBlockRounds": "{count, plural, =1{1 giro} other{{count} giri}}",
-  "@workoutBlockRounds": {
-    "description": "Giri previsti da un blocco a giri, nell'intestazione del gruppo in sessione.",
+  "blockParamRounds": "{count, plural, =1{1 giro} other{{count} giri}}",
+  "@blockParamRounds": {
+    "description": "Giri previsti da un blocco (superset, circuito, tabata), come si leggono nel dettaglio, nell'immagine condivisa e in sessione.",
     "placeholders": { "count": { "type": "int" } }
   },
-  "workoutBlockRestBetweenRounds": "{seconds}s tra i giri",
-  "@workoutBlockRestBetweenRounds": {
-    "description": "Recupero fra un giro e l'altro, nell'intestazione del gruppo in sessione.",
+  "blockParamRestBetweenRounds": "{seconds}s tra i giri",
+  "@blockParamRestBetweenRounds": {
+    "description": "Recupero fra un giro e l'altro di un superset o circuito, come si legge nel dettaglio, nell'immagine condivisa e in sessione.",
+    "placeholders": { "seconds": { "type": "int" } }
+  },
+  "blockParamInterval": "ogni {seconds}s",
+  "@blockParamInterval": {
+    "description": "EMOM: ogni quanti secondi parte un esercizio.",
+    "placeholders": { "seconds": { "type": "int" } }
+  },
+  "blockParamTotalMinutes": "{minutes} min totali",
+  "@blockParamTotalMinutes": {
+    "description": "EMOM: durata totale del blocco in minuti.",
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "blockParamDuration": "durata {seconds}s",
+  "@blockParamDuration": {
+    "description": "AMRAP: durata del blocco in secondi.",
+    "placeholders": { "seconds": { "type": "int" } }
+  },
+  "blockParamWork": "{seconds}s di lavoro",
+  "@blockParamWork": {
+    "description": "Tabata: secondi di lavoro di ogni intervallo.",
+    "placeholders": { "seconds": { "type": "int" } }
+  },
+  "blockParamRest": "{seconds}s di recupero",
+  "@blockParamRest": {
+    "description": "Tabata: secondi di recupero di ogni intervallo.",
+    "placeholders": { "seconds": { "type": "int" } }
+  },
+  "blockParamTimeCap": "time cap {seconds}s",
+  "@blockParamTimeCap": {
+    "description": "For Time: tetto massimo di tempo in secondi.",
     "placeholders": { "seconds": { "type": "int" } }
   },
   "workoutSupersetHint": "Un esercizio dopo l'altro senza recupero: il riposo è alla fine del giro.",
