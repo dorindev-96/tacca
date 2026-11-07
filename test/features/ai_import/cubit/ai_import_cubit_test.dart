@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:tacca/core/errors/ai_exception.dart';
+import 'package:tacca/core/errors/ai_failure.dart';
 import 'package:tacca/data/entities/block.dart';
 import 'package:tacca/features/ai_import/cubit/ai_import_cubit.dart';
 import 'package:tacca/features/ai_import/cubit/ai_import_state.dart';
@@ -208,7 +209,7 @@ void main() {
     await cubit.submit();
 
     expect(cubit.state.status, AiImportStatus.failure);
-    expect(cubit.state.errorMessage, 'Quota esaurita.');
+    expect(cubit.state.failure, AiFailure.quota);
     expect(cubit.state.images, hasLength(1));
     expect(cubit.state.text, 'testo prezioso');
 
@@ -265,6 +266,7 @@ void main() {
     await cubit.submit();
 
     expect(cubit.state.status, AiImportStatus.failure);
+    expect(cubit.state.failure, AiFailure.imagesUnreadable);
     expect(provider.calls, 0);
   });
 

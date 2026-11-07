@@ -33,11 +33,16 @@ class PlanEditorPage extends StatelessWidget {
 
     return BlocConsumer<PlanEditorCubit, PlanEditorState>(
       listenWhen: (previous, current) =>
-          previous.errorMessage != current.errorMessage ||
+          previous.failure != current.failure ||
           previous.saveSuccess != current.saveSuccess,
       listener: (context, state) {
-        if (state.errorMessage != null) {
-          ScaffoldMessenger.of(context).showMessage(state.errorMessage!);
+        final failure = state.failure;
+        if (failure != null) {
+          ScaffoldMessenger.of(context).showMessage(switch (failure) {
+            PlanEditorFailure.notFound => l10n.planEditorPlanNotFound,
+            PlanEditorFailure.nameRequired => l10n.planEditorNameRequired,
+            PlanEditorFailure.saveFailed => l10n.planEditorSaveFailed,
+          });
           context.read<PlanEditorCubit>().dismissError();
         }
         if (state.saveSuccess) {

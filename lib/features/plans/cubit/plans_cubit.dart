@@ -35,24 +35,29 @@ class PlansCubit extends Cubit<PlansState> {
   void search(String query) => emit(state.copyWith(searchQuery: query));
 
   void setActivePlan(int planId) =>
-      _guard(() => _repository.setActivePlan(planId));
+      _guard(PlansFailure.setActive, () => _repository.setActivePlan(planId));
 
   void duplicatePlan(int planId) =>
-      _guard(() => _repository.duplicatePlan(planId));
+      _guard(PlansFailure.duplicate, () => _repository.duplicatePlan(planId));
 
   /// Archivia ([archived] `true`) o ripristina la scheda.
-  void setArchived(int planId, {required bool archived}) =>
-      _guard(() => _repository.setArchived(planId, archived: archived));
+  void setArchived(int planId, {required bool archived}) => _guard(
+    archived ? PlansFailure.archive : PlansFailure.restore,
+    () => _repository.setArchived(planId, archived: archived),
+  );
 
-  void deletePlan(int planId) => _guard(() => _repository.deletePlan(planId));
+  void deletePlan(int planId) =>
+      _guard(PlansFailure.delete, () => _repository.deletePlan(planId));
 
-  void dismissError() => emit(state.copyWith(errorMessage: null));
+  void dismissError() => emit(state.copyWith(failure: null));
 
-  void _guard(void Function() action) {
+  /// Esegue [action]; se fallisce, lo stato dice **quale** azione, non il
+  /// testo dell'eccezione (un messaggio di ObjectBox non è per l'utente).
+  void _guard(PlansFailure failure, void Function() action) {
     try {
       action();
-    } catch (e) {
-      emit(state.copyWith(errorMessage: e.toString()));
+    } catch (_) {
+      emit(state.copyWith(failure: failure));
     }
   }
 

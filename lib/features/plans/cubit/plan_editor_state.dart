@@ -4,6 +4,19 @@ import '../../../data/entities/workout_plan.dart';
 
 part 'plan_editor_state.freezed.dart';
 
+/// Perché l'editor non è andato avanti: alla pagina serve solo per scegliere
+/// il messaggio.
+enum PlanEditorFailure {
+  /// La scheda da modificare non esiste (più).
+  notFound,
+
+  /// Salvataggio senza nome.
+  nameRequired,
+
+  /// Il database non ha accettato il salvataggio.
+  saveFailed,
+}
+
 /// Stato dell'editor manuale (RF-02).
 ///
 /// [draft] è l'entity ObjectBox in editing: un POJO mutabile (ADR-01,
@@ -25,7 +38,9 @@ sealed class PlanEditorState with _$PlanEditorState {
     @Default(false) bool saveSuccess,
     @Default(0) int selectedDayIndex,
     @Default(false) bool isAiDraft,
-    String? errorMessage,
+
+    /// L'ultimo fallimento, da mostrare una volta.
+    PlanEditorFailure? failure,
   }) = _PlanEditorState;
 
   /// La scheda a giorno singolo ha un giorno implicito che l'UI non mostra

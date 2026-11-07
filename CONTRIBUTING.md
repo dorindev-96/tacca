@@ -76,6 +76,8 @@ Bottom sheets must open on the **root** navigator (`showAppSheet` does): the flo
 
 **Strings.** Every user-facing string goes through the ARB files in `lib/l10n/`. Never hardcode text in a widget, not even temporarily.
 
+**Errors.** Never put an exception's text in state for the UI to show (`e.toString()`, `AiException.message`): it is untranslated and technical. Catch it, store a failure enum (the feature's own, or `AiFailure.from(e)` for AI calls), and let the page choose the ARB message.
+
 `app_it.arb` is the template: it is the only one carrying the `@key` description blocks, and a new key starts there. The translations — `app_de.arb`, `app_en.arb`, `app_es.arb`, `app_fr.arb`, `app_sv.arb` — must carry the *same* keys with the *same* placeholders, so add the key to all six in the same commit; `flutter gen-l10n` warns about the ones you forget, and a missing key silently falls back to Italian at runtime. Keep the files in the same order as the template, it is what makes them reviewable side by side.
 
 Strings that end up *inside saved data* rather than only on screen — the label of a plan's day, for instance — still come from the ARB, but a Cubit has no `BuildContext` to read them from: they are passed in at construction from the router, as `PlanEditorLabels` and `LiveSessionLabels` do. Read them in the route `builder`, never inside a `BlocProvider`'s `create` callback, which may not depend on an `InheritedWidget`.

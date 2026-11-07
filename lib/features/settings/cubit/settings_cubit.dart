@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/errors/ai_exception.dart';
+import '../../../core/errors/ai_failure.dart';
 import '../../../data/repositories/settings_repository.dart';
 import '../../../services/ai/ai_provider.dart';
 import '../../../services/ai/ai_selection.dart';
@@ -69,7 +69,7 @@ class SettingsCubit extends Cubit<SettingsState> {
         selectedModelId: selection.model.id,
         // L'esito del test riguardava l'altra key: qui non dice più nulla.
         testStatus: AiConnectionTestStatus.idle,
-        testErrorMessage: null,
+        testFailure: null,
       ),
     );
   }
@@ -82,7 +82,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       state.copyWith(
         hasApiKey: true,
         testStatus: AiConnectionTestStatus.idle,
-        testErrorMessage: null,
+        testFailure: null,
       ),
     );
   }
@@ -93,7 +93,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       state.copyWith(
         hasApiKey: false,
         testStatus: AiConnectionTestStatus.idle,
-        testErrorMessage: null,
+        testFailure: null,
       ),
     );
   }
@@ -107,24 +107,17 @@ class SettingsCubit extends Cubit<SettingsState> {
     emit(
       state.copyWith(
         testStatus: AiConnectionTestStatus.testing,
-        testErrorMessage: null,
+        testFailure: null,
       ),
     );
     try {
       await _provider.testConnection();
       emit(state.copyWith(testStatus: AiConnectionTestStatus.success));
-    } on AiException catch (e) {
-      emit(
-        state.copyWith(
-          testStatus: AiConnectionTestStatus.failure,
-          testErrorMessage: e.message,
-        ),
-      );
     } catch (e) {
       emit(
         state.copyWith(
           testStatus: AiConnectionTestStatus.failure,
-          testErrorMessage: e.toString(),
+          testFailure: AiFailure.from(e),
         ),
       );
     }

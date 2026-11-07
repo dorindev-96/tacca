@@ -1,4 +1,5 @@
 import 'package:tacca/core/errors/ai_exception.dart';
+import 'package:tacca/core/errors/ai_failure.dart';
 import 'package:tacca/features/settings/cubit/settings_cubit.dart';
 import 'package:tacca/features/settings/cubit/settings_state.dart';
 import 'package:tacca/services/ai/ai_provider.dart';
@@ -229,6 +230,6 @@ void main() {
     await cubit.testConnection();
 
     expect(cubit.state.testStatus, AiConnectionTestStatus.failure);
-    expect(cubit.state.testErrorMessage, 'API key non valida.');
+    expect(cubit.state.testFailure, AiFailure.auth);
   });
 }

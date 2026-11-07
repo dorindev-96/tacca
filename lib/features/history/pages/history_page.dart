@@ -32,10 +32,10 @@ class HistoryPage extends StatelessWidget {
 
     return BlocConsumer<HistoryCubit, HistoryState>(
       listenWhen: (previous, current) =>
-          previous.errorMessage != current.errorMessage,
+          previous.deleteFailed != current.deleteFailed,
       listener: (context, state) {
-        if (state.errorMessage != null) {
-          ScaffoldMessenger.of(context).showMessage(state.errorMessage!);
+        if (state.deleteFailed) {
+          ScaffoldMessenger.of(context).showMessage(l10n.historyDeleteFailed);
           context.read<HistoryCubit>().dismissError();
         }
       },

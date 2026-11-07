@@ -3,7 +3,9 @@ import 'app_exception.dart';
 /// Base delle eccezioni del servizio AI (§6.5).
 ///
 /// La UI distingue i sottotipi per dare messaggi parlanti: key invalida,
-/// quota/crediti esauriti, rete assente (analisi funzionale §9).
+/// quota/crediti esauriti, rete assente (analisi funzionale §9). Li traduce
+/// `AiFailure.from` (`ai_failure.dart`); il [message] resta diagnostica e non
+/// arriva mai a schermo.
 class AiException extends AppException {
   const AiException(super.message, {super.cause});
 }

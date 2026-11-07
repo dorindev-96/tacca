@@ -77,7 +77,7 @@ class PlanEditorCubit extends Cubit<PlanEditorState> {
     final plan = _repository.getById(planId);
     if (plan == null) {
       emit(
-        state.copyWith(isLoading: false, errorMessage: _labels.planNotFound),
+        state.copyWith(isLoading: false, failure: PlanEditorFailure.notFound),
       );
       return;
     }
@@ -314,23 +314,25 @@ class PlanEditorCubit extends Cubit<PlanEditorState> {
 
   // --- salvataggio ---
 
-  void dismissError() => emit(state.copyWith(errorMessage: null));
+  void dismissError() => emit(state.copyWith(failure: null));
 
   Future<bool> save() async {
     final trimmedName = state.draft.name.trim();
     if (trimmedName.isEmpty) {
-      emit(state.copyWith(errorMessage: _labels.nameRequired));
+      emit(state.copyWith(failure: PlanEditorFailure.nameRequired));
       return false;
     }
 
-    emit(state.copyWith(isSaving: true, errorMessage: null));
+    emit(state.copyWith(isSaving: true, failure: null));
     try {
       state.draft.name = trimmedName;
       _repository.savePlan(state.draft);
       emit(state.copyWith(isSaving: false, isDirty: false, saveSuccess: true));
       return true;
-    } catch (e) {
-      emit(state.copyWith(isSaving: false, errorMessage: e.toString()));
+    } catch (_) {
+      emit(
+        state.copyWith(isSaving: false, failure: PlanEditorFailure.saveFailed),
+      );
       return false;
     }
   }

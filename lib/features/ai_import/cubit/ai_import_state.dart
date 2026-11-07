@@ -1,3 +1,4 @@
+import '../../../core/errors/ai_failure.dart';
 import 'dart:typed_data';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -32,7 +33,10 @@ sealed class AiImportState with _$AiImportState {
     @Default(<Uint8List>[]) List<Uint8List> images,
     @Default('') String text,
     @Default('') String hint,
-    String? errorMessage,
+
+    /// Perché l'ultimo tentativo non è riuscito; il messaggio lo sceglie la
+    /// pagina.
+    AiFailure? failure,
 
     /// Bozza pronta per la revisione (status `review`).
     WorkoutPlan? draft,

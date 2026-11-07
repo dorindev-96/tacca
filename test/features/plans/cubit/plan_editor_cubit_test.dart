@@ -3,6 +3,7 @@ import 'package:tacca/data/entities/workout_day.dart';
 import 'package:tacca/data/entities/workout_plan.dart';
 import 'package:tacca/data/repositories/plan_repository.dart';
 import 'package:tacca/features/plans/cubit/plan_editor_cubit.dart';
+import 'package:tacca/features/plans/cubit/plan_editor_state.dart';
 import 'package:tacca/features/plans/cubit/plan_editor_labels.dart';
 import 'package:tacca/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
@@ -245,7 +246,7 @@ void main() {
         final ok = await cubit.save();
 
         expect(ok, isFalse);
-        expect(cubit.state.errorMessage, isNotNull);
+        expect(cubit.state.failure, PlanEditorFailure.nameRequired);
         verifyNever(() => repository.savePlan(any()));
       },
     );
@@ -286,7 +287,7 @@ void main() {
 
         expect(ok, isFalse);
         expect(cubit.state.isSaving, isFalse);
-        expect(cubit.state.errorMessage, contains('disco pieno'));
+        expect(cubit.state.failure, PlanEditorFailure.saveFailed);
       },
     );
   });
@@ -323,7 +324,7 @@ void main() {
       );
 
       expect(cubit.state.isLoading, isFalse);
-      expect(cubit.state.errorMessage, isNotNull);
+      expect(cubit.state.failure, PlanEditorFailure.notFound);
     });
   });
 }

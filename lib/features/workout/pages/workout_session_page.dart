@@ -106,7 +106,7 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage>
 
     return BlocConsumer<WorkoutSessionBloc, WorkoutSessionState>(
       listenWhen: (previous, current) =>
-          previous.errorMessage != current.errorMessage ||
+          previous.failure != current.failure ||
           previous.pendingTimerRequest != current.pendingTimerRequest ||
           previous.status != current.status,
       // Il timer batte quattro volte al secondo e lo disegna solo la sua
@@ -115,8 +115,12 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage>
       buildWhen: (previous, current) =>
           previous.copyWith(timer: current.timer) != current,
       listener: (context, state) {
-        if (state.errorMessage != null) {
-          ScaffoldMessenger.of(context).showMessage(state.errorMessage!);
+        final failure = state.failure;
+        if (failure != null) {
+          ScaffoldMessenger.of(context).showMessage(switch (failure) {
+            WorkoutSessionFailure.startFailed => l10n.workoutStartFailed,
+            WorkoutSessionFailure.saveFailed => l10n.workoutSaveFailed,
+          });
           context.read<WorkoutSessionBloc>().add(const SessionErrorDismissed());
         }
         if (state.pendingTimerRequest != null) {

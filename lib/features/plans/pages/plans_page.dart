@@ -48,11 +48,17 @@ class PlansPage extends StatelessWidget {
       ),
       aboveTabBar: true,
       body: BlocConsumer<PlansCubit, PlansState>(
-        listenWhen: (previous, current) =>
-            previous.errorMessage != current.errorMessage,
+        listenWhen: (previous, current) => previous.failure != current.failure,
         listener: (context, state) {
-          if (state.errorMessage != null) {
-            ScaffoldMessenger.of(context).showMessage(state.errorMessage!);
+          final failure = state.failure;
+          if (failure != null) {
+            ScaffoldMessenger.of(context).showMessage(switch (failure) {
+              PlansFailure.setActive => l10n.plansSetActiveFailed,
+              PlansFailure.duplicate => l10n.plansDuplicateFailed,
+              PlansFailure.archive => l10n.plansArchiveFailed,
+              PlansFailure.restore => l10n.plansRestoreFailed,
+              PlansFailure.delete => l10n.plansDeleteFailed,
+            });
             context.read<PlansCubit>().dismissError();
           }
         },

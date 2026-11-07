@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:tacca/data/entities/workout_plan.dart';
 import 'package:tacca/data/repositories/plan_repository.dart';
 import 'package:tacca/features/plans/cubit/plans_cubit.dart';
+import 'package:tacca/features/plans/cubit/plans_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -138,7 +139,7 @@ void main() {
     );
 
     test(
-      'un\'eccezione del repository imposta errorMessage, dismissError lo pulisce',
+      'un\'eccezione del repository dice quale azione è fallita, non il suo testo',
       () async {
         when(() => repository.deletePlan(any())).thenThrow(StateError('boom'));
         final cubit = PlansCubit(repository: repository);
@@ -146,10 +147,17 @@ void main() {
         cubit.deletePlan(1);
         await pumpEventQueue();
 
-        expect(cubit.state.errorMessage, contains('boom'));
+        expect(cubit.state.failure, PlansFailure.delete);
 
         cubit.dismissError();
-        expect(cubit.state.errorMessage, isNull);
+        expect(cubit.state.failure, isNull);
+
+        // Archiviare e ripristinare sono due messaggi diversi.
+        when(
+          () => repository.setArchived(any(), archived: any(named: 'archived')),
+        ).thenThrow(StateError('boom'));
+        cubit.setArchived(1, archived: false);
+        expect(cubit.state.failure, PlansFailure.restore);
 
         await cubit.close();
       },

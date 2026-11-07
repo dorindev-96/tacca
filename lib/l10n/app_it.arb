@@ -23,6 +23,8 @@
   "@historyTitle": {
     "description": "Titolo della pagina storico allenamenti."
   },
+  "historyDeleteFailed": "Non è stato possibile eliminare l'allenamento.",
+  "@historyDeleteFailed": { "description": "Storico: eliminazione di un allenamento non riuscita." },
   "historyEmpty": "Nessun allenamento registrato.",
   "@historyEmpty": {
     "description": "Stato vuoto dello storico allenamenti."
@@ -161,6 +163,20 @@
   "@aiSettingsDisabledBanner": { "description": "Banner mostrato quando nessuna key è configurata." },
   "aiSettingsLoadFailed": "Non riesco a leggere le impostazioni salvate: quelle qui sotto sono i valori predefiniti, non le tue. Chiudi e riapri la pagina per riprovare.",
   "@aiSettingsLoadFailed": { "description": "Banner di errore quando il secure storage non risponde all'apertura delle impostazioni AI: i valori mostrati sono i default." },
+  "aiFailureAuth": "La API key non è valida o è stata revocata. Controllala nelle impostazioni AI.",
+  "@aiFailureAuth": { "description": "Errore AI: key assente, non valida o revocata (HTTP 401/403). Usato dall'import e dal test di connessione." },
+  "aiFailureQuota": "Crediti o quota del provider esauriti, oppure troppe richieste. Controlla il tuo account o riprova fra poco.",
+  "@aiFailureQuota": { "description": "Errore AI: crediti o quota esauriti, troppe richieste (HTTP 402/429)." },
+  "aiFailureNetwork": "Non riesco a raggiungere il provider. Controlla la connessione e riprova.",
+  "@aiFailureNetwork": { "description": "Errore AI: rete assente o provider irraggiungibile." },
+  "aiFailureResponse": "Il modello ha dato una risposta vuota o inutilizzabile. Riprova, o scegli un altro modello nelle impostazioni AI.",
+  "@aiFailureResponse": { "description": "Errore AI: il provider ha risposto con qualcosa di vuoto o inutilizzabile." },
+  "aiFailureNotConfigured": "Nessuna API key salvata per questo provider: aggiungila nelle impostazioni AI.",
+  "@aiFailureNotConfigured": { "description": "Errore AI: nessuna API key salvata per il provider scelto." },
+  "aiFailureImagesUnreadable": "Il modello selezionato non supporta le immagini e l'OCR non ha trovato testo leggibile nelle foto: scegli un modello con supporto immagini nelle impostazioni, o riprova con foto più nitide.",
+  "@aiFailureImagesUnreadable": { "description": "Import AI: il modello scelto non legge le immagini e l'OCR del telefono non ha trovato testo nelle foto." },
+  "aiFailureUnexpected": "Qualcosa è andato storto. Riprova.",
+  "@aiFailureUnexpected": { "description": "Errore AI non previsto da nessun altro caso." },
 
   "aiImportTitle": "Nuova scheda con AI",
   "@aiImportTitle": { "description": "Titolo della pagina di import AI (RF-03)." },
@@ -297,11 +313,6 @@
   "@commonRename": { "description": "Etichetta generica per rinominare." },
   "commonAdd": "Aggiungi",
   "@commonAdd": { "description": "Etichetta generica per aggiungere un elemento." },
-  "commonErrorWithMessage": "Si è verificato un errore: {message}",
-  "@commonErrorWithMessage": {
-    "description": "Messaggio di errore generico con dettaglio.",
-    "placeholders": { "message": { "type": "String" } }
-  },
   "commonClose": "Chiudi",
   "@commonClose": { "description": "Etichetta generica per chiudere una schermata o un pannello." },
   "commonContinue": "Continua",
@@ -311,6 +322,16 @@
   "@plansTitle": {
     "description": "Titolo della pagina archivio schede."
   },
+  "plansSetActiveFailed": "Non è stato possibile mettere in uso la scheda.",
+  "@plansSetActiveFailed": { "description": "Archivio schede: non è stato possibile segnare la scheda come in uso." },
+  "plansDuplicateFailed": "Non è stato possibile duplicare la scheda.",
+  "@plansDuplicateFailed": { "description": "Archivio schede: duplicazione non riuscita." },
+  "plansArchiveFailed": "Non è stato possibile archiviare la scheda.",
+  "@plansArchiveFailed": { "description": "Archivio schede: archiviazione non riuscita." },
+  "plansRestoreFailed": "Non è stato possibile ripristinare la scheda.",
+  "@plansRestoreFailed": { "description": "Archivio schede: ripristino di una scheda archiviata non riuscito." },
+  "plansDeleteFailed": "Non è stato possibile eliminare la scheda.",
+  "@plansDeleteFailed": { "description": "Archivio schede: eliminazione non riuscita." },
   "plansEmpty": "Nessuna scheda. Creane una per iniziare.",
   "@plansEmpty": {
     "description": "Stato vuoto dell'archivio schede."
@@ -480,6 +501,8 @@
   "@planEditorSaved": { "description": "Conferma mostrata dopo un salvataggio riuscito." },
   "planEditorPlanNotFound": "Scheda non trovata.",
   "@planEditorPlanNotFound": { "description": "Errore quando si apre l'editor su una scheda non più esistente." },
+  "planEditorSaveFailed": "Non è stato possibile salvare la scheda: le modifiche sono ancora qui, riprova.",
+  "@planEditorSaveFailed": { "description": "Il database non ha accettato il salvataggio della scheda." },
 
   "blockTypeStandard": "Standard",
   "@blockTypeStandard": { "description": "Nome del tipo di blocco 'standard'." },
@@ -655,6 +678,10 @@
   "@workoutExitBody": { "description": "Corpo del dialog di uscita dalla sessione." },
   "workoutExitConfirm": "Esci",
   "@workoutExitConfirm": { "description": "Conferma di uscita dalla sessione senza chiuderla." },
+  "workoutStartFailed": "Non è stato possibile iniziare l'allenamento.",
+  "@workoutStartFailed": { "description": "Sessione: il database non ha permesso di aprire l'allenamento." },
+  "workoutSaveFailed": "Non è stato possibile salvare l'ultima modifica: se chiudi l'app adesso potrebbe andare persa.",
+  "@workoutSaveFailed": { "description": "Sessione: l'autosave non è riuscito, l'ultima modifica è a schermo ma forse non sul disco." },
   "workoutNotificationTitle": "Timer allenamento",
   "@workoutNotificationTitle": { "description": "Titolo della notifica locale che sostituisce il beep in background." },
   "workoutNotificationBody": "È scattato un segnale del timer.",

@@ -74,7 +74,7 @@ class WorkoutSessionBloc
     on<AppLifecycleChanged>(_onAppLifecycleChanged);
     on<SessionFinished>(_onSessionFinished);
     on<SessionErrorDismissed>(
-      (event, emit) => emit(state.copyWith(errorMessage: null)),
+      (event, emit) => emit(state.copyWith(failure: null)),
     );
 
     _tickSub = _timerEngine.stream.listen((timer) => add(TimerTicked(timer)));
@@ -140,11 +140,11 @@ class WorkoutSessionBloc
           revision: state.revision + 1,
         ),
       );
-    } catch (error) {
+    } catch (_) {
       emit(
         state.copyWith(
           status: WorkoutSessionStatus.notFound,
-          errorMessage: error.toString(),
+          failure: WorkoutSessionFailure.startFailed,
         ),
       );
       return;
@@ -690,17 +690,17 @@ class WorkoutSessionBloc
   void _persist(Emitter<WorkoutSessionState> emit, {int? currentIndex}) {
     final log = state.log;
     if (log == null) return;
-    String? error;
+    WorkoutSessionFailure? failure;
     try {
       _logRepository.saveLog(log);
-    } catch (e) {
-      error = e.toString();
+    } catch (_) {
+      failure = WorkoutSessionFailure.saveFailed;
     }
     emit(
       state.copyWith(
         revision: state.revision + 1,
         currentIndex: currentIndex ?? state.currentIndex,
-        errorMessage: error,
+        failure: failure,
       ),
     );
     _publishLive();

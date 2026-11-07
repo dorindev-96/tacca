@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../../core/errors/ai_failure.dart';
 import '../../../services/ai/ai_provider.dart';
 
 part 'settings_state.freezed.dart';
@@ -28,7 +29,9 @@ sealed class SettingsState with _$SettingsState {
     @Default(false) bool hasApiKey,
     String? selectedModelId,
     @Default(AiConnectionTestStatus.idle) AiConnectionTestStatus testStatus,
-    String? testErrorMessage,
+
+    /// Perché il test di connessione è fallito (`testStatus` = failure).
+    AiFailure? testFailure,
 
     /// Il caricamento iniziale non è riuscito. Resta finché la pagina è
     /// aperta: descrive i valori mostrati, non un evento passato, e non si

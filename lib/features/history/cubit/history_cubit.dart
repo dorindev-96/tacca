@@ -32,12 +32,12 @@ class HistoryCubit extends Cubit<HistoryState> {
   void deleteLog(int logId) {
     try {
       _repository.deleteLog(logId);
-    } catch (e) {
-      emit(state.copyWith(errorMessage: e.toString()));
+    } catch (_) {
+      emit(state.copyWith(deleteFailed: true));
     }
   }
 
-  void dismissError() => emit(state.copyWith(errorMessage: null));
+  void dismissError() => emit(state.copyWith(deleteFailed: false));
 
   @override
   Future<void> close() async {

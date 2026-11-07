@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/errors/ai_failure.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/linear_icons.dart';
 import '../../../core/design/theme_context.dart';
@@ -315,7 +316,7 @@ class _TestConnectionSection extends StatelessWidget {
           ),
           AiConnectionTestStatus.failure => InfoBanner(
             tone: InfoBannerTone.alert,
-            message: state.testErrorMessage ?? '',
+            message: (state.testFailure ?? AiFailure.unexpected).message(l10n),
           ),
           _ => const SizedBox.shrink(),
         },
