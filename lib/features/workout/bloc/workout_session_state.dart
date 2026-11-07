@@ -109,20 +109,10 @@ sealed class WorkoutSessionState with _$WorkoutSessionState {
   /// aperto nel superset o nel circuito dell'esercizio in evidenza. Null fuori
   /// da un gruppo a giri, o a gruppo finito.
   SessionStep? get currentRound {
-    final item = currentItem;
-    if (item == null) return null;
-    final group = executionGroupOf(items, item.index);
+    final all = items;
+    if (all.isEmpty) return null;
+    final group = executionGroupOf(all, currentIndex.clamp(0, all.length - 1));
     if (group.length < 2) return null;
-    for (final step in pendingStepsOf(group)) {
-      return step;
-    }
-    return null;
+    return pendingStepsOf(group).firstOrNull;
   }
-
-  int get completedExercises => items.where((item) => item.isDone).length;
-
-  int get loggedSets =>
-      items.fold(0, (total, item) => total + item.entry.sets.length);
-
-  bool get hasTimer => timer != null;
 }

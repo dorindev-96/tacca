@@ -87,12 +87,8 @@ class AiProviderOption {
     this.keyHint,
   });
 
-  AiModelOption? byId(String modelId) {
-    for (final model in models) {
-      if (model.id == modelId) return model;
-    }
-    return null;
-  }
+  AiModelOption? byId(String? modelId) =>
+      models.where((model) => model.id == modelId).firstOrNull;
 
   /// Il modello di default, garantito presente: [AiModelCatalog] verifica in
   /// fase di parsing che [defaultModelId] esista fra i [models].
@@ -102,7 +98,7 @@ class AiProviderOption {
   /// un id rimasto nelle impostazioni dopo una modifica del JSON non deve
   /// diventare una chiamata a un modello inesistente.
   AiModelOption modelOrDefault(String? modelId) =>
-      (modelId == null ? null : byId(modelId)) ?? defaultModel;
+      byId(modelId) ?? defaultModel;
 }
 
 /// Catalogo dei provider e dei modelli selezionabili, letto da
@@ -148,11 +144,7 @@ class AiModelCatalog {
       throw const FormatException('models.json: nessun provider valido.');
     }
 
-    final defaultId = AiProviderId.fromValue(
-      root['defaultProviderId'] is String
-          ? root['defaultProviderId'] as String
-          : null,
-    );
+    final defaultId = AiProviderId.fromValue(root['defaultProviderId']);
     return AiModelCatalog(
       defaultProviderId: providers.any((p) => p.id == defaultId)
           ? defaultId!
@@ -161,12 +153,8 @@ class AiModelCatalog {
     );
   }
 
-  AiProviderOption? byId(AiProviderId? id) {
-    for (final provider in providers) {
-      if (provider.id == id) return provider;
-    }
-    return null;
-  }
+  AiProviderOption? byId(AiProviderId? id) =>
+      providers.where((provider) => provider.id == id).firstOrNull;
 
   /// Il provider di default, garantito presente in [providers].
   AiProviderOption get defaultProvider =>
@@ -179,40 +167,37 @@ class AiModelCatalog {
   /// Una voce di `providers`: `null` se l'id non è implementato o se non
   /// resta nemmeno un modello valido.
   static AiProviderOption? _providerFromJson(Map<String, dynamic> entry) {
-    final id = AiProviderId.fromValue(
-      entry['id'] is String ? entry['id'] as String : null,
-    );
+    final id = AiProviderId.fromValue(entry['id']);
     if (id == null) return null;
 
     final rawModels = entry['models'];
     final models = <AiModelOption>[
       if (rawModels is List)
         for (final model in rawModels.whereType<Map<String, dynamic>>())
-          if (model['id'] is String && (model['id'] as String).isNotEmpty)
-            _modelFromJson(model),
+          if (_modelFromJson(model) case final option?) option,
     ];
     if (models.isEmpty) return null;
 
-    final defaultModelId = entry['defaultModelId'];
+    final defaultModel = models
+        .where((model) => model.id == entry['defaultModelId'])
+        .firstOrNull;
     return AiProviderOption(
       id: id,
-      label: entry['label'] is String ? entry['label'] as String : id.value,
-      keyHint: entry['keyHint'] is String ? entry['keyHint'] as String : null,
-      defaultModelId:
-          defaultModelId is String &&
-              models.any((model) => model.id == defaultModelId)
-          ? defaultModelId
-          : models.first.id,
+      label: _text(entry['label']) ?? id.value,
+      keyHint: _text(entry['keyHint']),
+      defaultModelId: (defaultModel ?? models.first).id,
       models: models,
     );
   }
 
-  static AiModelOption _modelFromJson(Map<String, dynamic> entry) {
+  /// Una voce di `models`: `null` se manca l'id, senza il quale il modello
+  /// non si può chiedere al provider.
+  static AiModelOption? _modelFromJson(Map<String, dynamic> entry) {
+    final id = _text(entry['id']);
+    if (id == null || id.isEmpty) return null;
     return AiModelOption(
-      id: entry['id'] as String,
-      label: entry['label'] is String
-          ? entry['label'] as String
-          : entry['id'] as String,
+      id: id,
+      label: _text(entry['label']) ?? id,
       supportsVision: entry['supportsVision'] == true,
       supportsJsonSchema: entry['supportsJsonSchema'] == true,
       maxOutputTokens: switch (entry['maxOutputTokens']) {
@@ -220,7 +205,11 @@ class AiModelCatalog {
         _ => AiModelOption.defaultMaxOutputTokens,
       },
       disableReasoning: entry['disableReasoning'] == true,
-      effort: entry['effort'] is String ? entry['effort'] as String : null,
+      effort: _text(entry['effort']),
     );
   }
 }
+
+/// Il valore di un campo testuale di `models.json`; `null` se manca o non è
+/// una stringa.
+String? _text(Object? value) => value is String ? value : null;

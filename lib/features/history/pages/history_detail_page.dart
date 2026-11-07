@@ -7,7 +7,6 @@ import '../../../core/design/theme_context.dart';
 import '../../../core/extensions/duration_format.dart';
 import '../../../core/extensions/log_set_format.dart';
 import '../../../core/widgets/app_scaffold.dart';
-import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/meta_chip.dart';
 import '../../../core/widgets/section_header.dart';
@@ -17,6 +16,7 @@ import '../../../data/entities/log_entry.dart';
 import '../../../data/entities/workout_log.dart';
 import '../../../l10n/app_localizations.dart';
 import '../cubit/history_detail_cubit.dart';
+import '../widgets/log_delete_dialog.dart';
 
 /// Dettaglio di una sessione (RF-07): esercizi, serie, carichi e note.
 ///
@@ -42,7 +42,6 @@ class HistoryDetailPage extends StatelessWidget {
         }
 
         final aborted = log.status == WorkoutStatus.aborted;
-        final entries = _sortedEntries(log);
 
         return AppScaffold(
           leading: const AppBackButton(),
@@ -51,7 +50,7 @@ class HistoryDetailPage extends StatelessWidget {
               icon: AppIcons.trash,
               tooltip: l10n.commonDelete,
               foreground: context.colors.danger,
-              onPressed: () => _confirmDelete(context, l10n, log),
+              onPressed: () => _delete(context, log),
             ),
           ],
           body: ListView(
@@ -96,16 +95,11 @@ class HistoryDetailPage extends StatelessWidget {
               if ((log.notes ?? '').isNotEmpty)
                 Section(
                   label: l10n.historySessionNotesLabel,
-                  child: SurfaceCard(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.card,
-                      vertical: AppSpacing.lg,
-                    ),
-                    child: Text(log.notes!, style: context.type.paragraph),
-                  ),
+                  child: ProseCard(log.notes!),
                 ),
               const SizedBox(height: AppSpacing.xl),
-              for (final entry in entries)
+              // Entry e serie arrivano già ordinate dal repository.
+              for (final entry in log.entries)
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                   child: _EntryCard(entry: entry),
@@ -116,9 +110,6 @@ class HistoryDetailPage extends StatelessWidget {
       },
     );
   }
-
-  List<LogEntry> _sortedEntries(WorkoutLog log) =>
-      log.entries.toList()..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
   String _statusLabel(AppLocalizations l10n, WorkoutStatus status) {
     switch (status) {
@@ -131,21 +122,10 @@ class HistoryDetailPage extends StatelessWidget {
     }
   }
 
-  Future<void> _confirmDelete(
-    BuildContext context,
-    AppLocalizations l10n,
-    WorkoutLog log,
-  ) async {
+  Future<void> _delete(BuildContext context, WorkoutLog log) async {
     final cubit = context.read<HistoryDetailCubit>();
     final navigator = Navigator.of(context);
-    final confirmed = await showConfirmDialog(
-      context,
-      title: l10n.historyDeleteConfirmTitle,
-      message: l10n.historyDeleteConfirmBody(log.startedAt),
-      confirmLabel: l10n.commonDelete,
-      destructive: true,
-    );
-    if (confirmed) {
+    if (await confirmLogDelete(context, log)) {
       cubit.delete();
       navigator.pop();
     }
@@ -162,8 +142,7 @@ class _EntryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final sets = entry.sets.toList()
-      ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
+    final sets = entry.sets;
 
     return SurfaceCard(
       child: Column(

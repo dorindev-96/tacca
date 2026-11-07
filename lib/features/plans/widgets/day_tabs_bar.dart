@@ -70,13 +70,13 @@ class DayTabsBar extends StatelessWidget {
       context,
       builder: (context) => AppSheet(
         title: day.label,
+        spacing: AppSpacing.sm,
         children: [
           SheetOption(
             icon: AppIcons.pencil,
             title: l10n.commonRename,
             onTap: () => Navigator.of(context).pop(_DayAction.rename),
           ),
-          const SizedBox(height: AppSpacing.sm),
           SheetOption(
             icon: AppIcons.trash,
             title: l10n.planEditorRemoveDay,

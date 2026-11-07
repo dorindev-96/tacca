@@ -7,6 +7,7 @@ import '../../../core/design/linear_icons.dart';
 import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_field.dart';
 import '../../../core/widgets/app_scaffold.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/info_banner.dart';
 import '../../../core/widgets/meta_chip.dart';
 import '../../../core/widgets/pill_button.dart';
@@ -14,7 +15,7 @@ import '../../../core/widgets/square_icon_button.dart';
 import '../../../l10n/app_localizations.dart';
 import '../cubit/ai_paste_import_cubit.dart';
 import '../cubit/ai_paste_import_state.dart';
-import '../widgets/plan_image_thumbnail.dart';
+import '../widgets/image_source_picker.dart';
 import 'ai_import_review_args.dart';
 
 /// Import di una scheda passando per una chat AI qualsiasi (RF-03), in due
@@ -37,9 +38,7 @@ class AiPasteImportPage extends StatelessWidget {
           previous.draft != current.draft && current.draft != null,
       listener: (context, state) {
         if (state.usedFallback) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(l10n.aiPasteFreeTextNotice)));
+          ScaffoldMessenger.of(context).showMessage(l10n.aiPasteFreeTextNotice);
         }
         context.pushReplacement(
           '/plans/new/review',
@@ -106,9 +105,7 @@ class AiPasteImportPage extends StatelessWidget {
   ) async {
     final messenger = ScaffoldMessenger.of(context);
     await context.read<AiPasteImportCubit>().continueToPaste();
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(l10n.aiPastePromptCopied)));
+    messenger.showMessage(l10n.aiPastePromptCopied);
   }
 }
 
@@ -132,15 +129,8 @@ class _ComposeStepState extends State<_ComposeStep> {
   @override
   void didUpdateWidget(covariant _ComposeStep oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Il campo è scritto anche dall'OCR: il controller si riallinea solo
-    // quando è lo stato ad aver cambiato il testo, mai mentre si digita
-    // (altrimenti il cursore tornerebbe in fondo a ogni battuta).
-    if (widget.state.text != _text.text) {
-      _text.value = TextEditingValue(
-        text: widget.state.text,
-        selection: TextSelection.collapsed(offset: widget.state.text.length),
-      );
-    }
+    // Il campo è scritto anche dall'OCR.
+    _text.follow(widget.state.text);
   }
 
   @override
@@ -173,41 +163,12 @@ class _ComposeStepState extends State<_ComposeStep> {
         ],
         InfoBanner(message: l10n.aiPasteIntro),
         const SizedBox(height: AppSpacing.xl),
-        if (state.images.isNotEmpty) ...[
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              for (var i = 0; i < state.images.length; i++)
-                PlanImageThumbnail(
-                  key: ValueKey('paste-image-$i'),
-                  bytes: state.images[i],
-                  onRemove: () => cubit.removeImage(i),
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-        ],
-        Row(
-          children: [
-            Expanded(
-              child: PillButton(
-                label: l10n.aiImportSourceCamera,
-                icon: AppIcons.camera,
-                tone: PillTone.outline,
-                onPressed: state.isReadingImages ? null : cubit.addFromCamera,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: PillButton(
-                label: l10n.aiImportSourceGallery,
-                icon: AppIcons.gallery,
-                tone: PillTone.outline,
-                onPressed: state.isReadingImages ? null : cubit.addFromGallery,
-              ),
-            ),
-          ],
+        ImageSourcePicker(
+          images: state.images,
+          enabled: !state.isReadingImages,
+          onRemove: cubit.removeImage,
+          onCamera: cubit.addFromCamera,
+          onGallery: cubit.addFromGallery,
         ),
         if (state.isReadingImages) ...[
           const SizedBox(height: AppSpacing.lg),
@@ -228,7 +189,7 @@ class _ComposeStepState extends State<_ComposeStep> {
           child: TextField(
             key: const ValueKey('paste-text'),
             controller: _text,
-            style: context.type.paragraph.copyWith(color: context.colors.ink),
+            style: context.type.fieldProse,
             decoration: AppField.onBackground(
               context,
               hintText: l10n.aiPasteTextHint,
@@ -278,14 +239,8 @@ class _PasteStepState extends State<_PasteStep> {
   @override
   void didUpdateWidget(covariant _PasteStep oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.state.response != _response.text) {
-      _response.value = TextEditingValue(
-        text: widget.state.response,
-        selection: TextSelection.collapsed(
-          offset: widget.state.response.length,
-        ),
-      );
-    }
+    // Il campo è scritto anche dall'incolla dagli appunti.
+    _response.follow(widget.state.response);
   }
 
   @override
@@ -350,7 +305,7 @@ class _PasteStepState extends State<_PasteStep> {
           child: TextField(
             key: const ValueKey('paste-response'),
             controller: _response,
-            style: context.type.paragraph.copyWith(color: context.colors.ink),
+            style: context.type.fieldProse,
             decoration: AppField.onBackground(
               context,
               hintText: l10n.aiPasteResponseHint,
@@ -381,8 +336,20 @@ class _PasteStepState extends State<_PasteStep> {
   ) async {
     final messenger = ScaffoldMessenger.of(context);
     await copy();
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(notice)));
+    messenger.showMessage(notice);
+  }
+}
+
+/// I campi di questa pagina li scrive anche lo stato, non solo la tastiera.
+extension on TextEditingController {
+  /// Si riallinea a [text] solo quando è lo stato ad averlo cambiato, mai
+  /// mentre si digita: altrimenti il cursore tornerebbe in fondo a ogni
+  /// battuta.
+  void follow(String text) {
+    if (text == this.text) return;
+    value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
   }
 }

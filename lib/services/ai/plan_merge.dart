@@ -1,3 +1,4 @@
+import '../../core/extensions/blank_text.dart';
 import 'dto/plan_dto.dart';
 
 /// Fonde le estrazioni delle singole pagine in una scheda sola.
@@ -37,20 +38,13 @@ PlanDto mergePlanDtos(List<PlanDto> parts) {
   );
 }
 
-/// Etichette che differiscono solo per maiuscole, spazi o punteggiatura
-/// finale sono lo stesso giorno: "DAY 1 - Petto" e "Day 1 – Petto" no, ma
-/// "Day 1" e "day 1 " sì.
-String _dayKey(String? label) {
-  final normalized = (label ?? '').toLowerCase().replaceAll(
-    RegExp(r'[\s\-–—:.]+'),
-    ' ',
-  );
-  return normalized.trim();
-}
+/// Etichette che differiscono solo per maiuscole, spazi o separatori
+/// (trattini, due punti, punti) sono lo stesso giorno: "DAY 1 - Petto" e
+/// "Day 1 – Petto" si fondono, come "Day 1" e "day 1 ".
+String _dayKey(String? label) =>
+    (label ?? '').toLowerCase().replaceAll(_separators, ' ').trim();
 
-String? _firstNonEmpty(Iterable<String?> values) {
-  for (final value in values) {
-    if (value != null && value.trim().isNotEmpty) return value;
-  }
-  return null;
-}
+final _separators = RegExp(r'[\s\-–—:.]+');
+
+String? _firstNonEmpty(Iterable<String?> values) =>
+    values.where((value) => !value.isBlank).firstOrNull;

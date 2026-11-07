@@ -12,10 +12,10 @@ class PluginScreenWake implements ScreenWake {
   const PluginScreenWake();
 
   @override
-  Future<void> enable() => _guard(() => WakelockPlus.enable());
+  Future<void> enable() => _guard(WakelockPlus.enable);
 
   @override
-  Future<void> disable() => _guard(() => WakelockPlus.disable());
+  Future<void> disable() => _guard(WakelockPlus.disable);
 
   Future<void> _guard(Future<void> Function() action) async {
     try {

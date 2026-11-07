@@ -7,6 +7,7 @@ import '../../../core/design/linear_icons.dart';
 import '../../../core/design/theme_context.dart';
 import '../../../core/extensions/log_set_format.dart';
 import '../../../core/widgets/linear_icon.dart';
+import '../../../core/widgets/meta_chip.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/surface_card.dart';
 import '../../../data/entities/log_set.dart';
@@ -116,6 +117,9 @@ class SessionExerciseCard extends StatelessWidget {
         ? _CardPalette.current(context.colors)
         : _CardPalette.normal(context.colors);
     final sets = item.displayedSets;
+    final checkable = item.checkableSets;
+    final done = item.entry.sets.length;
+    final prescription = _prescription;
 
     // Nei blocchi a giri una "serie" è un giro del gruppo: chiamarla col suo
     // nome è ciò che rende leggibile un superset durante l'allenamento.
@@ -124,8 +128,8 @@ class SessionExerciseCard extends StatelessWidget {
         rounds ? l10n.workoutRoundLabel(number) : l10n.workoutSetLabel(number);
 
     final counter = rounds
-        ? l10n.workoutRoundsDone(item.completedSets.length, sets)
-        : l10n.workoutSetsDone(item.completedSets.length, sets);
+        ? l10n.workoutRoundsDone(done, sets)
+        : l10n.workoutSetsDone(done, sets);
 
     return SurfaceCard(
       color: palette.background,
@@ -152,14 +156,19 @@ class SessionExerciseCard extends StatelessWidget {
               ),
               if (sets > 0) ...[
                 const SizedBox(width: AppSpacing.md),
-                _CountChip(label: counter, palette: palette, strong: isCurrent),
+                // Sopra il lime, la chip prende l'inchiostro che non si
+                // capovolge: è il tono che [MetaChip] ha apposta.
+                MetaChip(
+                  label: counter,
+                  tone: isCurrent ? ChipTone.onAccent : ChipTone.neutral,
+                ),
               ],
             ],
           ),
-          if (_prescription.isNotEmpty) ...[
+          if (prescription.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
             Text(
-              _prescription,
+              prescription,
               style: context.type.row.copyWith(color: palette.foreground),
             ),
           ],
@@ -180,7 +189,7 @@ class SessionExerciseCard extends StatelessWidget {
           // comunque la prima. La chip del conteggio invece resta legata a
           // quelle prescritte, che lì sono zero e non ci sarebbe niente da
           // contare.
-          for (var number = 1; number <= item.checkableSets; number++) ...[
+          for (var number = 1; number <= checkable; number++) ...[
             if (number > 1) const SizedBox(height: AppSpacing.sm),
             _SetRow(
               label: setLabel(number),
@@ -253,38 +262,6 @@ class _GroupMarker extends StatelessWidget {
   }
 }
 
-/// "2/4 serie": il conteggio di avanzamento dell'esercizio.
-class _CountChip extends StatelessWidget {
-  const _CountChip({
-    required this.label,
-    required this.palette,
-    required this.strong,
-  });
-
-  final String label;
-  final _CardPalette palette;
-  final bool strong;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 26,
-      alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm + 2),
-      decoration: BoxDecoration(
-        color: palette.marker,
-        borderRadius: BorderRadius.circular(AppRadius.chip),
-      ),
-      child: Text(
-        label,
-        style: (strong ? context.type.chipStrong : context.type.chip).copyWith(
-          color: strong ? palette.foreground : palette.secondary,
-        ),
-      ),
-    );
-  }
-}
-
 class _LastTimeLine extends StatelessWidget {
   const _LastTimeLine({required this.last, required this.color});
 
@@ -301,9 +278,9 @@ class _LastTimeLine extends StatelessWidget {
       return Text(l10n.workoutLastTimeNever, style: style);
     }
 
-    final summary = performance.sets.map((set) => set.summary).join(' · ');
     return Text(
-      '${l10n.workoutLastTime(performance.performedAt)}: $summary',
+      '${l10n.workoutLastTime(performance.performedAt)}: '
+      '${performance.sets.summary}',
       style: style,
     );
   }

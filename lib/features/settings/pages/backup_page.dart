@@ -6,7 +6,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/linear_icons.dart';
 import '../../../core/design/theme_context.dart';
+import '../../../core/extensions/share_origin.dart';
 import '../../../core/widgets/app_scaffold.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/info_banner.dart';
 import '../../../core/widgets/pill_button.dart';
@@ -87,15 +89,9 @@ class BackupPage extends StatelessWidget {
     );
   }
 
-  /// Il rettangolo della pagina fa da ancora al foglio di condivisione su
-  /// iPad, dove è un popover: senza, compare dove capita.
-  Future<void> _export(BuildContext context) {
-    final box = context.findRenderObject() as RenderBox?;
-    final origin = box != null && box.hasSize
-        ? box.localToGlobal(Offset.zero) & box.size
-        : null;
-    return context.read<BackupCubit>().export(originRect: origin);
-  }
+  /// Il rettangolo della pagina fa da ancora al foglio di condivisione.
+  Future<void> _export(BuildContext context) =>
+      context.read<BackupCubit>().export(originRect: context.shareOrigin);
 
   /// Sceglie il file, lo fa verificare e solo allora chiede conferma, con i
   /// conti di ciò che arriva e di ciò che verrà sostituito.
@@ -142,7 +138,6 @@ class BackupPage extends StatelessWidget {
         context: context,
         useRootNavigator: true,
         barrierDismissible: false,
-        barrierColor: context.colors.scrim,
         builder: (context) => _RestoringDialog(label: l10n.backupRestoring),
       ),
     );
@@ -169,9 +164,7 @@ class BackupPage extends StatelessWidget {
         BackupFailure.restoreFailed => l10n.backupRestoreFailed,
       },
     };
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showMessage(message);
   }
 }
 
@@ -188,7 +181,6 @@ class _RestoringDialog extends StatelessWidget {
     return PopScope(
       canPop: false,
       child: Dialog(
-        insetPadding: const EdgeInsets.all(AppSpacing.xl),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Row(

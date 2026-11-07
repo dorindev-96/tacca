@@ -66,9 +66,9 @@ void main() {
 
   Widget tile() => PlanListTile(
     plan: plan(),
-    highlighted: true,
     onOpen: () {},
     onEdit: () {},
+    onSetActive: () {},
     onDuplicate: () {},
     onArchiveToggle: () {},
     onDelete: () {},

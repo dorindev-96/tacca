@@ -7,6 +7,7 @@ import '../../../core/design/linear_icons.dart';
 import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_field.dart';
 import '../../../core/widgets/app_scaffold.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/info_banner.dart';
@@ -16,7 +17,7 @@ import '../../../core/widgets/surface_card.dart';
 import '../../../l10n/app_localizations.dart';
 import '../cubit/ai_import_cubit.dart';
 import '../cubit/ai_import_state.dart';
-import '../widgets/plan_image_thumbnail.dart';
+import '../widgets/image_source_picker.dart';
 import 'ai_import_review_args.dart';
 
 /// Import di una scheda via AI (RF-03): foto, immagini dalla galleria e/o
@@ -38,9 +39,7 @@ class AiImportPage extends StatelessWidget {
           if (state.usedFallback) l10n.aiImportFallbackNotice,
         ];
         if (notices.isNotEmpty) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(notices.join(' '))));
+          ScaffoldMessenger.of(context).showMessage(notices.join(' '));
         }
         context.pushReplacement(
           '/plans/new/review',
@@ -211,41 +210,11 @@ class _InputView extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
         ],
-        if (state.images.isNotEmpty) ...[
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              for (var i = 0; i < state.images.length; i++)
-                PlanImageThumbnail(
-                  key: ValueKey('import-image-$i'),
-                  bytes: state.images[i],
-                  onRemove: () => cubit.removeImage(i),
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-        ],
-        Row(
-          children: [
-            Expanded(
-              child: PillButton(
-                label: l10n.aiImportSourceCamera,
-                icon: AppIcons.camera,
-                tone: PillTone.outline,
-                onPressed: cubit.addFromCamera,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: PillButton(
-                label: l10n.aiImportSourceGallery,
-                icon: AppIcons.gallery,
-                tone: PillTone.outline,
-                onPressed: cubit.addFromGallery,
-              ),
-            ),
-          ],
+        ImageSourcePicker(
+          images: state.images,
+          onRemove: cubit.removeImage,
+          onCamera: cubit.addFromCamera,
+          onGallery: cubit.addFromGallery,
         ),
         const SizedBox(height: AppSpacing.xl),
         LabeledField(
@@ -253,7 +222,7 @@ class _InputView extends StatelessWidget {
           child: TextFormField(
             key: const ValueKey('import-text'),
             initialValue: state.text,
-            style: context.type.paragraph.copyWith(color: context.colors.ink),
+            style: context.type.fieldProse,
             decoration: AppField.onBackground(
               context,
               hintText: l10n.aiImportTextHint,

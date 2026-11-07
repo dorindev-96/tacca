@@ -17,7 +17,6 @@ class SurfaceCard extends StatelessWidget {
     this.onTap,
     this.padding = const EdgeInsets.all(AppSpacing.card),
     this.color,
-    this.radius = AppRadius.lg,
     super.key,
   });
 
@@ -29,12 +28,10 @@ class SurfaceCard extends StatelessWidget {
   /// evidenza della schermata, `fill` per un riquadro *dentro* una card.
   final Color? color;
 
-  final double radius;
-
   @override
   Widget build(BuildContext context) {
-    final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(radius),
+    const shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(AppRadius.lg)),
     );
 
     return Material(
@@ -48,6 +45,28 @@ class SurfaceCard extends StatelessWidget {
               customBorder: shape,
               child: Padding(padding: padding, child: child),
             ),
+    );
+  }
+}
+
+/// Un paragrafo dentro una card: descrizione e note di una scheda, note di
+/// una sessione. È prosa, quindi carattere di sistema (`type.paragraph`).
+///
+/// Il dettaglio di una scheda e l'immagine che la condivide la disegnano con
+/// lo stesso widget: due copie vorrebbero dire due schede diverse.
+class ProseCard extends StatelessWidget {
+  const ProseCard(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return SurfaceCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.card,
+        vertical: AppSpacing.lg,
+      ),
+      child: Text(text, style: context.type.paragraph),
     );
   }
 }

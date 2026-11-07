@@ -121,7 +121,7 @@ void main() {
     });
 
     test(
-      'duplicatePlan, archivePlan, restorePlan e deletePlan delegano al repository',
+      'duplicatePlan, setArchived e deletePlan delegano al repository',
       () async {
         when(() => repository.duplicatePlan(any())).thenReturn(99);
         when(
@@ -131,8 +131,8 @@ void main() {
         final cubit = PlansCubit(repository: repository);
 
         cubit.duplicatePlan(1);
-        cubit.archivePlan(2);
-        cubit.restorePlan(3);
+        cubit.setArchived(2, archived: true);
+        cubit.setArchived(3, archived: false);
         cubit.deletePlan(4);
 
         verify(() => repository.duplicatePlan(1)).called(1);

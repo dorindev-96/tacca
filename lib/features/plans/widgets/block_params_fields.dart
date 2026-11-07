@@ -141,7 +141,7 @@ class BlockParamsFields extends StatelessWidget {
             initialValue: block.freeTextContent ?? '',
             minLines: 3,
             maxLines: 8,
-            style: context.type.paragraph.copyWith(color: context.colors.ink),
+            style: context.type.fieldProse,
             decoration: AppField.inset(
               context,
               hintText: l10n.planEditorFreeTextHint,

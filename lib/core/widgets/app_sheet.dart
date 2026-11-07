@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../design/app_radius.dart';
 import '../design/app_spacing.dart';
 import '../design/linear_icons.dart';
 import '../design/theme_context.dart';
 import 'linear_icon.dart';
 import 'square_icon_button.dart';
+import 'surface_card.dart';
 
 /// Apre un bottom sheet nella forma del restyling: bianco, raggio 24 in
 /// alto, velo `rgba(25,33,38,.4)`.
@@ -15,11 +15,10 @@ import 'square_icon_button.dart';
 Future<T?> showAppSheet<T>(
   BuildContext context, {
   required WidgetBuilder builder,
-  bool isScrollControlled = true,
 }) {
   return showModalBottomSheet<T>(
     context: context,
-    isScrollControlled: isScrollControlled,
+    isScrollControlled: true,
     // Sul navigator radice, non su quello del ramo: la tab bar del
     // restyling galleggia dentro lo Stack della shell e un pannello aperto
     // sul navigator interno le finirebbe sotto.
@@ -37,23 +36,23 @@ class AppSheet extends StatelessWidget {
     required this.title,
     required this.children,
     this.scrollable = false,
-    this.maxHeightFactor = 0.9,
+    this.spacing = 0,
     super.key,
   });
 
   final String title;
   final List<Widget> children;
 
+  /// Spazio fra un figlio e l'altro: un pannello fatto solo di [SheetOption]
+  /// le stacca di `AppSpacing.sm`.
+  final double spacing;
+
   /// True quando i figli possono superare l'altezza dello schermo (elenchi
   /// lunghi): il corpo diventa scorrevole e la testata resta ferma.
   final bool scrollable;
 
-  final double maxHeightFactor;
-
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-
     final header = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -70,26 +69,24 @@ class AppSheet extends StatelessWidget {
     final body = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
+      spacing: spacing,
       children: children,
     );
 
     return ConstrainedBox(
       constraints: BoxConstraints(
-        maxHeight: media.size.height * maxHeightFactor,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.9,
       ),
       child: Padding(
         // Con la tastiera aperta il pannello sale: senza questo, i campi
         // dello sheet del log finiscono sotto i tasti.
-        padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
         child: SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.xl,
-              AppSpacing.xl,
-              AppSpacing.xl,
-              AppSpacing.xl,
-            ),
+            padding: const EdgeInsets.all(AppSpacing.xl),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -131,56 +128,48 @@ class SheetOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final background = highlighted ? colors.lime : colors.fill;
+    final type = context.type;
     // Evidenziata, la riga è una superficie lime: icona e testo non possono
     // seguire il tema, o al buio diventerebbero quasi bianchi sul lime.
     final foreground = highlighted ? colors.onLime : colors.ink;
 
-    return Material(
-      color: background,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.card,
-            vertical: AppSpacing.lg,
-          ),
-          child: Row(
-            children: [
-              LinearIcon(icon, size: 20, color: foreground),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      style:
-                          (highlighted
-                                  ? context.type.rowStrong
-                                  : context.type.row)
-                              .copyWith(color: foreground),
-                    ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        subtitle!,
-                        style: context.type.paragraph.copyWith(
-                          color: highlighted
-                              ? colors.onLime.withValues(alpha: 0.72)
-                              : colors.muted,
-                        ),
-                      ),
-                    ],
-                  ],
+    return SurfaceCard(
+      color: highlighted ? colors.lime : colors.fill,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.card,
+        vertical: AppSpacing.lg,
+      ),
+      onTap: onTap,
+      child: Row(
+        children: [
+          LinearIcon(icon, size: 20, color: foreground),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: (highlighted ? type.rowStrong : type.row).copyWith(
+                    color: foreground,
+                  ),
                 ),
-              ),
-            ],
+                if (subtitle != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    subtitle!,
+                    style: type.paragraph.copyWith(
+                      color: highlighted
+                          ? colors.onLime.withValues(alpha: 0.72)
+                          : colors.muted,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

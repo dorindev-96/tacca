@@ -24,8 +24,7 @@ class PlanImageStore {
   /// `WorkoutPlan.imagePaths`.
   Future<String> saveOriginal(Uint8List bytes) async {
     final directory = await _imagesDirectory();
-    final fileName =
-        '${DateTime.now().microsecondsSinceEpoch}_${bytes.length}.jpg';
+    final fileName = _newFileName(bytes.length);
     await File('${directory.path}/$fileName').writeAsBytes(bytes, flush: true);
     return '$_directoryName/$fileName';
   }
@@ -45,8 +44,7 @@ class PlanImageStore {
   /// arriva da fuori non si prende nessun path.
   Future<String> adopt(File file) async {
     final directory = await _imagesDirectory();
-    final fileName =
-        '${DateTime.now().microsecondsSinceEpoch}_${await file.length()}.jpg';
+    final fileName = _newFileName(await file.length());
     final target = '${directory.path}/$fileName';
     try {
       await file.rename(target);
@@ -88,6 +86,10 @@ class PlanImageStore {
       format: CompressFormat.jpeg,
     );
   }
+
+  /// Il nome su disco di un'immagine nuova di [length] byte.
+  static String _newFileName(int length) =>
+      '${DateTime.now().microsecondsSinceEpoch}_$length.jpg';
 
   Future<Directory> _imagesDirectory() async {
     final documents = await _documentsDirectory();

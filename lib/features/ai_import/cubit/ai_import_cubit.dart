@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/errors/ai_exception.dart';
+import '../../../core/extensions/blank_text.dart';
 import '../../../services/ai/ai_provider.dart';
 import '../../../services/ai/ai_selection.dart';
 import '../../../services/ai/plan_parser.dart';
@@ -95,7 +96,7 @@ class AiImportCubit extends Cubit<AiImportState> {
     emit(state.copyWith(status: AiImportStatus.processing, errorMessage: null));
     try {
       var images = state.images;
-      var text = _blankToNull(state.text);
+      var text = state.text.trimmedOrNull;
       var usedOcr = false;
 
       if (images.isNotEmpty) {
@@ -132,14 +133,14 @@ class AiImportCubit extends Cubit<AiImportState> {
       final extraction = await _provider.extractPlan(
         images: compressed,
         text: text,
-        userHint: _blankToNull(state.hint),
+        userHint: state.hint.trimmedOrNull,
       );
 
       final imagePaths = <String>[
         for (final bytes in state.images) await _imageStore.saveOriginal(bytes),
       ];
       final draft = _parser.toEntity(extraction.plan, imagePaths: imagePaths);
-      if (draft.name.trim().isEmpty) draft.name = 'Scheda importata';
+      if (draft.name.isBlank) draft.name = 'Scheda importata';
 
       emit(
         state.copyWith(
@@ -169,32 +170,16 @@ class AiImportCubit extends Cubit<AiImportState> {
     emit(state.copyWith(status: AiImportStatus.input, errorMessage: null));
   }
 
-  String? _blankToNull(String value) {
-    final trimmed = value.trim();
-    return trimmed.isEmpty ? null : trimmed;
-  }
-
-  /// OCR pagina per pagina: un'immagine illeggibile non deve far fallire le
-  /// altre, quindi un errore locale diventa pagina vuota invece di
-  /// interrompere l'import (RNF-05).
+  /// Il testo delle foto, pagina per pagina; le pagine illeggibili restano
+  /// fuori senza far fallire le altre (RNF-05).
   Future<String> _recognizeText(List<Uint8List> images) async {
-    final pageCount = images.length > 1 ? images.length : null;
-    final parts = <String>[];
-    for (var i = 0; i < images.length; i++) {
-      String recognized;
-      try {
-        recognized = await _ocr.recognizeText(images[i]);
-      } catch (_) {
-        recognized = '';
-      }
-      recognized = recognized.trim();
-      if (recognized.isEmpty) continue;
-      parts.add(
-        pageCount == null
-            ? recognized
-            : '--- Pagina ${i + 1} di $pageCount ---\n$recognized',
-      );
-    }
-    return parts.join('\n\n');
+    final pages = await _ocr.recognizePages(images);
+    return [
+      for (final (i, page) in pages.indexed)
+        if (page.isNotEmpty)
+          pages.length == 1
+              ? page
+              : '--- Pagina ${i + 1} di ${pages.length} ---\n$page',
+    ].join('\n\n');
   }
 }

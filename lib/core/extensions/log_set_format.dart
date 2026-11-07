@@ -1,4 +1,5 @@
 import '../../data/entities/log_set.dart';
+import 'blank_text.dart';
 
 /// Resa testuale di una serie registrata, condivisa fra sessione e storico.
 ///
@@ -8,13 +9,17 @@ extension LogSetFormat on LogSet {
   /// `80 kg × 8`; le parti non registrate vengono omesse, una serie spuntata
   /// senza valori resta comunque visibile come `✓`.
   String get summary {
-    final value = weightKg;
     final parts = <String>[
-      if (value != null) '${formatWeightKg(value)} kg',
-      if ((reps ?? '').isNotEmpty) reps!,
+      if (weightKg case final value?) '${formatWeightKg(value)} kg',
+      if (reps.trimmedOrNull case final value?) value,
     ];
     return parts.isEmpty ? '✓' : parts.join(' × ');
   }
+}
+
+/// Le serie di un esercizio in una riga: `80 kg × 8 · 80 kg × 6`.
+extension LogSetsFormat on Iterable<LogSet> {
+  String get summary => map((set) => set.summary).join(' · ');
 }
 
 /// Carico senza decimali inutili: in palestra i pesi sono interi o mezzi kg.

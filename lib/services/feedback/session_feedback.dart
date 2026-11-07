@@ -21,8 +21,6 @@ abstract interface class SessionFeedback {
 
 /// Implementazione reale su `audioplayers` + `vibration`.
 class PluginSessionFeedback implements SessionFeedback {
-  PluginSessionFeedback();
-
   static const _intervalAsset = 'audio/beep.wav';
   static const _finishedAsset = 'audio/beep_end.wav';
 
@@ -56,13 +54,9 @@ class PluginSessionFeedback implements SessionFeedback {
 
   @override
   Future<void> emit(TimerSignal signal) async {
-    final asset = switch (signal) {
-      TimerSignal.interval => _intervalAsset,
-      TimerSignal.finished => _finishedAsset,
-    };
-    final vibrationMs = switch (signal) {
-      TimerSignal.interval => 180,
-      TimerSignal.finished => 600,
+    final (asset, vibrationMs) = switch (signal) {
+      TimerSignal.interval => (_intervalAsset, 180),
+      TimerSignal.finished => (_finishedAsset, 600),
     };
 
     try {

@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../../core/extensions/blank_text.dart';
 import '../../../data/entities/workout_plan.dart';
 
 part 'ai_import_state.freezed.dart';
@@ -44,5 +45,5 @@ sealed class AiImportState with _$AiImportState {
     @Default(false) bool usedOcr,
   }) = _AiImportState;
 
-  bool get hasInput => images.isNotEmpty || text.trim().isNotEmpty;
+  bool get hasInput => images.isNotEmpty || !text.isBlank;
 }

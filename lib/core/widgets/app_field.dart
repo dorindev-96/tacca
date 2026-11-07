@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../design/app_radius.dart';
 import '../design/app_spacing.dart';
+import '../design/linear_icons.dart';
 import '../design/theme_context.dart';
+import 'linear_icon.dart';
 
 /// Le due forme di campo del restyling.
 ///
 /// Non ce ne sono altre, e nessuna delle due ha un contorno: la forma la fa
-/// il colore del riempimento.
+/// il colore del riempimento. Riempimento, spaziatura interna e stile del
+/// suggerimento vengono da `inputDecorationTheme`: qui c'è solo ciò in cui le
+/// due forme se ne staccano.
 abstract final class AppField {
   /// Campo che sta **sul fondo pagina**: pillola al colore delle card, raggio
   /// 26, come il campo di ricerca dell'archivio.
@@ -23,12 +27,7 @@ abstract final class AppField {
     return InputDecoration(
       hintText: hintText,
       isDense: true,
-      filled: true,
       fillColor: context.colors.surface,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.card,
-        vertical: AppSpacing.lg,
-      ),
       prefixIcon: prefixIcon == null
           ? null
           : Padding(
@@ -40,7 +39,6 @@ abstract final class AppField {
             ),
       prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
       suffixIcon: suffixIcon,
-      hintStyle: context.type.row.copyWith(color: context.colors.muted),
       border: _border(AppRadius.lg),
       enabledBorder: _border(AppRadius.lg),
       focusedBorder: _border(AppRadius.lg),
@@ -58,15 +56,8 @@ abstract final class AppField {
     return InputDecoration(
       hintText: hintText,
       labelText: labelText,
-      filled: true,
       fillColor: context.colors.fill,
-      contentPadding:
-          contentPadding ??
-          const EdgeInsets.symmetric(
-            horizontal: AppSpacing.card,
-            vertical: AppSpacing.lg,
-          ),
-      hintStyle: context.type.row.copyWith(color: context.colors.muted),
+      contentPadding: contentPadding,
       border: _border(AppRadius.md),
       enabledBorder: _border(AppRadius.md),
       focusedBorder: _border(AppRadius.md),
@@ -83,6 +74,45 @@ abstract final class AppField {
   }
 }
 
+/// L'unica forma di tendina dell'app: testo da riga, freccia lineare, menu
+/// col raggio dei campi. Il campo intorno è una delle due forme di [AppField]
+/// e lo sceglie chi la usa ([decoration]).
+///
+/// Flutter non ha un tema per `DropdownButtonFormField`: senza questo widget
+/// freccia, stile e raggio del menu andrebbero ripetuti a ogni tendina.
+class AppDropdown<T> extends StatelessWidget {
+  const AppDropdown({
+    required this.value,
+    required this.items,
+    required this.onChanged,
+    required this.decoration,
+    super.key,
+  });
+
+  final T? value;
+  final List<DropdownMenuItem<T>> items;
+  final ValueChanged<T?> onChanged;
+  final InputDecoration decoration;
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButtonFormField<T>(
+      initialValue: value,
+      isExpanded: true,
+      style: context.type.row,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      icon: LinearIcon(
+        AppIcons.chevronDown,
+        size: 20,
+        color: context.colors.muted,
+      ),
+      decoration: decoration,
+      items: items,
+      onChanged: onChanged,
+    );
+  }
+}
+
 /// Etichetta sopra un campo: nel restyling i campi non hanno label
 /// flottante, il nome sta fuori in grigio da 14.
 class FieldLabel extends StatelessWidget {
@@ -94,10 +124,7 @@ class FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Text(
-        text,
-        style: context.type.sectionLabel.copyWith(fontSize: 14),
-      ),
+      child: Text(text, style: context.type.fieldLabel),
     );
   }
 }

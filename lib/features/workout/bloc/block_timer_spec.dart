@@ -64,25 +64,11 @@ TimerSpec? blockTimerSpec(Block block, {String? label}) {
 /// fermarsi fra un esercizio e l'altro sarebbe l'esatto contrario di un
 /// superset. Nessun valore configurato significa nessun timer automatico: non
 /// si inventa una durata.
-TimerSpec? restTimerSpec(SessionItem item, {String? label}) {
-  final exerciseRest = item.exercise?.restSeconds;
-  if (exerciseRest != null && exerciseRest > 0) {
-    return TimerSpec.rest(
-      Duration(seconds: exerciseRest),
-      label: label ?? item.name,
-    );
-  }
-  if (item.isRoundBased && item.isLastOfBlock) {
-    final roundRest = item.block?.restBetweenRoundsSeconds;
-    if (roundRest != null && roundRest > 0) {
-      return TimerSpec.rest(
-        Duration(seconds: roundRest),
-        label: label ?? item.name,
-      );
-    }
-  }
-  return null;
-}
+TimerSpec? restTimerSpec(SessionItem item) =>
+    _rest(item.exercise?.restSeconds, item.name) ??
+    (item.isRoundBased && item.isLastOfBlock
+        ? _rest(item.block?.restBetweenRoundsSeconds, item.name)
+        : null);
 
 /// Recupero da avviare a giro concluso (superset, circuito): quello che
 /// partirebbe spuntando [closing], l'esercizio che chiude il giro.
@@ -91,23 +77,14 @@ TimerSpec? restTimerSpec(SessionItem item, {String? label}) {
 /// è l'ultimo esercizio del blocco — uno che prescrive più serie degli altri e
 /// gli ultimi giri li fa da solo. Il giro è finito lo stesso, e il recupero
 /// fra i giri gli spetta.
-TimerSpec? roundRestSpec(SessionItem closing, {String? label}) {
-  final exerciseRest = closing.exercise?.restSeconds;
-  if (exerciseRest != null && exerciseRest > 0) {
-    return TimerSpec.rest(
-      Duration(seconds: exerciseRest),
-      label: label ?? closing.name,
-    );
-  }
-  final roundRest = closing.block?.restBetweenRoundsSeconds;
-  if (roundRest != null && roundRest > 0) {
-    return TimerSpec.rest(
-      Duration(seconds: roundRest),
-      label: label ?? closing.name,
-    );
-  }
-  return null;
-}
+TimerSpec? roundRestSpec(SessionItem closing, {required String label}) =>
+    _rest(closing.exercise?.restSeconds, label) ??
+    _rest(closing.block?.restBetweenRoundsSeconds, label);
+
+/// Un recupero di [seconds], se ne è configurato uno.
+TimerSpec? _rest(int? seconds, String label) => seconds != null && seconds > 0
+    ? TimerSpec.rest(Duration(seconds: seconds), label: label)
+    : null;
 
 /// Recupero da avviare confermando [step]: quello del giro se il passo è un
 /// giro intero, quello della serie altrimenti.

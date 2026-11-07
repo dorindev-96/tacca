@@ -13,17 +13,12 @@ import 'linear_icon.dart';
 class SquareIconSurface extends StatelessWidget {
   const SquareIconSurface({
     required this.icon,
-    this.filled = false,
     this.enabled = true,
     this.foreground,
     super.key,
   });
 
   final LinearIconData icon;
-
-  /// Fondo bianco pieno invece del solo contorno: serve quando il pulsante
-  /// sta già sopra una superficie bianca.
-  final bool filled;
 
   final bool enabled;
 
@@ -43,13 +38,8 @@ class SquareIconSurface extends StatelessWidget {
           height: boxSize,
           width: boxSize,
           decoration: BoxDecoration(
-            color: filled ? context.colors.surface : null,
             borderRadius: BorderRadius.circular(AppRadius.sm),
-            border: filled
-                ? null
-                : Border.fromBorderSide(
-                    BorderSide(color: context.colors.stroke),
-                  ),
+            border: Border.all(color: context.colors.stroke),
           ),
           child: Center(
             child: LinearIcon(
@@ -76,7 +66,6 @@ class SquareIconButton extends StatelessWidget {
     required this.icon,
     required this.onPressed,
     this.tooltip,
-    this.filled = false,
     this.foreground,
     super.key,
   });
@@ -87,21 +76,17 @@ class SquareIconButton extends StatelessWidget {
   final VoidCallback? onPressed;
 
   final String? tooltip;
-  final bool filled;
 
   /// Null = l'inchiostro del tema.
   final Color? foreground;
 
   @override
   Widget build(BuildContext context) {
-    Widget button = InkResponse(
+    Widget button = InkWell(
       onTap: onPressed,
-      containedInkWell: true,
-      highlightShape: BoxShape.rectangle,
       borderRadius: BorderRadius.circular(AppRadius.sm),
       child: SquareIconSurface(
         icon: icon,
-        filled: filled,
         enabled: onPressed != null,
         foreground: foreground,
       ),
@@ -139,7 +124,6 @@ class GhostIconButton extends StatelessWidget {
     required this.onPressed,
     this.tooltip,
     this.foreground,
-    this.size = 20,
     super.key,
   });
 
@@ -149,8 +133,6 @@ class GhostIconButton extends StatelessWidget {
 
   /// Null = l'inchiostro del tema.
   final Color? foreground;
-
-  final double size;
 
   static const double tapSize = 44;
 
@@ -162,7 +144,6 @@ class GhostIconButton extends StatelessWidget {
       child: GhostIconSurface(
         icon: icon,
         foreground: onPressed == null ? context.colors.muted : foreground,
-        size: size,
       ),
     );
     if (tooltip != null) {
@@ -174,19 +155,12 @@ class GhostIconButton extends StatelessWidget {
 
 /// Il disegno di [GhostIconButton], senza gestione del tocco.
 class GhostIconSurface extends StatelessWidget {
-  const GhostIconSurface({
-    required this.icon,
-    this.foreground,
-    this.size = 20,
-    super.key,
-  });
+  const GhostIconSurface({required this.icon, this.foreground, super.key});
 
   final LinearIconData icon;
 
   /// Null = l'inchiostro del tema.
   final Color? foreground;
-
-  final double size;
 
   @override
   Widget build(BuildContext context) {
@@ -195,7 +169,7 @@ class GhostIconSurface extends StatelessWidget {
       child: Center(
         child: LinearIcon(
           icon,
-          size: size,
+          size: 20,
           color: foreground ?? context.colors.ink,
         ),
       ),

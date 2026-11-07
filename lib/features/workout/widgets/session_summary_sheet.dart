@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/theme_context.dart';
+import '../../../core/extensions/blank_text.dart';
 import '../../../core/extensions/duration_format.dart';
 import '../../../core/extensions/log_set_format.dart';
 import '../../../core/widgets/app_field.dart';
@@ -23,9 +24,6 @@ class SessionSummaryConfirmed {
 Future<SessionSummaryConfirmed?> showSessionSummarySheet(
   BuildContext context, {
   required Duration elapsed,
-  required int completedExercises,
-  required int totalExercises,
-  required int loggedSets,
   required List<SessionItem> items,
   String? initialNotes,
 }) {
@@ -33,9 +31,6 @@ Future<SessionSummaryConfirmed?> showSessionSummarySheet(
     context,
     builder: (context) => _SessionSummarySheet(
       elapsed: elapsed,
-      completedExercises: completedExercises,
-      totalExercises: totalExercises,
-      loggedSets: loggedSets,
       items: items,
       initialNotes: initialNotes,
     ),
@@ -45,17 +40,11 @@ Future<SessionSummaryConfirmed?> showSessionSummarySheet(
 class _SessionSummarySheet extends StatefulWidget {
   const _SessionSummarySheet({
     required this.elapsed,
-    required this.completedExercises,
-    required this.totalExercises,
-    required this.loggedSets,
     required this.items,
     required this.initialNotes,
   });
 
   final Duration elapsed;
-  final int completedExercises;
-  final int totalExercises;
-  final int loggedSets;
   final List<SessionItem> items;
   final String? initialNotes;
 
@@ -77,9 +66,8 @@ class _SessionSummarySheetState extends State<_SessionSummarySheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final performed = widget.items
-        .where((item) => item.entry.sets.isNotEmpty)
-        .toList();
+    final items = widget.items;
+    final performed = items.where((item) => item.entry.sets.isNotEmpty);
 
     return AppSheet(
       title: l10n.workoutSummaryTitle,
@@ -98,12 +86,12 @@ class _SessionSummarySheetState extends State<_SessionSummarySheet> {
               const SizedBox(width: AppSpacing.sm),
               _Stat(
                 label: l10n.workoutSummaryExercises,
-                value: '${widget.completedExercises}/${widget.totalExercises}',
+                value: '${items.completedCount}/${items.length}',
               ),
               const SizedBox(width: AppSpacing.sm),
               _Stat(
                 label: l10n.workoutSummarySets,
-                value: '${widget.loggedSets}',
+                value: '${items.loggedSetCount}',
               ),
             ],
           ),
@@ -119,7 +107,7 @@ class _SessionSummarySheetState extends State<_SessionSummarySheet> {
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Text(
-                    item.completedSets.map((set) => set.summary).join(' · '),
+                    item.completedSets.summary,
                     textAlign: TextAlign.end,
                     style: context.type.meta,
                   ),
@@ -134,7 +122,7 @@ class _SessionSummarySheetState extends State<_SessionSummarySheet> {
           controller: _notes,
           minLines: 1,
           maxLines: 3,
-          style: context.type.paragraph.copyWith(color: context.colors.ink),
+          style: context.type.fieldProse,
           decoration: AppField.inset(context),
         ),
         const SizedBox(height: AppSpacing.card),
@@ -150,11 +138,9 @@ class _SessionSummarySheetState extends State<_SessionSummarySheet> {
             Expanded(
               child: PillButton(
                 label: l10n.workoutSummaryConfirm,
-                onPressed: () => Navigator.of(context).pop(
-                  SessionSummaryConfirmed(
-                    _notes.text.trim().isEmpty ? null : _notes.text.trim(),
-                  ),
-                ),
+                onPressed: () => Navigator.of(
+                  context,
+                ).pop(SessionSummaryConfirmed(_notes.text.trimmedOrNull)),
               ),
             ),
           ],

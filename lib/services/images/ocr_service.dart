@@ -36,3 +36,21 @@ class NativeOcrService implements OcrService {
     }
   }
 }
+
+/// L'OCR di più foto, una alla volta.
+extension OcrPages on OcrService {
+  /// Il testo di ciascuna di [images], nello stesso ordine e senza spazi ai
+  /// bordi. Una foto illeggibile — o un errore del riconoscimento — diventa
+  /// una pagina vuota invece di far perdere le altre (RNF-05).
+  Future<List<String>> recognizePages(List<Uint8List> images) async {
+    final pages = <String>[];
+    for (final bytes in images) {
+      try {
+        pages.add((await recognizeText(bytes)).trim());
+      } catch (_) {
+        pages.add('');
+      }
+    }
+    return pages;
+  }
+}

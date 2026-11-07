@@ -18,13 +18,16 @@ sealed class PlansState with _$PlansState {
     String? errorMessage,
   }) = _PlansState;
 
-  /// La scheda marcata "in uso", se presente (mai tra le archiviate).
-  WorkoutPlan? get inUsePlan {
-    for (final plan in activePlans) {
-      if (plan.isActive) return plan;
-    }
-    return null;
-  }
+  /// La scheda marcata "in uso", se c'è e risponde alla ricerca (mai tra le
+  /// archiviate).
+  WorkoutPlan? get inUsePlan =>
+      filteredActivePlans.where((plan) => plan.isActive).firstOrNull;
+
+  /// La scheda [id], attiva o archiviata; null se non esiste (più).
+  WorkoutPlan? planById(int id) => [
+    ...activePlans,
+    ...archivedPlans,
+  ].where((plan) => plan.id == id).firstOrNull;
 
   List<WorkoutPlan> get filteredActivePlans => _filtered(activePlans);
 

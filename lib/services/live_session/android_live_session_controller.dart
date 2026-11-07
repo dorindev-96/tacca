@@ -174,11 +174,6 @@ class AndroidLiveSessionController implements LiveSessionController {
 class LiveActionPayload {
   const LiveActionPayload({required this.queuePath, required this.snapshot});
 
-  factory LiveActionPayload.forSnapshot(
-    LiveSessionSnapshot snapshot, {
-    required String queuePath,
-  }) => LiveActionPayload(queuePath: queuePath, snapshot: snapshot);
-
   final String queuePath;
   final LiveSessionSnapshot snapshot;
 
@@ -282,9 +277,9 @@ Future<void> showLiveSessionNotification(
     title: snapshot.exerciseName,
     body: label != null ? '$label · $sets' : sets,
     notificationDetails: NotificationDetails(android: details),
-    payload: LiveActionPayload.forSnapshot(
-      snapshot,
+    payload: LiveActionPayload(
       queuePath: queuePath,
+      snapshot: snapshot,
     ).encode(),
   );
 }

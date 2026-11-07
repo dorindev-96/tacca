@@ -6,6 +6,7 @@ import '../../../core/design/app_spacing.dart';
 import '../../../core/design/linear_icons.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../../../core/widgets/app_sheet.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/section_header.dart';
@@ -51,9 +52,7 @@ class PlansPage extends StatelessWidget {
             previous.errorMessage != current.errorMessage,
         listener: (context, state) {
           if (state.errorMessage != null) {
-            ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+            ScaffoldMessenger.of(context).showMessage(state.errorMessage!);
             context.read<PlansCubit>().dismissError();
           }
         },
@@ -81,20 +80,19 @@ class PlansPage extends StatelessWidget {
       context,
       builder: (context) => AppSheet(
         title: l10n.plansNewPlan,
+        spacing: AppSpacing.sm,
         children: [
           SheetOption(
             icon: AppIcons.pencil,
             title: l10n.plansNewPlanManual,
             onTap: () => Navigator.of(context).pop('/plans/new'),
           ),
-          const SizedBox(height: AppSpacing.sm),
           SheetOption(
             icon: AppIcons.gallery,
             title: l10n.plansNewPlanAi,
             subtitle: l10n.plansNewPlanAiSubtitle,
             onTap: () => Navigator.of(context).pop('/plans/new/import'),
           ),
-          const SizedBox(height: AppSpacing.sm),
           SheetOption(
             icon: AppIcons.cpu,
             title: l10n.plansNewPlanChat,
@@ -114,13 +112,6 @@ class _PlansListBody extends StatelessWidget {
 
   final PlansState state;
 
-  WorkoutPlan? _firstActive(List<WorkoutPlan> plans) {
-    for (final plan in plans) {
-      if (plan.isActive) return plan;
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -129,10 +120,23 @@ class _PlansListBody extends StatelessWidget {
     final hasAnyPlan =
         state.activePlans.isNotEmpty || state.archivedPlans.isNotEmpty;
 
-    final filteredActive = state.filteredActivePlans;
     final filteredArchived = state.filteredArchivedPlans;
-    final inUse = _firstActive(filteredActive);
-    final otherActive = filteredActive.where((p) => p.id != inUse?.id).toList();
+    final inUse = state.inUsePlan;
+    final otherActive = state.filteredActivePlans
+        .where((p) => p.id != inUse?.id)
+        .toList();
+
+    Widget tile(WorkoutPlan plan) => PlanListTile(
+      key: ValueKey('plan-${plan.id}'),
+      plan: plan,
+      onOpen: () => context.push('/plans/${plan.id}'),
+      onEdit: () => context.push('/plans/${plan.id}/edit'),
+      onSetActive: () => cubit.setActivePlan(plan.id),
+      onDuplicate: () => cubit.duplicatePlan(plan.id),
+      onArchiveToggle: () =>
+          cubit.setArchived(plan.id, archived: !plan.isArchived),
+      onDelete: () => cubit.deletePlan(plan.id),
+    );
 
     if (!hasAnyPlan) {
       return EmptyState(icon: AppIcons.noteAdd, message: l10n.plansEmpty);
@@ -153,51 +157,16 @@ class _PlansListBody extends StatelessWidget {
       ),
       children: [
         if (inUse != null)
-          Section(
-            label: l10n.plansInUseBadge,
-            child: PlanListTile(
-              key: ValueKey('plan-${inUse.id}'),
-              plan: inUse,
-              highlighted: true,
-              onOpen: () => context.push('/plans/${inUse.id}'),
-              onEdit: () => context.push('/plans/${inUse.id}/edit'),
-              onDuplicate: () => cubit.duplicatePlan(inUse.id),
-              onArchiveToggle: () => cubit.archivePlan(inUse.id),
-              onDelete: () => cubit.deletePlan(inUse.id),
-            ),
-          ),
+          Section(label: l10n.plansInUseBadge, child: tile(inUse)),
         if (otherActive.isNotEmpty)
           Section(
             label: l10n.plansSectionActive,
-            child: _rows([
-              for (final plan in otherActive)
-                PlanListTile(
-                  key: ValueKey('plan-${plan.id}'),
-                  plan: plan,
-                  onOpen: () => context.push('/plans/${plan.id}'),
-                  onEdit: () => context.push('/plans/${plan.id}/edit'),
-                  onSetActive: () => cubit.setActivePlan(plan.id),
-                  onDuplicate: () => cubit.duplicatePlan(plan.id),
-                  onArchiveToggle: () => cubit.archivePlan(plan.id),
-                  onDelete: () => cubit.deletePlan(plan.id),
-                ),
-            ]),
+            child: _rows([for (final plan in otherActive) tile(plan)]),
           ),
         if (filteredArchived.isNotEmpty)
           Section(
             label: l10n.plansSectionArchived,
-            child: _rows([
-              for (final plan in filteredArchived)
-                PlanListTile(
-                  key: ValueKey('plan-${plan.id}'),
-                  plan: plan,
-                  onOpen: () => context.push('/plans/${plan.id}'),
-                  onEdit: () => context.push('/plans/${plan.id}/edit'),
-                  onDuplicate: () => cubit.duplicatePlan(plan.id),
-                  onArchiveToggle: () => cubit.restorePlan(plan.id),
-                  onDelete: () => cubit.deletePlan(plan.id),
-                ),
-            ]),
+            child: _rows([for (final plan in filteredArchived) tile(plan)]),
           ),
       ],
     );
@@ -208,12 +177,8 @@ class _PlansListBody extends StatelessWidget {
   Widget _rows(List<Widget> tiles) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var i = 0; i < tiles.length; i++) ...[
-          if (i > 0) const SizedBox(height: AppSpacing.sm),
-          tiles[i],
-        ],
-      ],
+      spacing: AppSpacing.sm,
+      children: tiles,
     );
   }
 }

@@ -5,6 +5,7 @@ import '../../../core/constants.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/linear_icons.dart';
 import '../../../core/design/theme_context.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/linear_icon.dart';
 import '../../../core/widgets/surface_card.dart';
 import '../../../l10n/app_localizations.dart';
@@ -172,8 +173,6 @@ class TermsLinkCard extends StatelessWidget {
     if (opened) return;
 
     await clipboard.write(AppConstants.termsUrl);
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(l10n.legalTermsLinkCopied)));
+    messenger.showMessage(l10n.legalTermsLinkCopied);
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 /// Tipo di timer, contestuale al tipo di blocco che lo ha richiesto (§7).
 enum TimerKind {
@@ -107,19 +108,17 @@ class TimerSpec {
 
   /// Round previsti complessivamente (1 quando il concetto non si applica).
   int get totalRounds {
-    switch (kind) {
-      case TimerKind.emom:
-        final step = interval;
-        if (step == null || step <= Duration.zero) return 1;
-        final count = total.inMilliseconds ~/ step.inMilliseconds;
-        return count < 1 ? 1 : count;
-      case TimerKind.tabata:
-        return (rounds ?? 1) < 1 ? 1 : rounds!;
-      case TimerKind.rest:
-      case TimerKind.amrap:
-      case TimerKind.forTime:
-        return 1;
-    }
+    final step = interval;
+    final count = switch (kind) {
+      TimerKind.emom when step != null && step > Duration.zero =>
+        total.inMilliseconds ~/ step.inMilliseconds,
+      TimerKind.tabata => rounds ?? 1,
+      TimerKind.emom ||
+      TimerKind.rest ||
+      TimerKind.amrap ||
+      TimerKind.forTime => 1,
+    };
+    return math.max(count, 1);
   }
 }
 
@@ -155,15 +154,12 @@ class TimerState {
   int get totalRounds => spec.totalRounds;
 
   /// Tempo mancante alla fine, `null` per il cronometro senza time cap.
-  Duration? get remaining {
-    if (spec.isCountUp) return null;
-    final left = spec.total - elapsed;
-    return left.isNegative ? Duration.zero : left;
-  }
+  Duration? get remaining =>
+      spec.isCountUp ? null : _atLeastZero(spec.total - elapsed);
 
   /// Quota di avanzamento in [0, 1]; 0 per il cronometro senza time cap.
   double get progress {
-    if (spec.isCountUp || spec.total <= Duration.zero) return 0;
+    if (spec.isCountUp) return 0;
     final value = elapsed.inMilliseconds / spec.total.inMilliseconds;
     return value.clamp(0.0, 1.0);
   }
@@ -204,18 +200,18 @@ class TimerEngine {
 
   TimerState? get current => _current;
 
-  bool get isRunning => _current != null && !_current!.isFinished;
+  bool get isRunning => _current?.isFinished == false;
 
   /// Avvia [spec]. [startedAt] permette di riagganciarsi a un timer partito in
   /// passato (ripresa di una sessione): lo stato viene ricalcolato dall'inizio
   /// reale, non da adesso.
   void start(TimerSpec spec, {DateTime? startedAt}) {
     _ticker?.cancel();
-    final begin = startedAt ?? _now();
-    _current = _evaluate(spec, begin);
-    _stateController.add(_current!);
+    final state = _evaluate(spec, startedAt ?? _now());
+    _current = state;
+    _stateController.add(state);
 
-    if (_current!.isFinished) {
+    if (state.isFinished) {
       _signalController.add(TimerSignal.finished);
       return;
     }
@@ -244,36 +240,37 @@ class TimerEngine {
     if (state == null || state.isFinished || max <= 0) return const [];
 
     final spec = state.spec;
-    final times = <DateTime>[];
     final now = _now();
+    final times = <DateTime>[];
+    void addIfAhead(DateTime at) {
+      if (at.isAfter(now)) times.add(at);
+    }
 
-    // Il tabata è a parte: alterna due fasi di durata diversa.
-    final step = spec.kind == TimerKind.emom ? spec.interval : null;
-
+    final step = spec.interval;
     if (spec.kind == TimerKind.tabata) {
+      // Il tabata è a parte: alterna due fasi di durata diversa. Dopo
+      // l'ultimo recupero non c'è un cambio di fase ma la fine, qui sotto.
       final work = spec.interval ?? Duration.zero;
       final rest = spec.restInterval ?? Duration.zero;
       var cursor = state.startedAt;
       for (var i = 0; i < spec.totalRounds; i++) {
         cursor = cursor.add(work);
-        if (cursor.isAfter(now)) times.add(cursor);
+        addIfAhead(cursor);
         cursor = cursor.add(rest);
-        if (cursor.isAfter(now) && i < spec.totalRounds - 1) times.add(cursor);
+        if (i < spec.totalRounds - 1) addIfAhead(cursor);
       }
-    } else if (step != null && step > Duration.zero) {
+    } else if (spec.kind == TimerKind.emom &&
+        step != null &&
+        step > Duration.zero) {
       for (var i = 1; i < spec.totalRounds; i++) {
-        final at = state.startedAt.add(step * i);
-        if (at.isAfter(now)) times.add(at);
+        addIfAhead(state.startedAt.add(step * i));
       }
     }
 
-    if (!spec.isCountUp) {
-      final end = state.startedAt.add(spec.total);
-      if (end.isAfter(now)) times.add(end);
-    }
+    if (!spec.isCountUp) addIfAhead(state.startedAt.add(spec.total));
 
     times.sort();
-    return times.length > max ? times.sublist(0, max) : times;
+    return times.take(max).toList();
   }
 
   Future<void> dispose() async {
@@ -305,8 +302,7 @@ class TimerEngine {
   }
 
   TimerState _evaluate(TimerSpec spec, DateTime startedAt) {
-    final rawElapsed = _now().difference(startedAt);
-    final elapsed = rawElapsed.isNegative ? Duration.zero : rawElapsed;
+    final elapsed = _atLeastZero(_now().difference(startedAt));
     final finished = !spec.isCountUp && elapsed >= spec.total;
 
     switch (spec.kind) {
@@ -369,19 +365,22 @@ class TimerEngine {
     Duration elapsed,
     bool finished,
   ) {
-    final left = spec.isCountUp
-        ? Duration.zero
-        : (spec.total - elapsed).isNegative
-        ? Duration.zero
-        : spec.total - elapsed;
     return TimerState(
       spec: spec,
       startedAt: startedAt,
       elapsed: elapsed,
       round: 1,
       phase: TimerPhase.work,
-      phaseRemaining: left,
+      phaseRemaining: spec.isCountUp
+          ? Duration.zero
+          : _atLeastZero(spec.total - elapsed),
       isFinished: finished,
     );
   }
 }
+
+/// Una durata calcolata dall'orologio non va mai sotto lo zero: né il tempo
+/// trascorso di un timer che parte nel futuro, né quello che manca a uno già
+/// finito.
+Duration _atLeastZero(Duration value) =>
+    value.isNegative ? Duration.zero : value;

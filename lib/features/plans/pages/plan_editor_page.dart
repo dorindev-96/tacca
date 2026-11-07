@@ -9,6 +9,7 @@ import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_field.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../../../core/widgets/app_sheet.dart';
+import '../../../core/widgets/app_snack_bar.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/info_banner.dart';
 import '../../../core/widgets/pill_button.dart';
@@ -36,15 +37,11 @@ class PlanEditorPage extends StatelessWidget {
           previous.saveSuccess != current.saveSuccess,
       listener: (context, state) {
         if (state.errorMessage != null) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+          ScaffoldMessenger.of(context).showMessage(state.errorMessage!);
           context.read<PlanEditorCubit>().dismissError();
         }
         if (state.saveSuccess) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(l10n.planEditorSaved)));
+          ScaffoldMessenger.of(context).showMessage(l10n.planEditorSaved);
           Navigator.of(context).pop();
         }
       },
@@ -121,9 +118,7 @@ class PlanEditorPage extends StatelessWidget {
                   child: TextFormField(
                     key: const ValueKey('plan-description'),
                     initialValue: state.draft.description ?? '',
-                    style: context.type.paragraph.copyWith(
-                      color: context.colors.ink,
-                    ),
+                    style: context.type.fieldProse,
                     decoration: AppField.onBackground(context),
                     onChanged: cubit.updateDescription,
                   ),
@@ -134,9 +129,7 @@ class PlanEditorPage extends StatelessWidget {
                   child: TextFormField(
                     key: const ValueKey('plan-notes'),
                     initialValue: state.draft.notes ?? '',
-                    style: context.type.paragraph.copyWith(
-                      color: context.colors.ink,
-                    ),
+                    style: context.type.fieldProse,
                     decoration: AppField.onBackground(context),
                     minLines: 1,
                     maxLines: 4,
@@ -217,7 +210,7 @@ class _DayBlocksSection extends StatelessWidget {
             child: TextFormField(
               key: ValueKey('day-notes-${identityHashCode(day)}'),
               initialValue: day.notes ?? '',
-              style: context.type.paragraph.copyWith(color: context.colors.ink),
+              style: context.type.fieldProse,
               decoration: AppField.onBackground(context),
               onChanged: (v) => cubit.updateDayNotes(dayIndex, v),
             ),
@@ -257,7 +250,7 @@ class _DayBlocksSection extends StatelessWidget {
             label: l10n.planEditorAddBlock,
             icon: AppIcons.add,
             tone: PillTone.outline,
-            onPressed: () => _pickBlockType(context, l10n, dayIndex),
+            onPressed: () => _pickBlockType(context, l10n),
           ),
         ),
       ],
@@ -267,22 +260,20 @@ class _DayBlocksSection extends StatelessWidget {
   Future<void> _pickBlockType(
     BuildContext context,
     AppLocalizations l10n,
-    int dayIndex,
   ) async {
     final type = await showAppSheet<BlockType>(
       context,
       builder: (context) => AppSheet(
         title: l10n.planEditorBlockTypeLabel,
         scrollable: true,
+        spacing: AppSpacing.sm,
         children: [
-          for (var i = 0; i < BlockType.values.length; i++) ...[
-            if (i > 0) const SizedBox(height: AppSpacing.sm),
+          for (final type in BlockType.values)
             SheetOption(
               icon: AppIcons.noteAdd,
-              title: blockTypeLabel(l10n, BlockType.values[i]),
-              onTap: () => Navigator.of(context).pop(BlockType.values[i]),
+              title: blockTypeLabel(l10n, type),
+              onTap: () => Navigator.of(context).pop(type),
             ),
-          ],
         ],
       ),
     );

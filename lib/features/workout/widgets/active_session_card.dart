@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/linear_icons.dart';
 import '../../../core/design/theme_context.dart';
+import '../../../core/widgets/icon_disc.dart';
 import '../../../core/widgets/linear_icon.dart';
 import '../../../core/widgets/meta_chip.dart';
 import '../../../core/widgets/surface_card.dart';
@@ -47,20 +48,12 @@ class ActiveSessionCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            height: 40,
-            width: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: context.colors.fill,
-            ),
-            child: Center(
-              child: LinearIcon(
-                AppIcons.play,
-                size: 20,
-                color: context.colors.ink,
-              ),
-            ),
+          IconDisc(
+            AppIcons.play,
+            size: 40,
+            iconSize: 20,
+            color: context.colors.fill,
+            iconColor: context.colors.ink,
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(

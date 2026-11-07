@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'session_item.dart';
 
 /// Esercizi che si eseguono insieme, un giro alla volta: quelli consecutivi di
@@ -82,13 +84,7 @@ class SessionStep {
 
   /// Serie dell'esercizio, o giri del gruppo; 0 se la scheda non li
   /// prescrive (si scrive "Serie 1" senza denominatore).
-  int get total {
-    var total = 0;
-    for (final item in group) {
-      if (item.displayedSets > total) total = item.displayedSets;
-    }
-    return total;
-  }
+  int get total => group.map((item) => item.displayedSets).fold(0, max);
 
   /// Nome del passo: l'esercizio, o quelli del giro uniti da "+" — la stessa
   /// notazione con cui un superset si scrive su una scheda di carta.
@@ -101,10 +97,7 @@ class SessionStep {
 
 /// I passi ancora aperti di un gruppo, giro dopo giro.
 Iterable<SessionStep> pendingStepsOf(List<SessionItem> group) sync* {
-  var rounds = 0;
-  for (final item in group) {
-    if (item.checkableSets > rounds) rounds = item.checkableSets;
-  }
+  final rounds = group.map((item) => item.checkableSets).fold(0, max);
   for (var number = 1; number <= rounds; number++) {
     final step = SessionStep(group: group, number: number);
     if (step.pending.isNotEmpty) yield step;

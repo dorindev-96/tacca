@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/extensions/blank_text.dart';
 import '../../../data/entities/block.dart';
 import '../../../data/entities/exercise.dart';
 import '../../../data/entities/workout_day.dart';
@@ -141,7 +142,7 @@ class PlanEditorCubit extends Cubit<PlanEditorState> {
 
   void selectDay(int index) {
     final maxIndex = state.draft.days.isEmpty ? 0 : state.draft.days.length - 1;
-    emit(state.copyWith(selectedDayIndex: _clampIndex(index, maxIndex)));
+    emit(state.copyWith(selectedDayIndex: index.clamp(0, maxIndex)));
   }
 
   // --- blocchi ---
@@ -456,14 +457,7 @@ class PlanEditorCubit extends Cubit<PlanEditorState> {
     return buffer.toString().split('').reversed.join();
   }
 
-  static int _clampIndex(int value, int maxIndex) {
-    if (value < 0) return 0;
-    if (value > maxIndex) return maxIndex;
-    return value;
-  }
-
-  String? _blankToNull(String? value) {
-    if (value == null) return null;
-    return value.trim().isEmpty ? null : value;
-  }
+  /// Un testo fatto di soli spazi conta come assente; gli altri si tengono
+  /// così come sono scritti, spazi compresi.
+  String? _blankToNull(String? value) => value.isBlank ? null : value;
 }

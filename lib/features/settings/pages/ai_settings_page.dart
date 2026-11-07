@@ -7,6 +7,7 @@ import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_field.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/widgets/icon_disc.dart';
 import '../../../core/widgets/info_banner.dart';
 import '../../../core/widgets/linear_icon.dart';
 import '../../../core/widgets/pill_button.dart';
@@ -158,20 +159,12 @@ class _SavedKeyTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                height: 32,
-                width: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: context.colors.lime,
-                ),
-                child: Center(
-                  child: LinearIcon(
-                    AppIcons.check,
-                    size: 18,
-                    color: context.colors.onLime,
-                  ),
-                ),
+              IconDisc(
+                AppIcons.check,
+                size: 32,
+                iconSize: 18,
+                color: context.colors.lime,
+                iconColor: context.colors.onLime,
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -322,9 +315,8 @@ class _TestConnectionSection extends StatelessWidget {
   }
 }
 
-/// L'unica forma di tendina della pagina: provider e modello si scelgono
-/// così. Gli stili vengono dal tema (design system), qui si passa solo il
-/// contenuto.
+/// Provider e modello si scelgono così: valori del catalogo con la loro
+/// etichetta, nella tendina sul fondo pagina.
 class _Dropdown<T> extends StatelessWidget {
   const _Dropdown({
     required this.value,
@@ -345,16 +337,8 @@ class _Dropdown<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButtonFormField<T>(
-      initialValue: value,
-      isExpanded: true,
-      style: context.type.row,
-      borderRadius: BorderRadius.circular(AppSpacing.card),
-      icon: LinearIcon(
-        AppIcons.chevronDown,
-        size: 20,
-        color: context.colors.muted,
-      ),
+    return AppDropdown<T>(
+      value: value,
       decoration: AppField.onBackground(
         context,
         prefixIcon: switch (icon) {

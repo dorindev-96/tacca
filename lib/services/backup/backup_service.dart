@@ -194,12 +194,8 @@ class BackupService {
     final staging = await _freshDirectory('restore');
 
     try {
-      var isHeader = true;
-      await for (final line in _lines(file)) {
-        if (isHeader) {
-          isHeader = false;
-          continue;
-        }
+      // La prima riga è l'intestazione, già letta da [_firstLine].
+      await for (final line in _lines(file).skip(1)) {
         if (line.trim().isEmpty) continue;
         final image = decoder.add(line);
         if (image != null) {

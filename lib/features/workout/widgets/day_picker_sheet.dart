@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/linear_icons.dart';
 import '../../../core/design/theme_context.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/linear_icon.dart';
+import '../../../core/widgets/surface_card.dart';
 import '../../../data/entities/workout_day.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -24,14 +24,10 @@ Future<int?> showDayPickerSheet(
     builder: (context) => AppSheet(
       title: l10n.workoutChooseDayTitle,
       scrollable: true,
+      spacing: AppSpacing.sm,
       children: [
-        for (var i = 0; i < days.length; i++) ...[
-          if (i > 0) const SizedBox(height: AppSpacing.sm),
-          _DayRow(
-            day: days[i],
-            onTap: () => Navigator.of(context).pop(days[i].id),
-          ),
-        ],
+        for (final day in days)
+          _DayRow(day: day, onTap: () => Navigator.of(context).pop(day.id)),
       ],
     ),
   );
@@ -47,48 +43,42 @@ class _DayRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final notes = day.notes ?? '';
 
-    return Material(
+    return SurfaceCard(
       color: context.colors.fill,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.card,
-            vertical: AppSpacing.md,
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.card,
+        vertical: AppSpacing.md,
+      ),
+      child: Row(
+        children: [
+          _DayInitial(label: day.label),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(day.label, style: context.type.row),
+                if (notes.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    notes,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.type.paragraphSmall,
+                  ),
+                ],
+              ],
+            ),
           ),
-          child: Row(
-            children: [
-              _DayInitial(label: day.label),
-              const SizedBox(width: AppSpacing.lg),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(day.label, style: context.type.row),
-                    if (notes.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        notes,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.type.paragraphSmall,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              LinearIcon(
-                AppIcons.chevronRight,
-                size: 20,
-                color: context.colors.muted,
-              ),
-            ],
+          const SizedBox(width: AppSpacing.sm),
+          LinearIcon(
+            AppIcons.chevronRight,
+            size: 20,
+            color: context.colors.muted,
           ),
-        ),
+        ],
       ),
     );
   }

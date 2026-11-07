@@ -22,7 +22,13 @@ import 'app_typography.dart';
 /// quelle dal contesto renderebbe più difficile capire cosa dipende davvero
 /// dalla luminosità.
 extension AppThemeContext on BuildContext {
-  Brightness get _brightness => Theme.of(this).brightness;
+  /// Solo la luminosità, non tutto `Theme.of`: quello dipende anche dalle
+  /// localizzazioni e dal tema Cupertino, e si paga in ognuna delle centinaia
+  /// di letture. Un `Theme` sopra c'è sempre (`MaterialApp`, le pagine
+  /// dell'immagine da condividere); senza, conterebbe la luminosità della
+  /// piattaforma e in ultimo il chiaro.
+  Brightness get _brightness =>
+      Theme.maybeBrightnessOf(this) ?? Brightness.light;
 
   /// I colori del tema corrente.
   AppPalette get colors => AppPalette.of(_brightness);
