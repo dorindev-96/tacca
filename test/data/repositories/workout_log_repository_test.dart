@@ -259,6 +259,82 @@ void main() {
       skip: skip,
     );
 
+    test(
+      'l\'autosave della sessione in corso non riemette storico né sessione aperta',
+      () async {
+        // Le notifiche di ObjectBox arrivano dal thread nativo: si lascia loro
+        // il tempo di arrivare tutte prima di contarle.
+        Future<void> settle() =>
+            Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final (plan, day) = seedPlan();
+        final finished = <List<int>>[];
+        final inProgress = <int?>[];
+        final finishedSub = logs.watchFinished().listen(
+          (list) => finished.add([for (final log in list) log.id]),
+        );
+        final inProgressSub = logs.watchInProgress().listen(
+          (log) => inProgress.add(log?.id),
+        );
+        addTearDown(finishedSub.cancel);
+        addTearDown(inProgressSub.cancel);
+        await settle();
+
+        final log = logs.startSession(plan: plan, day: day);
+        await settle();
+        expect(finished, [<int>[]]);
+        expect(inProgress, [null, log.id]);
+
+        // Tre serie spuntate, tre autosave: nessuno cambia i due elenchi.
+        for (var n = 1; n <= 3; n++) {
+          log.entries.first.sets.add(
+            LogSet(setNumber: n, completedAt: DateTime(2026, 8, 15)),
+          );
+          logs.saveLog(log);
+          await settle();
+        }
+        expect(finished, [<int>[]]);
+        expect(inProgress, [null, log.id]);
+
+        // La chiusura invece li cambia entrambi.
+        log
+          ..status = WorkoutStatus.completed
+          ..finishedAt = DateTime(2026, 8, 15, 19);
+        logs.saveLog(log);
+        await settle();
+        expect(finished.last, [log.id]);
+        expect(inProgress.last, isNull);
+
+        // E così l'eliminazione dallo storico.
+        logs.deleteLog(log.id);
+        await settle();
+        expect(finished.last, isEmpty);
+      },
+      skip: skip,
+    );
+
+    test(
+      'watchInProgress emette la sessione con entry e serie ordinate',
+      () async {
+        final (plan, day) = seedPlan();
+        final log = logs.startSession(plan: plan, day: day);
+        log.entries.first.sets.addAll([
+          LogSet(setNumber: 2, completedAt: DateTime(2026, 8, 15)),
+          LogSet(setNumber: 1, completedAt: DateTime(2026, 8, 15)),
+        ]);
+        logs.saveLog(log);
+
+        final emitted = await logs.watchInProgress().first;
+        expect(emitted?.entries.map((e) => e.exerciseNameSnapshot), [
+          'Panca piana',
+          'Rematore',
+          'Trazioni',
+        ]);
+        expect(emitted?.entries.first.sets.map((s) => s.setNumber), [1, 2]);
+      },
+      skip: skip,
+    );
+
     test('deleteLog rimuove entry e serie collegate', () {
       final (plan, day) = seedPlan();
       final log = logs.startSession(plan: plan, day: day);
@@ -345,6 +421,42 @@ void main() {
         expect(last!.performedAt, DateTime(2026, 8, 8, 18));
         expect(last.sets.map((s) => s.weightKg), [75, 75]);
         expect(last.sets.map((s) => s.setNumber), [1, 2]);
+      },
+      skip: skip,
+    );
+
+    test(
+      'lastPerformance salta le sessioni più recenti in cui l\'esercizio non è stato fatto',
+      () {
+        final (plan, day) = seedPlan();
+
+        final done = logs.startSession(
+          plan: plan,
+          day: day,
+          startedAt: DateTime(2026, 8, 1, 18),
+        );
+        done.entries.first.sets.add(
+          LogSet(setNumber: 1, weightKg: 70, completedAt: DateTime(2026, 8, 1)),
+        );
+        done
+          ..status = WorkoutStatus.completed
+          ..finishedAt = DateTime(2026, 8, 1, 19);
+        logs.saveLog(done);
+
+        // Più recente, ma la panca non è stata spuntata.
+        final skipped = logs.startSession(
+          plan: plan,
+          day: day,
+          startedAt: DateTime(2026, 8, 8, 18),
+        );
+        skipped
+          ..status = WorkoutStatus.aborted
+          ..finishedAt = DateTime(2026, 8, 8, 18, 30);
+        logs.saveLog(skipped);
+
+        final last = logs.lastPerformance('Panca piana');
+        expect(last?.performedAt, DateTime(2026, 8, 1, 18));
+        expect(last?.sets.map((s) => s.weightKg), [70]);
       },
       skip: skip,
     );

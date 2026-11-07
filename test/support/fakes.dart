@@ -40,12 +40,8 @@ class FakePlanRepository implements PlanRepository {
   void add(WorkoutPlan plan) => plans[plan.id] = plan;
 
   @override
-  Stream<List<WorkoutPlan>> watchActive() =>
-      Stream.value(plans.values.where((p) => !p.isArchived).toList());
-
-  @override
-  Stream<List<WorkoutPlan>> watchArchived() =>
-      Stream.value(plans.values.where((p) => p.isArchived).toList());
+  Stream<PlanArchive> watchPlans() =>
+      Stream.value(PlanArchive.split(plans.values));
 
   @override
   WorkoutPlan? getById(int id) => plans[id];
@@ -177,8 +173,10 @@ class FakeWorkoutLogRepository implements WorkoutLogRepository {
     _notify();
   }
 
-  /// Come i watcher di ObjectBox: ogni scrittura ripropaga entrambi gli
-  /// elenchi osservati.
+  /// Ogni scrittura ripropaga entrambi gli elenchi osservati. Il repository
+  /// vero riemette solo quando cambiano (vedi `watchFinished` e
+  /// `watchInProgress`): emettere di più è il caso peggiore, e i cubit
+  /// devono reggerlo comunque.
   void _notify() {
     if (!_controller.isClosed) _controller.add(_finished());
     if (!_inProgressController.isClosed) {

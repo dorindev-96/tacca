@@ -109,24 +109,38 @@ void main() {
       },
     );
 
-    test('watchActive esclude le schede archiviate', () async {
+    test('watchPlans divide le schede fra attive e archiviate', () async {
       final active = buildPlan(name: 'Attiva');
       final archived = buildPlan(name: 'Archiviata', isArchived: true);
       repository.savePlan(active);
       repository.savePlan(archived);
 
-      final result = await repository.watchActive().first;
-      expect(result.map((p) => p.name), ['Attiva']);
+      final result = await repository.watchPlans().first;
+      expect(result.active.map((p) => p.name), ['Attiva']);
+      expect(result.archived.map((p) => p.name), ['Archiviata']);
     });
 
-    test('watchArchived restituisce solo le schede archiviate', () async {
-      final active = buildPlan(name: 'Attiva');
-      final archived = buildPlan(name: 'Archiviata', isArchived: true);
-      repository.savePlan(active);
-      repository.savePlan(archived);
+    test('watchPlans emette una volta sola per ogni scrittura', () async {
+      // Le notifiche di ObjectBox arrivano dal thread nativo: si lascia loro
+      // il tempo di arrivare tutte prima di contarle.
+      Future<void> settle() =>
+          Future<void>.delayed(const Duration(milliseconds: 50));
 
-      final result = await repository.watchArchived().first;
-      expect(result.map((p) => p.name), ['Archiviata']);
+      final emissions = <PlanArchive>[];
+      final subscription = repository.watchPlans().listen(emissions.add);
+      addTearDown(subscription.cancel);
+      await settle();
+      expect(emissions, hasLength(1), reason: 'emissione iniziale');
+
+      final id = repository.savePlan(buildPlan(name: 'Nuova'));
+      await settle();
+      expect(emissions, hasLength(2));
+
+      repository.setArchived(id, archived: true);
+      await settle();
+      expect(emissions, hasLength(3));
+      expect(emissions.last.active, isEmpty);
+      expect(emissions.last.archived.map((p) => p.name), ['Nuova']);
     });
 
     test('setActivePlan garantisce una sola scheda "in uso" alla volta', () {

@@ -20,50 +20,43 @@ WorkoutPlan _plan(int id, String name, {bool isActive = false}) {
 
 void main() {
   late _MockPlanRepository repository;
-  late StreamController<List<WorkoutPlan>> activeController;
-  late StreamController<List<WorkoutPlan>> archivedController;
+  late StreamController<PlanArchive> plansController;
 
   setUp(() {
     repository = _MockPlanRepository();
-    activeController = StreamController<List<WorkoutPlan>>.broadcast();
-    archivedController = StreamController<List<WorkoutPlan>>.broadcast();
+    plansController = StreamController<PlanArchive>.broadcast();
     when(
-      () => repository.watchActive(),
-    ).thenAnswer((_) => activeController.stream);
-    when(
-      () => repository.watchArchived(),
-    ).thenAnswer((_) => archivedController.stream);
+      () => repository.watchPlans(),
+    ).thenAnswer((_) => plansController.stream);
   });
 
   tearDown(() async {
-    await activeController.close();
-    await archivedController.close();
+    await plansController.close();
   });
 
   group('PlansCubit', () {
     test(
-      'parte in caricamento e si aggiorna quando entrambi gli stream emettono',
+      'parte in caricamento e si aggiorna con un\'emissione sola per entrambe le liste',
       () async {
         final cubit = PlansCubit(repository: repository);
         expect(cubit.state.isLoading, isTrue);
 
+        final states = <Object>[];
+        final sub = cubit.stream.listen(states.add);
+
         final active = _plan(1, 'Push / Pull / Legs');
         final archived = _plan(2, 'Vecchia scheda');
-        activeController.add([active]);
-        await pumpEventQueue();
-        expect(
-          cubit.state.isLoading,
-          isTrue,
-          reason: 'manca ancora lo stream archiviate',
+        plansController.add(
+          PlanArchive(active: [active], archived: [archived]),
         );
-
-        archivedController.add([archived]);
         await pumpEventQueue();
 
         expect(cubit.state.isLoading, isFalse);
         expect(cubit.state.activePlans, [active]);
         expect(cubit.state.archivedPlans, [archived]);
+        expect(states, hasLength(1), reason: 'una scrittura, un\'emissione');
 
+        await sub.cancel();
         await cubit.close();
       },
     );
@@ -74,8 +67,7 @@ void main() {
         final cubit = PlansCubit(repository: repository);
         final inUse = _plan(1, 'In uso', isActive: true);
         final other = _plan(2, 'Altra');
-        activeController.add([inUse, other]);
-        archivedController.add([]);
+        plansController.add(PlanArchive(active: [inUse, other]));
         await pumpEventQueue();
 
         expect(cubit.state.inUsePlan, inUse);
@@ -88,11 +80,12 @@ void main() {
       'search filtra le liste per nome, senza distinzione maiuscole/minuscole',
       () async {
         final cubit = PlansCubit(repository: repository);
-        activeController.add([
-          _plan(1, 'Push Pull Legs'),
-          _plan(2, 'Full Body'),
-        ]);
-        archivedController.add([_plan(3, 'Vecchio Push')]);
+        plansController.add(
+          PlanArchive(
+            active: [_plan(1, 'Push Pull Legs'), _plan(2, 'Full Body')],
+            archived: [_plan(3, 'Vecchio Push')],
+          ),
+        );
         await pumpEventQueue();
 
         cubit.search('push');
