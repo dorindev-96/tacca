@@ -39,11 +39,18 @@ jobs:
       - name: Generate code (ObjectBox, freezed, json_serializable)
         run: dart run build_runner build --delete-conflicting-outputs
 
+      # Su file e non in pipe: con `curl | tar` un download andato male
+      # arrivava a `tar` come "not in gzip format", senza dire cosa avesse
+      # risposto il server. Qui un errore HTTP ferma il passo col suo codice,
+      # si ritenta, e l'archivio si controlla prima di estrarlo.
       - name: Download ObjectBox native library
         run: |
           mkdir -p /tmp/objectbox
-          curl -sSL "https://github.com/objectbox/objectbox-c/releases/download/v${OBJECTBOX_C_VERSION}/objectbox-linux-x64.tar.gz" \
-            | tar -xz -C /tmp/objectbox
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 10 \
+            -o /tmp/objectbox/objectbox.tar.gz \
+            "https://github.com/objectbox/objectbox-c/releases/download/v${OBJECTBOX_C_VERSION}/objectbox-linux-x64.tar.gz"
+          gzip -t /tmp/objectbox/objectbox.tar.gz
+          tar -xzf /tmp/objectbox/objectbox.tar.gz -C /tmp/objectbox
           cp "$(find /tmp/objectbox -name libobjectbox.so | head -1)" lib/
 
       # Solo i file versionati: il codice generato non lo formattiamo noi.
