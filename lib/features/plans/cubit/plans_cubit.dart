@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../data/entities/workout_plan.dart';
 import '../../../data/repositories/plan_repository.dart';
 import 'plans_state.dart';
 
@@ -10,63 +9,61 @@ import 'plans_state.dart';
 /// repository e espone le azioni di lista (attiva/duplica/archivia/elimina).
 ///
 /// Le mutazioni non aggiornano lo stato direttamente: chiamano il repository
-/// e lasciano che i due stream (`watchActive`/`watchArchived`) ripropaghino
-/// il nuovo elenco, così un'unica fonte di verità decide l'ordinamento.
+/// e lasciano che lo stream (`watchPlans`) ripropaghi il nuovo archivio, così
+/// un'unica fonte di verità decide l'ordinamento. Una scrittura, un'emissione:
+/// i due elenchi arrivano insieme.
 class PlansCubit extends Cubit<PlansState> {
   PlansCubit({required PlanRepository repository})
     : _repository = repository,
       super(const PlansState()) {
-    _activeSub = _repository.watchActive().listen(_onActiveChanged);
-    _archivedSub = _repository.watchArchived().listen(_onArchivedChanged);
+    _subscription = _repository.watchPlans().listen(_onPlansChanged);
   }
 
   final PlanRepository _repository;
-  late final StreamSubscription<List<WorkoutPlan>> _activeSub;
-  late final StreamSubscription<List<WorkoutPlan>> _archivedSub;
+  late final StreamSubscription<PlanArchive> _subscription;
 
-  bool _activeLoaded = false;
-  bool _archivedLoaded = false;
-
-  void _onActiveChanged(List<WorkoutPlan> plans) {
-    _activeLoaded = true;
-    emit(state.copyWith(activePlans: plans, isLoading: !_bothLoaded));
+  void _onPlansChanged(PlanArchive archive) {
+    emit(
+      state.copyWith(
+        activePlans: archive.active,
+        archivedPlans: archive.archived,
+        isLoading: false,
+      ),
+    );
   }
-
-  void _onArchivedChanged(List<WorkoutPlan> plans) {
-    _archivedLoaded = true;
-    emit(state.copyWith(archivedPlans: plans, isLoading: !_bothLoaded));
-  }
-
-  bool get _bothLoaded => _activeLoaded && _archivedLoaded;
 
   void search(String query) => emit(state.copyWith(searchQuery: query));
 
   void setActivePlan(int planId) =>
-      _guard(() => _repository.setActivePlan(planId));
+      _guard(PlansFailure.setActive, () => _repository.setActivePlan(planId));
 
   void duplicatePlan(int planId) =>
-      _guard(() => _repository.duplicatePlan(planId));
+      _guard(PlansFailure.duplicate, () => _repository.duplicatePlan(planId));
 
   /// Archivia ([archived] `true`) o ripristina la scheda.
-  void setArchived(int planId, {required bool archived}) =>
-      _guard(() => _repository.setArchived(planId, archived: archived));
+  void setArchived(int planId, {required bool archived}) => _guard(
+    archived ? PlansFailure.archive : PlansFailure.restore,
+    () => _repository.setArchived(planId, archived: archived),
+  );
 
-  void deletePlan(int planId) => _guard(() => _repository.deletePlan(planId));
+  void deletePlan(int planId) =>
+      _guard(PlansFailure.delete, () => _repository.deletePlan(planId));
 
-  void dismissError() => emit(state.copyWith(errorMessage: null));
+  void dismissError() => emit(state.copyWith(failure: null));
 
-  void _guard(void Function() action) {
+  /// Esegue [action]; se fallisce, lo stato dice **quale** azione, non il
+  /// testo dell'eccezione (un messaggio di ObjectBox non è per l'utente).
+  void _guard(PlansFailure failure, void Function() action) {
     try {
       action();
-    } catch (e) {
-      emit(state.copyWith(errorMessage: e.toString()));
+    } catch (_) {
+      emit(state.copyWith(failure: failure));
     }
   }
 
   @override
   Future<void> close() async {
-    await _activeSub.cancel();
-    await _archivedSub.cancel();
+    await _subscription.cancel();
     return super.close();
   }
 }

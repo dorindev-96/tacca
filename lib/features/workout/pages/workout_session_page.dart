@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart' hide Block;
 
+import '../../../core/block_params.dart';
 import '../../../core/block_type_labels.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/linear_icons.dart';
@@ -105,7 +106,7 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage>
 
     return BlocConsumer<WorkoutSessionBloc, WorkoutSessionState>(
       listenWhen: (previous, current) =>
-          previous.errorMessage != current.errorMessage ||
+          previous.failure != current.failure ||
           previous.pendingTimerRequest != current.pendingTimerRequest ||
           previous.status != current.status,
       // Il timer batte quattro volte al secondo e lo disegna solo la sua
@@ -114,8 +115,12 @@ class _WorkoutSessionPageState extends State<WorkoutSessionPage>
       buildWhen: (previous, current) =>
           previous.copyWith(timer: current.timer) != current,
       listener: (context, state) {
-        if (state.errorMessage != null) {
-          ScaffoldMessenger.of(context).showMessage(state.errorMessage!);
+        final failure = state.failure;
+        if (failure != null) {
+          ScaffoldMessenger.of(context).showMessage(switch (failure) {
+            WorkoutSessionFailure.startFailed => l10n.workoutStartFailed,
+            WorkoutSessionFailure.saveFailed => l10n.workoutSaveFailed,
+          });
           context.read<WorkoutSessionBloc>().add(const SessionErrorDismissed());
         }
         if (state.pendingTimerRequest != null) {
@@ -411,18 +416,19 @@ class _SessionScaffold extends StatelessWidget {
     SessionItem item,
     int setNumber,
   ) async {
-    final suggestion = state.lastPerformances[item.name];
-    final reference = suggestion == null || suggestion.sets.isEmpty
-        ? null
-        : suggestion.sets.last;
+    final prefill = setPrefill(
+      item,
+      setNumber,
+      lastTime: state.lastPerformances[item.name],
+    );
 
     final outcome = await showSetLogSheet(
       context,
       exerciseName: item.name,
       setNumber: setNumber,
       current: item.setNumbered(setNumber),
-      suggestedWeightKg: reference?.weightKg,
-      suggestedReps: reference?.reps ?? item.exercise?.reps,
+      suggestedWeightKg: prefill.weightKg,
+      suggestedReps: prefill.reps,
     );
 
     switch (outcome) {
@@ -511,17 +517,10 @@ class _BlockHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final spec = blockTimerSpec(block, label: blockTypeLabel(l10n, block.type));
-    final rounds = block.rounds;
-    final roundRest = block.restBetweenRoundsSeconds;
-
-    // Il "come si esegue" è la prima cosa da capire di un superset: giri e
-    // recupero stanno accanto al nome del blocco, non sepolti negli esercizi.
-    final params = <String>[
-      if (block.type != BlockType.tabata && rounds != null && rounds > 0)
-        l10n.workoutBlockRounds(rounds),
-      if (roundRest != null && roundRest > 0)
-        l10n.workoutBlockRestBetweenRounds(roundRest),
-    ];
+    // Il "come si esegue" è la prima cosa da capire di un blocco: giri,
+    // recuperi e intervalli stanno accanto al nome, non sepolti negli
+    // esercizi, e si leggono come nel dettaglio della scheda.
+    final params = blockParamTexts(l10n, block);
 
     final hint = switch (block.type) {
       BlockType.superset when inGroup => l10n.workoutSupersetHint,

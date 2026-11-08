@@ -2,10 +2,12 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/block_params.dart';
 import '../../../core/block_type_labels.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/theme_context.dart';
+import '../../../core/extensions/exercise_format.dart';
 import '../../../core/widgets/meta_chip.dart';
 import '../../../core/widgets/surface_card.dart';
 import '../../../data/entities/block.dart';
@@ -163,7 +165,8 @@ class PlanBlockCard extends StatelessWidget {
                 blockTypeLabel(l10n, block.type),
                 style: context.type.blockType,
               ),
-              for (final param in _params(l10n)) MetaChip(label: param),
+              for (final param in blockParamTexts(l10n, block))
+                MetaChip(label: param),
             ],
           ),
           if (start == 0 && (block.notes ?? '').isNotEmpty) ...[
@@ -189,38 +192,6 @@ class PlanBlockCard extends StatelessWidget {
       ),
     );
   }
-
-  List<String> _params(AppLocalizations l10n) {
-    final parts = <String>[];
-    void add(String label, int? value) {
-      if (value != null) parts.add('$label: $value');
-    }
-
-    switch (block.type) {
-      case BlockType.standard:
-      case BlockType.freeText:
-        break;
-      case BlockType.superset:
-      case BlockType.circuit:
-        add(l10n.planEditorParamRounds, block.rounds);
-        add(
-          l10n.planEditorParamRestBetweenRounds,
-          block.restBetweenRoundsSeconds,
-        );
-      case BlockType.emom:
-        add(l10n.planEditorParamIntervalSeconds, block.intervalSeconds);
-        add(l10n.planEditorParamTotalMinutes, block.totalMinutes);
-      case BlockType.amrap:
-        add(l10n.planEditorParamDurationSeconds, block.durationSeconds);
-      case BlockType.tabata:
-        add(l10n.planEditorParamWorkSeconds, block.workSeconds);
-        add(l10n.planEditorParamRestSeconds, block.restSeconds);
-        add(l10n.planEditorParamRounds, block.rounds);
-      case BlockType.forTime:
-        add(l10n.planEditorParamTimeCapSeconds, block.timeCapSeconds);
-    }
-    return parts;
-  }
 }
 
 /// Riga di un esercizio: numero, nome e — allineata a destra, dove l'occhio
@@ -239,16 +210,8 @@ class PlanExerciseRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    final volume = exercise.sets != null
-        ? '${exercise.sets}×${exercise.reps ?? '?'}'
-        : (exercise.reps ?? '');
-    final details = <String>[
-      if ((exercise.load ?? '').isNotEmpty) exercise.load!,
-      if (exercise.restSeconds != null)
-        l10n.planDetailExerciseRest(exercise.restSeconds!),
-      if (exercise.durationSeconds != null)
-        l10n.planDetailExerciseDuration(exercise.durationSeconds!),
-    ];
+    final volume = exercise.volume;
+    final details = exercise.prescriptionDetails(l10n);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

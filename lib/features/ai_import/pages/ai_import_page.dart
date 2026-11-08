@@ -193,10 +193,10 @@ class _InputView extends StatelessWidget {
         AppSpacing.actionClearance,
       ),
       children: [
-        if (state.errorMessage != null) ...[
+        if (state.failure case final failure?) ...[
           InfoBanner(
             tone: InfoBannerTone.alert,
-            message: state.errorMessage!,
+            message: failure.message(l10n),
             onDismiss: cubit.dismissError,
           ),
           const SizedBox(height: AppSpacing.sm),

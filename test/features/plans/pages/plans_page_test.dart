@@ -41,20 +41,15 @@ void main() {
 
   late _MockPlanRepository repository;
   late FakeWorkoutLogRepository logs;
-  late StreamController<List<WorkoutPlan>> activeController;
-  late StreamController<List<WorkoutPlan>> archivedController;
+  late StreamController<PlanArchive> plansController;
 
   setUp(() {
     repository = _MockPlanRepository();
     logs = FakeWorkoutLogRepository();
-    activeController = StreamController<List<WorkoutPlan>>.broadcast();
-    archivedController = StreamController<List<WorkoutPlan>>.broadcast();
+    plansController = StreamController<PlanArchive>.broadcast();
     when(
-      () => repository.watchActive(),
-    ).thenAnswer((_) => activeController.stream);
-    when(
-      () => repository.watchArchived(),
-    ).thenAnswer((_) => archivedController.stream);
+      () => repository.watchPlans(),
+    ).thenAnswer((_) => plansController.stream);
     when(() => repository.duplicatePlan(any())).thenReturn(99);
     when(
       () => repository.setArchived(any(), archived: any(named: 'archived')),
@@ -62,8 +57,7 @@ void main() {
   });
 
   tearDown(() async {
-    await activeController.close();
-    await archivedController.close();
+    await plansController.close();
     await logs.dispose();
   });
 
@@ -118,8 +112,7 @@ void main() {
         ),
       ),
     );
-    activeController.add(active);
-    archivedController.add(archived);
+    plansController.add(PlanArchive(active: active, archived: archived));
     await tester.pumpAndSettle();
   }
 

@@ -39,12 +39,43 @@ jobs:
       - name: Generate code (ObjectBox, freezed, json_serializable)
         run: dart run build_runner build --delete-conflicting-outputs
 
+      # La libreria si scarica una volta per versione e poi resta in cache: il
+      # download dalle release di objectbox-c a volte risponde 504 per minuti
+      # di fila, e non deve poter tenere rossa la CI ogni volta.
+      - name: Cache ObjectBox native library
+        id: objectbox-cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/objectbox-lib
+          key: objectbox-c-${{ env.OBJECTBOX_C_VERSION }}-linux-x64
+
+      # Su file e non in pipe: con `curl | tar` un download andato male
+      # arrivava a `tar` come "not in gzip format", senza dire cosa avesse
+      # risposto il server. Se il link pubblico continua a fallire si passa
+      # dall'API delle release col token della run, che è un altro percorso.
       - name: Download ObjectBox native library
+        if: steps.objectbox-cache.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir -p /tmp/objectbox
-          curl -sSL "https://github.com/objectbox/objectbox-c/releases/download/v${OBJECTBOX_C_VERSION}/objectbox-linux-x64.tar.gz" \
-            | tar -xz -C /tmp/objectbox
-          cp "$(find /tmp/objectbox -name libobjectbox.so | head -1)" lib/
+          mkdir -p /tmp/objectbox /tmp/objectbox-lib
+          archive=/tmp/objectbox/objectbox.tar.gz
+          if ! curl -fsSL --retry 5 --retry-all-errors --retry-delay 10 -o "$archive" \
+            "https://github.com/objectbox/objectbox-c/releases/download/v${OBJECTBOX_C_VERSION}/objectbox-linux-x64.tar.gz"; then
+            echo "Public release link failed, trying the releases API"
+            asset_url="$(gh api "repos/objectbox/objectbox-c/releases/tags/v${OBJECTBOX_C_VERSION}" \
+              --jq '.assets[] | select(.name == "objectbox-linux-x64.tar.gz") | .url')"
+            test -n "$asset_url"
+            curl -fsSL --retry 5 --retry-all-errors --retry-delay 15 -o "$archive" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/octet-stream" "$asset_url"
+          fi
+          gzip -t "$archive"
+          tar -xzf "$archive" -C /tmp/objectbox
+          cp "$(find /tmp/objectbox -name libobjectbox.so | head -1)" /tmp/objectbox-lib/
+
+      - name: Install ObjectBox native library
+        run: cp /tmp/objectbox-lib/libobjectbox.so lib/
 
       # Solo i file versionati: il codice generato non lo formattiamo noi.
       - name: Check formatting

@@ -11,6 +11,17 @@ import 'session_step.dart';
 
 part 'workout_session_state.freezed.dart';
 
+/// Cosa non è riuscito a salvare la sessione: alla pagina serve solo per
+/// scegliere il messaggio.
+enum WorkoutSessionFailure {
+  /// La sessione non si è potuta aprire.
+  startFailed,
+
+  /// Un autosave non è andato a buon fine (RF-06): l'ultima modifica è a
+  /// schermo ma forse non sul disco.
+  saveFailed,
+}
+
 enum WorkoutSessionStatus {
   /// Log e scheda in caricamento.
   loading,
@@ -63,7 +74,8 @@ sealed class WorkoutSessionState with _$WorkoutSessionState {
     /// Avvio automatico del recupero dopo la spunta di una serie.
     @Default(true) bool autoStartRest,
 
-    String? errorMessage,
+    /// L'ultimo fallimento del database, da mostrare una volta.
+    WorkoutSessionFailure? failure,
   }) = _WorkoutSessionState;
 
   /// Righe della sessione: esercizi prescritti accostati alle entry del log.

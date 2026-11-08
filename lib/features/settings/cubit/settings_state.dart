@@ -1,11 +1,20 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../../core/errors/ai_failure.dart';
 import '../../../services/ai/ai_provider.dart';
 
 part 'settings_state.freezed.dart';
 
 /// Esito del "test connessione" (RF-08).
 enum AiConnectionTestStatus { idle, testing, success, failure }
+
+/// Perché la pagina non mostra le impostazioni salvate: alla pagina serve
+/// solo per scegliere il messaggio, come `BackupFailure`.
+enum SettingsFailure {
+  /// Il secure storage non ha risposto all'apertura: provider, key e modello
+  /// in pagina sono i default, non quelli dell'utente.
+  loadFailed,
+}
 
 /// Stato della configurazione AI (RF-08). La key non compare mai qui:
 /// lo stato espone solo la sua presenza (RNF-03).
@@ -20,7 +29,13 @@ sealed class SettingsState with _$SettingsState {
     @Default(false) bool hasApiKey,
     String? selectedModelId,
     @Default(AiConnectionTestStatus.idle) AiConnectionTestStatus testStatus,
-    String? testErrorMessage,
-    String? errorMessage,
+
+    /// Perché il test di connessione è fallito (`testStatus` = failure).
+    AiFailure? testFailure,
+
+    /// Il caricamento iniziale non è riuscito. Resta finché la pagina è
+    /// aperta: descrive i valori mostrati, non un evento passato, e non si
+    /// chiude perché smetterebbe di essere vero solo rileggendo.
+    SettingsFailure? failure,
   }) = _SettingsState;
 }

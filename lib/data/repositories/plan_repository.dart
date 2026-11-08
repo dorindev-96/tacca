@@ -6,16 +6,39 @@ import '../entities/exercise.dart';
 import '../entities/workout_day.dart';
 import '../entities/workout_plan.dart';
 
+/// L'archivio schede diviso fra quelle non archiviate ([active]) e quelle
+/// archiviate ([archived]), ciascun elenco nell'ordine ricevuto.
+class PlanArchive {
+  const PlanArchive({this.active = const [], this.archived = const []});
+
+  /// Divide [plans] per `isArchived`, mantenendone l'ordine.
+  factory PlanArchive.split(Iterable<WorkoutPlan> plans) {
+    final active = <WorkoutPlan>[];
+    final archived = <WorkoutPlan>[];
+    for (final plan in plans) {
+      (plan.isArchived ? archived : active).add(plan);
+    }
+    return PlanArchive(active: active, archived: archived);
+  }
+
+  final List<WorkoutPlan> active;
+  final List<WorkoutPlan> archived;
+}
+
 /// Accesso alle schede di allenamento (RF-01, RF-02).
 ///
 /// Interfaccia astratta: Cubit/Bloc dipendono da questa, mai da [ObjectBox]
 /// direttamente (ADR-01).
 abstract interface class PlanRepository {
-  /// Schede non archiviate, più recenti prima. Si aggiorna ad ogni scrittura.
-  Stream<List<WorkoutPlan>> watchActive();
-
-  /// Schede archiviate, stesso ordinamento di [watchActive].
-  Stream<List<WorkoutPlan>> watchArchived();
+  /// L'archivio intero, già diviso: schede non archiviate e archiviate, più
+  /// recenti prima in entrambe. Si aggiorna a ogni scrittura, con
+  /// **un'emissione per scrittura**.
+  ///
+  /// Uno stream solo e non uno per elenco: due query sullo stesso box
+  /// scattano entrambe a ogni scrittura, e ogni salvataggio diventava due
+  /// emissioni, due ricostruzioni dell'archivio e due caricamenti degli
+  /// alberi delle schede.
+  Stream<PlanArchive> watchPlans();
 
   /// Scheda completa con giorni/blocchi/esercizi già ordinati per `sortOrder`.
   WorkoutPlan? getById(int id);
@@ -56,16 +79,11 @@ class ObjectBoxPlanRepository implements PlanRepository {
   Box<Exercise> get _exerciseBox => _objectBox.exerciseBox;
 
   @override
-  Stream<List<WorkoutPlan>> watchActive() => _watchByArchived(archived: false);
-
-  @override
-  Stream<List<WorkoutPlan>> watchArchived() => _watchByArchived(archived: true);
-
-  Stream<List<WorkoutPlan>> _watchByArchived({required bool archived}) {
-    return (_planBox.query(WorkoutPlan_.isArchived.equals(archived))
+  Stream<PlanArchive> watchPlans() {
+    return (_planBox.query()
           ..order(WorkoutPlan_.updatedAt, flags: Order.descending))
         .watch(triggerImmediately: true)
-        .map((query) => query.find()..forEach(sortPlanTree));
+        .map((query) => PlanArchive.split(query.find()..forEach(sortPlanTree)));
   }
 
   @override

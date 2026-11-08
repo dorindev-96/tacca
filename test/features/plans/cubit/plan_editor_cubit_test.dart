@@ -3,6 +3,7 @@ import 'package:tacca/data/entities/workout_day.dart';
 import 'package:tacca/data/entities/workout_plan.dart';
 import 'package:tacca/data/repositories/plan_repository.dart';
 import 'package:tacca/features/plans/cubit/plan_editor_cubit.dart';
+import 'package:tacca/features/plans/cubit/plan_editor_state.dart';
 import 'package:tacca/features/plans/cubit/plan_editor_labels.dart';
 import 'package:tacca/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
@@ -245,7 +246,7 @@ void main() {
         final ok = await cubit.save();
 
         expect(ok, isFalse);
-        expect(cubit.state.errorMessage, isNotNull);
+        expect(cubit.state.failure, PlanEditorFailure.nameRequired);
         verifyNever(() => repository.savePlan(any()));
       },
     );
@@ -286,7 +287,7 @@ void main() {
 
         expect(ok, isFalse);
         expect(cubit.state.isSaving, isFalse);
-        expect(cubit.state.errorMessage, contains('disco pieno'));
+        expect(cubit.state.failure, PlanEditorFailure.saveFailed);
       },
     );
   });
@@ -323,7 +324,67 @@ void main() {
       );
 
       expect(cubit.state.isLoading, isFalse);
-      expect(cubit.state.errorMessage, isNotNull);
+      expect(cubit.state.failure, PlanEditorFailure.notFound);
+    });
+  });
+
+  group('PlanEditorCubit.draft (bozza dall\'import AI)', () {
+    WorkoutPlan importedDraft({
+      String name = '',
+      List<String> days = const [],
+    }) {
+      final now = DateTime(2026);
+      final plan = WorkoutPlan(name: name, createdAt: now, updatedAt: now);
+      for (final (i, label) in days.indexed) {
+        plan.days.add(WorkoutDay(label: label, sortOrder: i));
+      }
+      return plan;
+    }
+
+    test('riempie nome e giorni vuoti nella lingua dell\'utente', () {
+      final cubit = PlanEditorCubit.draft(
+        repository: repository,
+        labels: editorLabels,
+        draft: importedDraft(days: ['', 'Gambe', '  ']),
+      );
+
+      final draft = cubit.state.draft;
+      expect(draft.name, 'Scheda importata');
+      // Come un giorno aggiunto a mano: la lettera della sua posizione.
+      expect(draft.days.map((d) => d.label), ['Giorno A', 'Gambe', 'Giorno C']);
+    });
+
+    test('un giorno solo senza nome è il giorno implicito', () {
+      final cubit = PlanEditorCubit.draft(
+        repository: repository,
+        labels: editorLabels,
+        draft: importedDraft(days: ['']),
+      );
+
+      expect(cubit.state.draft.days.single.label, 'Giorno unico');
+    });
+
+    test('in inglese i ripieghi sono inglesi', () {
+      final cubit = PlanEditorCubit.draft(
+        repository: repository,
+        labels: PlanEditorLabels.of(lookupAppLocalizations(const Locale('en'))),
+        draft: importedDraft(days: ['', '']),
+      );
+
+      final draft = cubit.state.draft;
+      expect(draft.name, 'Imported plan');
+      expect(draft.days.map((d) => d.label), ['Day A', 'Day B']);
+    });
+
+    test('non tocca quello che il modello ha letto', () {
+      final cubit = PlanEditorCubit.draft(
+        repository: repository,
+        labels: editorLabels,
+        draft: importedDraft(name: 'Forza 5x5', days: ['Lunedì']),
+      );
+
+      expect(cubit.state.draft.name, 'Forza 5x5');
+      expect(cubit.state.draft.days.single.label, 'Lunedì');
     });
   });
 }

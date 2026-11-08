@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../../core/block_params.dart';
 import '../../core/errors/app_exception.dart';
 import '../../core/extensions/blank_text.dart';
 import '../../data/entities/block.dart';
@@ -114,12 +115,15 @@ class PlanParser {
 
   /// Fallback dopo il secondo fallimento (§6.2 punto 5, RNF-05): il testo
   /// grezzo della risposta diventa un blocco `freeText` editabile.
+  ///
+  /// Nome e giorno restano senza testo: i ripieghi finiscono **dentro la
+  /// scheda**, quindi vanno scritti nella lingua di chi la crea, e il parser
+  /// una lingua non ce l'ha. Li mette `PlanEditorCubit.draft`.
   PlanDto fallback(String raw, {String? planName}) {
     return PlanDto(
-      name: planName.trimmedOrNull ?? 'Scheda importata',
+      name: planName.trimmedOrNull,
       days: [
         DayDto(
-          label: 'Giorno unico',
           blocks: [BlockDto(type: BlockType.freeText.name, content: raw)],
         ),
       ],
@@ -128,6 +132,9 @@ class PlanParser {
 
   /// Unico punto di conversione DTO → entity (§6.2 punto 6). Assegna i
   /// `sortOrder` e copia solo i parametri pertinenti al tipo di blocco.
+  ///
+  /// Riporta quello che ha letto e basta: un nome o un'etichetta assenti
+  /// restano vuoti, e li riempie l'editor nella lingua dell'utente.
   WorkoutPlan toEntity(PlanDto dto, {List<String> imagePaths = const []}) {
     final now = DateTime.now();
     final plan = WorkoutPlan(
@@ -141,38 +148,22 @@ class PlanParser {
 
     for (final (d, dayDto) in dto.days.indexed) {
       final day = WorkoutDay(
-        label: dayDto.label.trimmedOrNull ?? 'Giorno ${d + 1}',
+        label: dayDto.label.trimmedOrNull ?? '',
         notes: dayDto.notes,
         sortOrder: d,
       );
       for (final (b, blockDto) in dayDto.blocks.indexed) {
         final type = _blockTypes[blockDto.type] ?? BlockType.freeText;
         final block = Block.ofType(type, sortOrder: b, notes: blockDto.notes);
-        switch (type) {
-          case BlockType.standard:
-            break;
-          // Anche il superset ha un recupero fra un giro e l'altro: era il
-          // dato che nella scheda sta in fondo alla riga ("... x4 1'").
-          case BlockType.superset:
-          case BlockType.circuit:
-            block
-              ..rounds = blockDto.rounds
-              ..restBetweenRoundsSeconds = blockDto.restBetweenRoundsSeconds;
-          case BlockType.emom:
-            block
-              ..intervalSeconds = blockDto.intervalSeconds
-              ..totalMinutes = blockDto.totalMinutes;
-          case BlockType.amrap:
-            block.durationSeconds = blockDto.durationSeconds;
-          case BlockType.tabata:
-            block
-              ..workSeconds = blockDto.workSeconds
-              ..restSeconds = blockDto.restSeconds
-              ..rounds = blockDto.rounds;
-          case BlockType.forTime:
-            block.timeCapSeconds = blockDto.timeCapSeconds;
-          case BlockType.freeText:
-            block.freeTextContent = blockDto.content ?? '';
+        // Solo i parametri del tipo: un `rounds` arrivato su un EMOM resta
+        // fuori, come se il modello non l'avesse scritto. Anche il superset
+        // ha un recupero fra un giro e l'altro: era il dato che nella scheda
+        // sta in fondo alla riga ("... x4 1'").
+        for (final param in BlockParam.of(type)) {
+          param.write(block, _dtoParam(blockDto, param));
+        }
+        if (type == BlockType.freeText) {
+          block.freeTextContent = blockDto.content ?? '';
         }
         for (final (e, exerciseDto) in blockDto.exercises.indexed) {
           block.exercises.add(
@@ -414,3 +405,16 @@ final _blockTypes = BlockType.values.asNameMap();
 final _fencedBlock = RegExp(r'```[a-zA-Z]*[ \t]*\n?([\s\S]*?)```');
 
 final _typographicQuotes = RegExp('[“”„‟″]');
+
+/// Il campo del DTO che porta [param]. Lo `switch` è esaustivo apposta: un
+/// parametro nuovo in [BlockParam] non compila finché non dice da dove arriva.
+int? _dtoParam(BlockDto dto, BlockParam param) => switch (param) {
+  BlockParam.rounds => dto.rounds,
+  BlockParam.restBetweenRounds => dto.restBetweenRoundsSeconds,
+  BlockParam.interval => dto.intervalSeconds,
+  BlockParam.totalMinutes => dto.totalMinutes,
+  BlockParam.duration => dto.durationSeconds,
+  BlockParam.work => dto.workSeconds,
+  BlockParam.rest => dto.restSeconds,
+  BlockParam.timeCap => dto.timeCapSeconds,
+};

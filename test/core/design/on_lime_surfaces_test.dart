@@ -143,7 +143,10 @@ void main() {
       // Nome, prescrizione, conteggio e valore della serie: tutto quello che
       // nel tema segue `ink` e sopra il lime non può.
       expect(colorOf(tester, 'Back Squat'), AppPalette.light.onLime);
-      expect(colorOf(tester, '3×8-10 · rec 120s'), AppPalette.light.onLime);
+      expect(
+        colorOf(tester, '3×8-10 · Recupero 120s'),
+        AppPalette.light.onLime,
+      );
       expect(colorOf(tester, '0/3 serie'), AppPalette.light.onLime);
       // Tre serie, tre trattini: nessuno dei tre può restare inchiostro.
       final dashes = tester

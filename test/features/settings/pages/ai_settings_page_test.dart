@@ -167,4 +167,26 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('se il secure storage non risponde lo dice, invece di fingere '
+      'che non ci sia nessuna key', (tester) async {
+    settings
+      ..apiKeys['openrouter'] = 'sk-or-x'
+      ..aiReadError = Exception('keystore bloccato');
+    await pumpPage(tester);
+
+    expect(
+      find.textContaining('Non riesco a leggere le impostazioni salvate'),
+      findsOneWidget,
+    );
+    // "AI disabilitata" sarebbe un'altra affermazione falsa: la key c'è.
+    expect(
+      find.text(
+        'Le funzioni AI sono disabilitate finché non salvi una API key.',
+      ),
+      findsNothing,
+    );
+    // Il testo dell'eccezione non arriva all'utente.
+    expect(find.textContaining('keystore'), findsNothing);
+  });
 }

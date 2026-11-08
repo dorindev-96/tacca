@@ -40,12 +40,8 @@ class FakePlanRepository implements PlanRepository {
   void add(WorkoutPlan plan) => plans[plan.id] = plan;
 
   @override
-  Stream<List<WorkoutPlan>> watchActive() =>
-      Stream.value(plans.values.where((p) => !p.isArchived).toList());
-
-  @override
-  Stream<List<WorkoutPlan>> watchArchived() =>
-      Stream.value(plans.values.where((p) => p.isArchived).toList());
+  Stream<PlanArchive> watchPlans() =>
+      Stream.value(PlanArchive.split(plans.values));
 
   @override
   WorkoutPlan? getById(int id) => plans[id];
@@ -177,8 +173,10 @@ class FakeWorkoutLogRepository implements WorkoutLogRepository {
     _notify();
   }
 
-  /// Come i watcher di ObjectBox: ogni scrittura ripropaga entrambi gli
-  /// elenchi osservati.
+  /// Ogni scrittura ripropaga entrambi gli elenchi osservati. Il repository
+  /// vero riemette solo quando cambiano (vedi `watchFinished` e
+  /// `watchInProgress`): emettere di più è il caso peggiore, e i cubit
+  /// devono reggerlo comunque.
   void _notify() {
     if (!_controller.isClosed) _controller.add(_finished());
     if (!_inProgressController.isClosed) {
@@ -410,6 +408,16 @@ class FakeSettingsRepository implements SettingsRepository {
   final Map<String, String> apiKeys = {};
   final Map<String, String> modelIds = {};
 
+  /// Se impostato, ogni lettura delle impostazioni AI lo lancia: è il secure
+  /// storage che non risponde.
+  Object? aiReadError;
+
+  Future<String?> _readAi(String? value) async {
+    final error = aiReadError;
+    if (error != null) throw error;
+    return value;
+  }
+
   @override
   Future<String?> getLocaleCode() async => localeCode;
 
@@ -432,20 +440,21 @@ class FakeSettingsRepository implements SettingsRepository {
   set modelId(String? value) => _put(modelIds, defaultProviderId, value);
 
   @override
-  Future<String?> getAiProviderId() async => providerId;
+  Future<String?> getAiProviderId() => _readAi(providerId);
 
   @override
   Future<void> setAiProviderId(String? id) async => providerId = id;
 
   @override
-  Future<String?> getApiKey(String providerId) async => apiKeys[providerId];
+  Future<String?> getApiKey(String providerId) => _readAi(apiKeys[providerId]);
 
   @override
   Future<void> setApiKey(String providerId, String? key) async =>
       _put(apiKeys, providerId, key);
 
   @override
-  Future<String?> getModelId(String providerId) async => modelIds[providerId];
+  Future<String?> getModelId(String providerId) =>
+      _readAi(modelIds[providerId]);
 
   @override
   Future<void> setModelId(String providerId, String? modelId) async =>

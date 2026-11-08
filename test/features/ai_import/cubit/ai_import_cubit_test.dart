@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:tacca/core/errors/ai_exception.dart';
+import 'package:tacca/core/errors/ai_failure.dart';
 import 'package:tacca/data/entities/block.dart';
 import 'package:tacca/features/ai_import/cubit/ai_import_cubit.dart';
 import 'package:tacca/features/ai_import/cubit/ai_import_state.dart';
@@ -175,7 +176,8 @@ void main() {
     expect(cubit.state.draft!.imagePaths, ['plan_images/img_1.jpg']);
   });
 
-  test('una proposta senza nome riceve un nome di default', () async {
+  test('una proposta senza nome resta senza: il ripiego lo scrive l\'editor '
+      'nella lingua dell\'utente', () async {
     provider.result = _extraction(name: null);
     final cubit = buildCubit();
     await pumpEventQueue();
@@ -183,7 +185,8 @@ void main() {
     cubit.updateText('qualcosa');
     await cubit.submit();
 
-    expect(cubit.state.draft!.name, 'Scheda importata');
+    expect(cubit.state.status, AiImportStatus.review);
+    expect(cubit.state.draft!.name, isEmpty);
   });
 
   test('il flag usedFallback della pipeline arriva alla UI (RNF-05)', () async {
@@ -208,7 +211,7 @@ void main() {
     await cubit.submit();
 
     expect(cubit.state.status, AiImportStatus.failure);
-    expect(cubit.state.errorMessage, 'Quota esaurita.');
+    expect(cubit.state.failure, AiFailure.quota);
     expect(cubit.state.images, hasLength(1));
     expect(cubit.state.text, 'testo prezioso');
 
@@ -265,6 +268,7 @@ void main() {
     await cubit.submit();
 
     expect(cubit.state.status, AiImportStatus.failure);
+    expect(cubit.state.failure, AiFailure.imagesUnreadable);
     expect(provider.calls, 0);
   });
 
@@ -286,6 +290,25 @@ void main() {
 
     expect(provider.lastText, contains('Squat 4x8'));
     expect(cubit.state.status, AiImportStatus.review);
+  });
+
+  test('modello senza vision, più foto leggibili: il separatore di pagina '
+      'che va al modello è in inglese', () async {
+    settings.modelId = 'text/only';
+    provider.result = _extraction();
+    final cubit = buildCubit();
+    final first = Uint8List.fromList([1]);
+    final second = Uint8List.fromList([2]);
+    ocr.texts[first] = 'Panca 4x8';
+    ocr.texts[second] = 'Squat 4x8';
+    imageInput.galleryResult = [first, second];
+    await cubit.addFromGallery();
+
+    await cubit.submit();
+
+    expect(provider.lastText, contains('--- Page 1 of 2 ---\nPanca 4x8'));
+    expect(provider.lastText, contains('--- Page 2 of 2 ---\nSquat 4x8'));
+    expect(provider.lastText, isNot(contains('Pagina')));
   });
 
   test('senza input il submit non parte', () async {

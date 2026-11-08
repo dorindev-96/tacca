@@ -49,13 +49,19 @@ abstract interface class WorkoutLogRepository {
   /// Come [findInProgress], ma osservata: la sessione aperta cambia mentre
   /// l'app è viva — se ne apre una, la si chiude, la si riprende — e le
   /// schermate devono accorgersene senza essere riaperte (§8).
+  ///
+  /// Riemette quando la sessione aperta diventa un'altra (o nessuna), non a
+  /// ogni autosave: le serie del log emesso sono quelle del momento in cui è
+  /// stato emesso.
   Stream<WorkoutLog?> watchInProgress();
 
   /// Log completo con entry e serie già ordinate.
   WorkoutLog? getById(int id);
 
   /// Sessioni concluse (completate o interrotte), più recenti prima.
-  /// Si aggiorna a ogni scrittura.
+  /// Riemette quando l'elenco cambia, non a ogni scrittura: l'autosave della
+  /// sessione in corso non lo tocca. Entry e serie non sono ordinate (per
+  /// quelle c'è [getById]).
   Stream<List<WorkoutLog>> watchFinished();
 
   /// Persiste l'intero albero del log (autosave della sessione, RF-06).
@@ -124,17 +130,21 @@ class ObjectBoxWorkoutLogRepository implements WorkoutLogRepository {
     }
   }
 
+  /// Riemette solo quando **cambia la sessione aperta**, non a ogni scrittura.
+  ///
+  /// Il `watch` di una query ObjectBox scatta su qualunque scrittura del box,
+  /// quindi anche sull'autosave di ogni serie spuntata. Ma chi osserva la
+  /// sessione aperta (la card di ripresa, la proposta all'avvio) ne legge solo
+  /// id, scheda, giorno e ora d'inizio, che dentro una sessione non cambiano:
+  /// si confrontano gli id — `findIds` non costruisce oggetti — e l'albero si
+  /// carica solo quando la sessione è un'altra. Chi vuole le serie aggiornate
+  /// rilegge con [getById].
   @override
   Stream<WorkoutLog?> watchInProgress() {
-    return (_logBox.query(
-          WorkoutLog_.dbStatus.equals(WorkoutStatus.inProgress.name),
-        )..order(WorkoutLog_.startedAt, flags: Order.descending))
-        .watch(triggerImmediately: true)
-        .map((query) {
-          final log = query.findFirst();
-          if (log != null) sortLogTree(log);
-          return log;
-        });
+    return _watchIds(
+      _logBox.query(WorkoutLog_.dbStatus.equals(WorkoutStatus.inProgress.name))
+        ..order(WorkoutLog_.startedAt, flags: Order.descending),
+    ).map((ids) => ids.isEmpty ? null : getById(ids.first));
   }
 
   @override
@@ -168,13 +178,36 @@ class ObjectBoxWorkoutLogRepository implements WorkoutLogRepository {
     });
   }
 
+  /// Riemette solo quando **cambia l'elenco** delle sessioni concluse.
+  ///
+  /// Regola su cui poggia il confronto per id: una sessione conclusa non si
+  /// modifica sul posto. Entra nell'elenco quando si chiude (completata o
+  /// interrotta), ne esce quando si elimina, e il ripristino di un backup le
+  /// sostituisce tutte con id nuovi: ogni cambiamento che lo storico deve
+  /// vedere cambia anche gli id. Senza il confronto, ogni autosave della
+  /// sessione in corso — che non può toccare questo elenco — ricaricava
+  /// l'intero storico sul thread UI alla spunta di ogni serie. Se un giorno
+  /// una sessione conclusa diventasse modificabile, questo controllo va
+  /// rivisto insieme.
+  ///
+  /// Le entry e le serie **non** sono ordinate: l'elenco ne usa solo il
+  /// conteggio, e il dettaglio rilegge la sessione con [getById].
   @override
   Stream<List<WorkoutLog>> watchFinished() {
-    return (_logBox.query(
-          WorkoutLog_.dbStatus.notEquals(WorkoutStatus.inProgress.name),
-        )..order(WorkoutLog_.startedAt, flags: Order.descending))
+    return _watchIds(
+      _logBox.query(
+        WorkoutLog_.dbStatus.notEquals(WorkoutStatus.inProgress.name),
+      )..order(WorkoutLog_.startedAt, flags: Order.descending),
+    ).map((ids) => _logBox.getMany(ids).whereType<WorkoutLog>().toList());
+  }
+
+  /// Gli id che [builder] trova, riemessi solo quando cambiano (anche
+  /// nell'ordine). Gli oggetti li costruisce chi ascolta, e solo allora.
+  Stream<List<int>> _watchIds(QueryBuilder<WorkoutLog> builder) {
+    return builder
         .watch(triggerImmediately: true)
-        .map((query) => query.find()..forEach(sortLogTree));
+        .map((query) => query.findIds())
+        .distinct(_sameIds);
   }
 
   @override
@@ -243,10 +276,13 @@ class ObjectBoxWorkoutLogRepository implements WorkoutLogRepository {
     try {
       // ObjectBox non ordina per proprietà dell'entità collegata: si filtra e
       // si ordina in memoria. Le occorrenze sono al più una per sessione.
+      //
+      // Prima stato e data, poi le serie: il log collegato è una riga sola,
+      // le serie no. Scorrendo dalla più recente ci si ferma alla prima
+      // occorrenza che ne ha, invece di caricare le serie di tutte.
       final candidates =
           query
               .find()
-              .where((entry) => entry.sets.isNotEmpty)
               .map((entry) => (entry: entry, log: entry.log.target))
               .where(
                 (row) =>
@@ -257,15 +293,25 @@ class ObjectBoxWorkoutLogRepository implements WorkoutLogRepository {
               .toList()
             ..sort((a, b) => b.log!.startedAt.compareTo(a.log!.startedAt));
 
-      if (candidates.isEmpty) return null;
-      final best = candidates.first;
-      final sets = best.entry.sets.toList()
-        ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
-      return LastPerformance(performedAt: best.log!.startedAt, sets: sets);
+      for (final row in candidates) {
+        if (row.entry.sets.isEmpty) continue;
+        final sets = row.entry.sets.toList()
+          ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
+        return LastPerformance(performedAt: row.log!.startedAt, sets: sets);
+      }
+      return null;
     } finally {
       query.close();
     }
   }
+}
+
+bool _sameIds(List<int> a, List<int> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
 }
 
 /// Ordina in memoria entry e serie di [log], come `sortPlanTree` fa con le

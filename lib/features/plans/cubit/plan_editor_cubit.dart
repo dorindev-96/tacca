@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/block_params.dart';
 import '../../../core/extensions/blank_text.dart';
 import '../../../data/entities/block.dart';
 import '../../../data/entities/exercise.dart';
@@ -44,6 +45,22 @@ class PlanEditorCubit extends Cubit<PlanEditorState> {
     if (draft.days.isEmpty) {
       draft.days.add(WorkoutDay(label: labels.singleDay, sortOrder: 0));
     }
+    _fillBlanks(draft, labels);
+  }
+
+  /// Il parser riporta quello che ha letto e lascia vuoto il resto: i
+  /// ripieghi si scrivono qui, nella lingua di chi crea la scheda, perché
+  /// restano nei dati. Come in un giorno aggiunto a mano, un giorno senza
+  /// nome prende la lettera della sua posizione; quello di una scheda a
+  /// giorno singolo è il giorno implicito.
+  static void _fillBlanks(WorkoutPlan draft, PlanEditorLabels labels) {
+    if (draft.name.isBlank) draft.name = labels.importedPlanName;
+    for (final (i, day) in draft.days.indexed) {
+      if (!day.label.isBlank) continue;
+      day.label = draft.days.length == 1
+          ? labels.singleDay
+          : labels.dayName(_dayLetter(i));
+    }
   }
 
   PlanEditorCubit.edit({
@@ -76,7 +93,7 @@ class PlanEditorCubit extends Cubit<PlanEditorState> {
     final plan = _repository.getById(planId);
     if (plan == null) {
       emit(
-        state.copyWith(isLoading: false, errorMessage: _labels.planNotFound),
+        state.copyWith(isLoading: false, failure: PlanEditorFailure.notFound),
       );
       return;
     }
@@ -167,36 +184,14 @@ class PlanEditorCubit extends Cubit<PlanEditorState> {
   void updateBlockNotes(int dayIndex, int blockIndex, String? notes) =>
       _mutateBlock(dayIndex, blockIndex, (b) => b.notes = _blankToNull(notes));
 
-  void setBlockIntervalSeconds(int dayIndex, int blockIndex, int? value) =>
-      _mutateBlock(dayIndex, blockIndex, (b) => b.intervalSeconds = value);
-
-  void setBlockTotalMinutes(int dayIndex, int blockIndex, int? value) =>
-      _mutateBlock(dayIndex, blockIndex, (b) => b.totalMinutes = value);
-
-  void setBlockDurationSeconds(int dayIndex, int blockIndex, int? value) =>
-      _mutateBlock(dayIndex, blockIndex, (b) => b.durationSeconds = value);
-
-  void setBlockWorkSeconds(int dayIndex, int blockIndex, int? value) =>
-      _mutateBlock(dayIndex, blockIndex, (b) => b.workSeconds = value);
-
-  void setBlockRestSeconds(int dayIndex, int blockIndex, int? value) =>
-      _mutateBlock(dayIndex, blockIndex, (b) => b.restSeconds = value);
-
-  void setBlockRounds(int dayIndex, int blockIndex, int? value) =>
-      _mutateBlock(dayIndex, blockIndex, (b) => b.rounds = value);
-
-  void setBlockRestBetweenRoundsSeconds(
+  /// Scrive un parametro numerico del blocco: uno solo per tutti, perché
+  /// cosa sia ogni parametro lo dice [BlockParam].
+  void setBlockParam(
     int dayIndex,
     int blockIndex,
+    BlockParam param,
     int? value,
-  ) => _mutateBlock(
-    dayIndex,
-    blockIndex,
-    (b) => b.restBetweenRoundsSeconds = value,
-  );
-
-  void setBlockTimeCapSeconds(int dayIndex, int blockIndex, int? value) =>
-      _mutateBlock(dayIndex, blockIndex, (b) => b.timeCapSeconds = value);
+  ) => _mutateBlock(dayIndex, blockIndex, (b) => param.write(b, value));
 
   void setBlockFreeText(int dayIndex, int blockIndex, String? value) =>
       _mutateBlock(dayIndex, blockIndex, (b) => b.freeTextContent = value);
@@ -335,23 +330,25 @@ class PlanEditorCubit extends Cubit<PlanEditorState> {
 
   // --- salvataggio ---
 
-  void dismissError() => emit(state.copyWith(errorMessage: null));
+  void dismissError() => emit(state.copyWith(failure: null));
 
   Future<bool> save() async {
     final trimmedName = state.draft.name.trim();
     if (trimmedName.isEmpty) {
-      emit(state.copyWith(errorMessage: _labels.nameRequired));
+      emit(state.copyWith(failure: PlanEditorFailure.nameRequired));
       return false;
     }
 
-    emit(state.copyWith(isSaving: true, errorMessage: null));
+    emit(state.copyWith(isSaving: true, failure: null));
     try {
       state.draft.name = trimmedName;
       _repository.savePlan(state.draft);
       emit(state.copyWith(isSaving: false, isDirty: false, saveSuccess: true));
       return true;
-    } catch (e) {
-      emit(state.copyWith(isSaving: false, errorMessage: e.toString()));
+    } catch (_) {
+      emit(
+        state.copyWith(isSaving: false, failure: PlanEditorFailure.saveFailed),
+      );
       return false;
     }
   }
@@ -402,48 +399,17 @@ class PlanEditorCubit extends Cubit<PlanEditorState> {
   }
 
   void _clearTypeParams(Block block) {
-    block
-      ..intervalSeconds = null
-      ..totalMinutes = null
-      ..durationSeconds = null
-      ..workSeconds = null
-      ..restSeconds = null
-      ..rounds = null
-      ..restBetweenRoundsSeconds = null
-      ..timeCapSeconds = null
-      ..freeTextContent = null;
+    for (final param in BlockParam.values) {
+      param.write(block, null);
+    }
+    block.freeTextContent = null;
   }
 
   void _applyDefaultParams(Block block, BlockType type) {
-    switch (type) {
-      case BlockType.standard:
-        break;
-      case BlockType.superset:
-      case BlockType.circuit:
-        block
-          ..rounds = 3
-          ..restBetweenRoundsSeconds = 60;
-        break;
-      case BlockType.emom:
-        block
-          ..intervalSeconds = 60
-          ..totalMinutes = 10;
-        break;
-      case BlockType.amrap:
-        block.durationSeconds = 900;
-        break;
-      case BlockType.tabata:
-        block
-          ..workSeconds = 20
-          ..restSeconds = 10
-          ..rounds = 8;
-        break;
-      case BlockType.forTime:
-        break; // timeCapSeconds è opzionale (§5.2)
-      case BlockType.freeText:
-        block.freeTextContent = '';
-        break;
+    for (final param in BlockParam.of(type)) {
+      param.write(block, param.defaultFor(type));
     }
+    if (type == BlockType.freeText) block.freeTextContent = '';
   }
 
   static String _dayLetter(int zeroBasedIndex) {

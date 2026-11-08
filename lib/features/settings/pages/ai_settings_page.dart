@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/errors/ai_failure.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/linear_icons.dart';
 import '../../../core/design/theme_context.dart';
@@ -73,7 +74,16 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
               // Avviso esplicito richiesto da RF-08: i contenuti inviati
               // all'AI lasciano il dispositivo, e verso chi.
               InfoBanner(message: l10n.aiSettingsPrivacyNotice(provider.label)),
-              if (!state.hasApiKey) ...[
+              if (state.failure == SettingsFailure.loadFailed) ...[
+                const SizedBox(height: AppSpacing.sm),
+                InfoBanner(
+                  tone: InfoBannerTone.alert,
+                  message: l10n.aiSettingsLoadFailed,
+                ),
+              ]
+              // Se la lettura è fallita non si sa se una key c'è: dire che
+              // le funzioni AI sono spente sarebbe un'altra affermazione falsa.
+              else if (!state.hasApiKey) ...[
                 const SizedBox(height: AppSpacing.sm),
                 InfoBanner(
                   icon: AppIcons.lock,
@@ -306,7 +316,7 @@ class _TestConnectionSection extends StatelessWidget {
           ),
           AiConnectionTestStatus.failure => InfoBanner(
             tone: InfoBannerTone.alert,
-            message: state.testErrorMessage ?? '',
+            message: (state.testFailure ?? AiFailure.unexpected).message(l10n),
           ),
           _ => const SizedBox.shrink(),
         },

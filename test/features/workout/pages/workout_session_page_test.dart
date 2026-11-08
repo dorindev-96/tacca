@@ -165,7 +165,7 @@ void main() {
 
     expect(find.text('Giorno A'), findsOneWidget);
     expect(find.text('Panca piana'), findsOneWidget);
-    expect(find.text('2×8 · rec 120s'), findsOneWidget);
+    expect(find.text('2×8 · Recupero 120s'), findsOneWidget);
     expect(find.text('Rematore'), findsOneWidget);
     expect(find.text('Serie 1'), findsNWidgets(2));
   });
@@ -291,6 +291,47 @@ void main() {
 
     expect(find.text('77.5 kg × 8'), findsOneWidget);
   });
+
+  testWidgets(
+    'log rapido e spunta partono dagli stessi valori: la serie prima, non la volta scorsa',
+    (tester) async {
+      logs.lastPerformances['Panca piana'] = LastPerformance(
+        performedAt: DateTime(2026, 8, 8),
+        sets: [buildLogSet(1, weightKg: 75, reps: '8')],
+      );
+      await pumpSession(tester);
+
+      // Serie 1 registrata a mano: 85 kg × 6.
+      await tester.tap(find.text('Serie 1').first);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('set-weight')), '85');
+      await tester.enterText(find.byKey(const ValueKey('set-reps')), '6');
+      await tester.tap(find.text('Salva'));
+      await tester.pumpAndSettle();
+
+      // Il log rapido della serie 2 propone 85 × 6…
+      await tester.tap(find.text('Serie 2').first);
+      await tester.pumpAndSettle();
+      String field(String key) =>
+          tester.widget<TextField>(find.byKey(ValueKey(key))).controller!.text;
+      expect(field('set-weight'), '85');
+      expect(field('set-reps'), '6');
+      Navigator.of(
+        tester.element(find.byKey(const ValueKey('set-weight'))),
+      ).pop();
+      await tester.pumpAndSettle();
+
+      // …ed è quello che la spunta registra.
+      await tester.tap(find.byKey(const ValueKey('set-toggle-Serie 2')).first);
+      await tester.pumpAndSettle();
+      final second = logs.logs.values.single.entries
+          .firstWhere((e) => e.exerciseNameSnapshot == 'Panca piana')
+          .sets
+          .firstWhere((s) => s.setNumber == 2);
+      expect(second.weightKg, 85);
+      expect(second.reps, '6');
+    },
+  );
 
   testWidgets('terminare la sessione mostra il riepilogo e apre lo storico', (
     tester,

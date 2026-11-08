@@ -74,7 +74,7 @@ class WorkoutSessionBloc
     on<AppLifecycleChanged>(_onAppLifecycleChanged);
     on<SessionFinished>(_onSessionFinished);
     on<SessionErrorDismissed>(
-      (event, emit) => emit(state.copyWith(errorMessage: null)),
+      (event, emit) => emit(state.copyWith(failure: null)),
     );
 
     _tickSub = _timerEngine.stream.listen((timer) => add(TimerTicked(timer)));
@@ -140,11 +140,11 @@ class WorkoutSessionBloc
           revision: state.revision + 1,
         ),
       );
-    } catch (error) {
+    } catch (_) {
       emit(
         state.copyWith(
           status: WorkoutSessionStatus.notFound,
-          errorMessage: error.toString(),
+          failure: WorkoutSessionFailure.startFailed,
         ),
       );
       return;
@@ -431,19 +431,19 @@ class WorkoutSessionBloc
     _publishLive();
   }
 
-  /// Spunta la serie [setNumber] di [item], svolta a [at], già compilata.
-  ///
-  /// Minimo attrito (RF-06): si riparte dall'ultimo valore usato in questa
-  /// sessione, poi da quello dell'ultima volta, infine dalla prescrizione.
+  /// Spunta la serie [setNumber] di [item], svolta a [at], già compilata con
+  /// [setPrefill]: gli stessi valori che il log rapido propone.
   void _addSet(SessionItem item, int setNumber, DateTime at) {
-    final reference =
-        item.completedSets.where((s) => s.setNumber < setNumber).lastOrNull ??
-        state.lastPerformances[item.name]?.sets.lastOrNull;
+    final prefill = setPrefill(
+      item,
+      setNumber,
+      lastTime: state.lastPerformances[item.name],
+    );
     item.entry.sets.add(
       LogSet(
         setNumber: setNumber,
-        reps: reference == null ? item.exercise?.reps : reference.reps,
-        weightKg: reference?.weightKg,
+        reps: prefill.reps,
+        weightKg: prefill.weightKg,
         completedAt: at,
       ),
     );
@@ -690,17 +690,17 @@ class WorkoutSessionBloc
   void _persist(Emitter<WorkoutSessionState> emit, {int? currentIndex}) {
     final log = state.log;
     if (log == null) return;
-    String? error;
+    WorkoutSessionFailure? failure;
     try {
       _logRepository.saveLog(log);
-    } catch (e) {
-      error = e.toString();
+    } catch (_) {
+      failure = WorkoutSessionFailure.saveFailed;
     }
     emit(
       state.copyWith(
         revision: state.revision + 1,
         currentIndex: currentIndex ?? state.currentIndex,
-        errorMessage: error,
+        failure: failure,
       ),
     );
     _publishLive();

@@ -19,7 +19,9 @@ sealed class HistoryState with _$HistoryState {
 
     /// `null` = nessun filtro (tutte le schede).
     String? planFilter,
-    String? errorMessage,
+
+    /// L'eliminazione di una voce non è riuscita: da mostrare una volta.
+    @Default(false) bool deleteFailed,
   }) = _HistoryState;
 
   List<WorkoutLog> get filteredLogs {

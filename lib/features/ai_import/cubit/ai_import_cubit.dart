@@ -3,10 +3,12 @@ import 'dart:typed_data';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/errors/ai_exception.dart';
+import '../../../core/errors/ai_failure.dart';
 import '../../../core/extensions/blank_text.dart';
 import '../../../services/ai/ai_provider.dart';
 import '../../../services/ai/ai_selection.dart';
 import '../../../services/ai/plan_parser.dart';
+import '../../../services/ai/prompts.dart';
 import '../../../services/images/image_input.dart';
 import '../../../services/images/ocr_service.dart';
 import '../../../services/images/plan_image_store.dart';
@@ -63,7 +65,7 @@ class AiImportCubit extends Cubit<AiImportState> {
       state.copyWith(
         images: [...state.images, bytes],
         status: AiImportStatus.input,
-        errorMessage: null,
+        failure: null,
       ),
     );
   }
@@ -75,7 +77,7 @@ class AiImportCubit extends Cubit<AiImportState> {
       state.copyWith(
         images: [...state.images, ...picked],
         status: AiImportStatus.input,
-        errorMessage: null,
+        failure: null,
       ),
     );
   }
@@ -93,7 +95,7 @@ class AiImportCubit extends Cubit<AiImportState> {
   Future<void> submit() async {
     if (!state.hasInput || state.status == AiImportStatus.processing) return;
 
-    emit(state.copyWith(status: AiImportStatus.processing, errorMessage: null));
+    emit(state.copyWith(status: AiImportStatus.processing, failure: null));
     try {
       var images = state.images;
       var text = state.text.trimmedOrNull;
@@ -109,11 +111,7 @@ class AiImportCubit extends Cubit<AiImportState> {
             emit(
               state.copyWith(
                 status: AiImportStatus.failure,
-                errorMessage:
-                    'Il modello selezionato non supporta le immagini e '
-                    'l\'OCR non ha trovato testo leggibile nelle foto: '
-                    'scegli un modello con supporto immagini nelle '
-                    'impostazioni, o riprova con foto più nitide.',
+                failure: AiFailure.imagesUnreadable,
               ),
             );
             return;
@@ -140,7 +138,6 @@ class AiImportCubit extends Cubit<AiImportState> {
         for (final bytes in state.images) await _imageStore.saveOriginal(bytes),
       ];
       final draft = _parser.toEntity(extraction.plan, imagePaths: imagePaths);
-      if (draft.name.isBlank) draft.name = 'Scheda importata';
 
       emit(
         state.copyWith(
@@ -152,22 +149,18 @@ class AiImportCubit extends Cubit<AiImportState> {
       );
     } on AiConfigurationException {
       emit(state.copyWith(status: AiImportStatus.input, isConfigured: false));
-    } on AiException catch (e) {
-      emit(
-        state.copyWith(status: AiImportStatus.failure, errorMessage: e.message),
-      );
     } catch (e) {
       emit(
         state.copyWith(
           status: AiImportStatus.failure,
-          errorMessage: e.toString(),
+          failure: AiFailure.from(e),
         ),
       );
     }
   }
 
   void dismissError() {
-    emit(state.copyWith(status: AiImportStatus.input, errorMessage: null));
+    emit(state.copyWith(status: AiImportStatus.input, failure: null));
   }
 
   /// Il testo delle foto, pagina per pagina; le pagine illeggibili restano
@@ -179,7 +172,7 @@ class AiImportCubit extends Cubit<AiImportState> {
         if (page.isNotEmpty)
           pages.length == 1
               ? page
-              : '--- Pagina ${i + 1} di ${pages.length} ---\n$page',
+              : '${ocrPageHeader(i + 1, pages.length)}\n$page',
     ].join('\n\n');
   }
 }

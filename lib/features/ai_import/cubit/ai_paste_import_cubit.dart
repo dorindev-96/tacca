@@ -203,7 +203,6 @@ class AiPasteImportCubit extends Cubit<AiPasteImportState> {
     }
 
     final draft = _parser.toEntity(dto, imagePaths: imagePaths);
-    if (draft.name.isBlank) draft.name = 'Scheda importata';
 
     emit(
       state.copyWith(

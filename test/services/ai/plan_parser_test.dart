@@ -284,11 +284,20 @@ void main() {
       const raw = 'testo non strutturabile';
       final dto = parser.fallback(raw);
 
-      expect(dto.name, 'Scheda importata');
+      // Nessun ripiego in italiano: nome e giorno li scrive l'editor, nella
+      // lingua dell'utente.
+      expect(dto.name, isNull);
+      expect(dto.days.single.label, isNull);
       final block = dto.days.single.blocks.single;
       expect(block.type, BlockType.freeText.name);
       expect(block.content, raw);
-      expect(parser.validate(dto), isEmpty);
+
+      // Diventa una scheda con un giorno solo e il testo dentro: nome ed
+      // etichetta vuoti, che l'editor riempirà.
+      final plan = parser.toEntity(dto);
+      expect(plan.name, isEmpty);
+      expect(plan.days.single.label, isEmpty);
+      expect(plan.days.single.blocks.single.freeTextContent, raw);
     });
   });
 
@@ -355,11 +364,11 @@ void main() {
       expect(block.exercises.map((e) => e.sets), [isNull, isNull]);
     });
 
-    test('assegna un\'etichetta di default ai giorni senza label', () {
+    test('lascia vuote le etichette che il modello non ha scritto', () {
       final dto = parser.parse(
         '{"name":"S","days":[{"blocks":[{"type":"standard"}]}]}',
       );
-      expect(parser.toEntity(dto).days.single.label, 'Giorno 1');
+      expect(parser.toEntity(dto).days.single.label, isEmpty);
     });
   });
 }

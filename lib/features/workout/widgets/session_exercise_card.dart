@@ -5,6 +5,7 @@ import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/linear_icons.dart';
 import '../../../core/design/theme_context.dart';
+import '../../../core/extensions/exercise_format.dart';
 import '../../../core/extensions/log_set_format.dart';
 import '../../../core/widgets/linear_icon.dart';
 import '../../../core/widgets/meta_chip.dart';
@@ -119,7 +120,7 @@ class SessionExerciseCard extends StatelessWidget {
     final sets = item.displayedSets;
     final checkable = item.checkableSets;
     final done = item.entry.sets.length;
-    final prescription = _prescription;
+    final prescription = item.exercise?.prescription(l10n) ?? '';
 
     // Nei blocchi a giri una "serie" è un giro del gruppo: chiamarla col suo
     // nome è ciò che rende leggibile un superset durante l'allenamento.
@@ -215,21 +216,6 @@ class SessionExerciseCard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String get _prescription {
-    final exercise = item.exercise;
-    if (exercise == null) return '';
-    final parts = <String>[
-      if (exercise.sets != null)
-        '${exercise.sets}×${exercise.reps ?? '?'}'
-      else if (exercise.reps != null)
-        exercise.reps!,
-      if ((exercise.load ?? '').isNotEmpty) exercise.load!,
-      if (exercise.restSeconds != null) 'rec ${exercise.restSeconds}s',
-      if (exercise.durationSeconds != null) '${exercise.durationSeconds}s',
-    ];
-    return parts.join(' · ');
   }
 }
 
