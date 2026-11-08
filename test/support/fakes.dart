@@ -26,6 +26,8 @@ import 'package:tacca/services/links/link_opener.dart';
 import 'package:tacca/services/live_session/live_session_controller.dart';
 import 'package:tacca/services/notifications/session_notifier.dart';
 import 'package:tacca/services/share/image_share_service.dart';
+import 'package:tacca/services/share/shared_text_receiver.dart';
+import 'package:tacca/services/share/text_share_service.dart';
 import 'package:tacca/services/timer/timer_engine.dart';
 import 'package:tacca/services/wakelock/screen_wake.dart';
 
@@ -364,6 +366,40 @@ class RecordingClipboardService implements ClipboardService {
 
   @override
   Future<String?> read() async => content;
+}
+
+/// [TextShareService] che non apre nessun foglio: registra i testi e risponde
+/// come il test ha deciso con [outcome].
+class RecordingTextShareService implements TextShareService {
+  RecordingTextShareService({this.outcome = TextShareOutcome.shared});
+
+  TextShareOutcome outcome;
+  final shared = <String>[];
+
+  String? get last => shared.isEmpty ? null : shared.last;
+
+  @override
+  Future<TextShareOutcome> share(
+    String text, {
+    String? subject,
+    Rect? originRect,
+  }) async {
+    shared.add(text);
+    return outcome;
+  }
+}
+
+/// [SharedTextReceiver] senza nativo: il test mette in coda i testi "arrivati"
+/// da un'altra app con [pending], e ognuno viene consegnato una volta sola.
+class FakeSharedTextReceiver implements SharedTextReceiver {
+  final pending = <String>[];
+  int takeCalls = 0;
+
+  @override
+  Future<String?> takePending() async {
+    takeCalls++;
+    return pending.isEmpty ? null : pending.removeAt(0);
+  }
 }
 
 /// Serie di comodo per costruire uno storico nei test.

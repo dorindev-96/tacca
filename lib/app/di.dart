@@ -6,6 +6,7 @@ import '../data/repositories/backup_repository.dart';
 import '../data/repositories/plan_repository.dart';
 import '../data/repositories/settings_repository.dart';
 import '../data/repositories/workout_log_repository.dart';
+import '../features/ai_import/cubit/shared_text_cubit.dart';
 import '../features/history/cubit/history_cubit.dart';
 import '../features/legal/cubit/legal_notice_cubit.dart';
 import '../features/plans/cubit/plans_cubit.dart';
@@ -33,6 +34,8 @@ import '../services/live_session/live_session_factory.dart';
 import '../services/notifications/notification_host.dart';
 import '../services/notifications/session_notifier.dart';
 import '../services/share/image_share_service.dart';
+import '../services/share/shared_text_receiver.dart';
+import '../services/share/text_share_service.dart';
 import '../services/timer/timer_engine.dart';
 import '../services/wakelock/screen_wake.dart';
 
@@ -150,6 +153,15 @@ class AppProviders extends StatelessWidget {
         RepositoryProvider<ImageShareService>(
           create: (context) => const SystemImageShareService(),
         ),
+        // Import senza key: il prompt esce dal foglio di condivisione verso
+        // la chat che l'utente sceglie, e la risposta rientra dallo stesso
+        // foglio, condivisa con Tacca dalla chat.
+        RepositoryProvider<TextShareService>(
+          create: (context) => const SystemTextShareService(),
+        ),
+        RepositoryProvider<SharedTextReceiver>(
+          create: (context) => const PlatformSharedTextReceiver(),
+        ),
         // Backup locale: lettura e sostituzione dell'archivio intero (una
         // transazione sola su schede e storico), il servizio che ne scrive e
         // legge il file, e i plugin che lo portano fuori e lo riportano
@@ -203,6 +215,13 @@ class AppProviders extends StatelessWidget {
           BlocProvider<LegalNoticeCubit>(
             create: (context) =>
                 LegalNoticeCubit(settings: context.read<SettingsRepository>()),
+          ),
+          // Il testo condiviso con l'app da fuori ha due lettori che non si
+          // vedono: `SharedTextIntake` sopra al router e la pagina
+          // dell'import senza key. Quindi sta qui, in mezzo a loro.
+          BlocProvider<SharedTextCubit>(
+            create: (context) =>
+                SharedTextCubit(receiver: context.read<SharedTextReceiver>()),
           ),
         ],
         child: child,

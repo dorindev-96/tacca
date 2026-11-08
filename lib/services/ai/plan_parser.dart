@@ -56,6 +56,15 @@ class PlanParser {
     throw schemaError ?? decodeError!;
   }
 
+  /// Vero se in [raw] c'è almeno un oggetto `{…}` bilanciato, cioè qualcosa
+  /// che *potrebbe* essere la risposta di una chat.
+  ///
+  /// È il criterio con cui l'import senza key decide cosa fare di un testo
+  /// condiviso con l'app da fuori: con un oggetto dentro è la risposta da
+  /// leggere, senza è il testo di una scheda da convertire. Non dice che il
+  /// JSON sia valido — quello lo stabilisce [parse].
+  bool containsJsonObject(String raw) => _jsonCandidates(raw).isNotEmpty;
+
   /// Validazione semantica (§6.2 punto 3): tipi di blocco noti, parametri
   /// coerenti col tipo, almeno un giorno. Ritorna i problemi trovati.
   List<String> validate(PlanDto dto) {

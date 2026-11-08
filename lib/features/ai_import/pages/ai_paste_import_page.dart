@@ -15,98 +15,158 @@ import '../../../core/widgets/square_icon_button.dart';
 import '../../../l10n/app_localizations.dart';
 import '../cubit/ai_paste_import_cubit.dart';
 import '../cubit/ai_paste_import_state.dart';
+import '../cubit/shared_text_cubit.dart';
 import '../widgets/image_source_picker.dart';
 import 'ai_import_review_args.dart';
 
 /// Import di una scheda passando per una chat AI qualsiasi (RF-03), in due
-/// passi: si prepara il messaggio, lo si porta fuori, si torna con la
-/// risposta.
+/// passi: si prepara il messaggio, lo si manda alla chat dal foglio di
+/// condivisione, si torna con la risposta — condivisa con Tacca dalla chat
+/// stessa, o incollata.
 ///
 /// I due passi sono una sola route con uno stato dentro, non due pagine: il
 /// testo della scheda, le foto e la risposta devono sopravvivere all'andirivieni
 /// fra l'uno e l'altro, e "indietro" dal secondo passo deve tornare al primo,
 /// non uscire dall'import buttando via tutto.
-class AiPasteImportPage extends StatelessWidget {
+///
+/// La pagina è anche chi si prende il testo condiviso con l'app
+/// ([SharedTextCubit]): lo fa quando compare, perché può essere stata aperta
+/// apposta da `SharedTextIntake`, e ogni volta che ne arriva uno mentre è a
+/// schermo. Cosa farne lo decide il cubit, che sa in quale passo si trova.
+class AiPasteImportPage extends StatefulWidget {
   const AiPasteImportPage({super.key});
+
+  /// La route di questa pagina. Sta qui, e non solo nel router, perché
+  /// `SharedTextIntake` deve riconoscerla per non aprirne una seconda sopra.
+  static const String routePath = '/plans/new/import/paste';
+
+  @override
+  State<AiPasteImportPage> createState() => _AiPasteImportPageState();
+}
+
+class _AiPasteImportPageState extends State<AiPasteImportPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Il testo può essere arrivato prima della pagina: ad app chiusa è
+    // proprio lui ad averla fatta aprire.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _takeSharedText());
+  }
+
+  void _takeSharedText() {
+    if (!mounted) return;
+    final shared = context.read<SharedTextCubit>();
+    final text = shared.state;
+    if (text == null) return;
+    shared.consume();
+    context.read<AiPasteImportCubit>().receiveSharedText(text);
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return BlocConsumer<AiPasteImportCubit, AiPasteImportState>(
-      listenWhen: (previous, current) =>
-          previous.draft != current.draft && current.draft != null,
-      listener: (context, state) {
-        if (state.usedFallback) {
-          ScaffoldMessenger.of(context).showMessage(l10n.aiPasteFreeTextNotice);
-        }
-        context.pushReplacement(
-          '/plans/new/review',
-          extra: AiImportReviewArgs(draft: state.draft!),
-        );
-      },
-      builder: (context, state) {
-        final cubit = context.read<AiPasteImportCubit>();
-        final composing = state.step == AiPasteImportStep.compose;
+    return BlocListener<SharedTextCubit, String?>(
+      listenWhen: (previous, current) => current != null,
+      listener: (context, text) => _takeSharedText(),
+      child: BlocConsumer<AiPasteImportCubit, AiPasteImportState>(
+        listenWhen: (previous, current) =>
+            previous.draft != current.draft && current.draft != null,
+        listener: (context, state) {
+          if (state.usedFallback) {
+            ScaffoldMessenger.of(
+              context,
+            ).showMessage(l10n.aiPasteFreeTextNotice);
+          }
+          context.pushReplacement(
+            '/plans/new/review',
+            extra: AiImportReviewArgs(draft: state.draft!),
+          );
+        },
+        builder: (context, state) {
+          final cubit = context.read<AiPasteImportCubit>();
+          final composing = state.step == AiPasteImportStep.compose;
 
-        return PopScope(
-          canPop: composing,
-          onPopInvokedWithResult: (didPop, result) {
-            if (!didPop) cubit.backToCompose();
-          },
-          child: AppScaffold(
-            leading: composing
-                ? const AppBackButton()
-                : AppBackButton(onPressed: cubit.backToCompose),
-            title: composing
-                ? l10n.aiPasteComposeTitle
-                : l10n.aiPastePasteTitle,
-            header: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xl,
-                0,
-                AppSpacing.xl,
-                AppSpacing.card,
-              ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: MetaChip(
-                  label: composing ? l10n.aiPasteStepOne : l10n.aiPasteStepTwo,
-                  tone: ChipTone.onBackground,
-                  small: false,
+          return PopScope(
+            canPop: composing,
+            onPopInvokedWithResult: (didPop, result) {
+              if (!didPop) cubit.backToCompose();
+            },
+            child: AppScaffold(
+              leading: composing
+                  ? const AppBackButton()
+                  : AppBackButton(onPressed: cubit.backToCompose),
+              title: composing
+                  ? l10n.aiPasteComposeTitle
+                  : l10n.aiPastePasteTitle,
+              header: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.xl,
+                  0,
+                  AppSpacing.xl,
+                  AppSpacing.card,
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: MetaChip(
+                    label: composing
+                        ? l10n.aiPasteStepOne
+                        : l10n.aiPasteStepTwo,
+                    tone: ChipTone.onBackground,
+                    small: false,
+                  ),
                 ),
               ),
+              dock: composing
+                  ? PillButton(
+                      label: l10n.aiPasteContinue,
+                      icon: AppIcons.chevronRight,
+                      onPressed: state.canContinue
+                          ? () => _deliver(context, cubit.continueToPaste)
+                          : null,
+                    )
+                  : PillButton(
+                      label: l10n.aiPasteFinish,
+                      icon: AppIcons.check,
+                      onPressed: state.canFinish ? cubit.finish : null,
+                    ),
+              body: composing
+                  ? _ComposeStep(state: state)
+                  : _PasteStep(state: state),
             ),
-            dock: composing
-                ? PillButton(
-                    label: l10n.aiPasteContinue,
-                    icon: AppIcons.chevronRight,
-                    onPressed: state.canContinue
-                        ? () => _copyAndContinue(context, l10n)
-                        : null,
-                  )
-                : PillButton(
-                    label: l10n.aiPasteFinish,
-                    icon: AppIcons.check,
-                    onPressed: state.canFinish ? cubit.finish : null,
-                  ),
-            body: composing
-                ? _ComposeStep(state: state)
-                : _PasteStep(state: state),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
+}
 
-  Future<void> _copyAndContinue(
-    BuildContext context,
-    AppLocalizations l10n,
-  ) async {
-    final messenger = ScaffoldMessenger.of(context);
-    await context.read<AiPasteImportCubit>().continueToPaste();
-    messenger.showMessage(l10n.aiPastePromptCopied);
+/// Manda fuori un messaggio e dice all'utente solo ciò che non si vede da
+/// sé: il foglio di condivisione che non c'era, e il testo finito negli
+/// appunti al suo posto. Una condivisione riuscita non ha bisogno di avvisi
+/// (l'utente è già nell'altra app) e una annullata non ha cambiato niente.
+Future<void> _deliver(
+  BuildContext context,
+  Future<AiPasteDelivery> Function() send,
+) async {
+  final l10n = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  final delivery = await send();
+  if (delivery == AiPasteDelivery.copied) {
+    messenger.showMessage(l10n.aiPasteShareUnavailable);
   }
+}
+
+/// Copia negli appunti e lo dice: qui l'utente l'ha chiesto, e la conferma è
+/// l'unica cosa che vede succedere.
+Future<void> _copy(
+  BuildContext context,
+  Future<void> Function() copy,
+  String notice,
+) async {
+  final messenger = ScaffoldMessenger.of(context);
+  await copy();
+  messenger.showMessage(notice);
 }
 
 /// Passo 1: la scheda. Foto lette dall'OCR del telefono e testo modificabile,
@@ -129,7 +189,7 @@ class _ComposeStepState extends State<_ComposeStep> {
   @override
   void didUpdateWidget(covariant _ComposeStep oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Il campo è scritto anche dall'OCR.
+    // Il campo è scritto anche dall'OCR e da un testo condiviso con l'app.
     _text.follow(widget.state.text);
   }
 
@@ -219,9 +279,10 @@ class _ComposeStepState extends State<_ComposeStep> {
   }
 }
 
-/// Passo 2: la risposta. Se non è utilizzabile non si perde niente — si può
-/// far correggere la chat con l'errore del parser, o tenere tutto come testo
-/// libero (RNF-05).
+/// Passo 2: la risposta. Arriva da sola se dalla chat la si condivide con
+/// Tacca, altrimenti si incolla. Se non è utilizzabile non si perde niente —
+/// si può far correggere la chat con l'errore del parser, o tenere tutto
+/// come testo libero (RNF-05).
 class _PasteStep extends StatefulWidget {
   const _PasteStep({required this.state});
 
@@ -239,7 +300,8 @@ class _PasteStepState extends State<_PasteStep> {
   @override
   void didUpdateWidget(covariant _PasteStep oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Il campo è scritto anche dall'incolla dagli appunti.
+    // Il campo è scritto anche dall'incolla dagli appunti e da una risposta
+    // condivisa con l'app.
     _response.follow(widget.state.response);
   }
 
@@ -265,21 +327,38 @@ class _PasteStepState extends State<_PasteStep> {
       children: [
         InfoBanner(message: l10n.aiPastePasteIntro),
         const SizedBox(height: AppSpacing.md),
-        Align(
-          alignment: Alignment.centerRight,
-          child: PillButton.compact(
-            label: l10n.aiPasteCopyPromptAgain,
-            icon: AppIcons.lines,
-            tone: PillTone.outline,
-            onPressed: () =>
-                _copy(context, cubit.copyPrompt, l10n.aiPastePromptCopied),
-          ),
+        // Condividere è la strada; copiare resta per chi preferisce incollare
+        // a mano o per una chat che dal foglio non si raggiunge.
+        Wrap(
+          alignment: WrapAlignment.end,
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            PillButton.compact(
+              label: l10n.aiPasteCopyPrompt,
+              icon: AppIcons.lines,
+              tone: PillTone.outline,
+              onPressed: () =>
+                  _copy(context, cubit.copyPrompt, l10n.aiPastePromptCopied),
+            ),
+            PillButton.compact(
+              label: l10n.aiPasteSharePromptAgain,
+              tone: PillTone.outline,
+              onPressed: () => _deliver(context, cubit.sharePrompt),
+            ),
+          ],
         ),
         if (state.error == AiPasteImportError.parse) ...[
           const SizedBox(height: AppSpacing.card),
           InfoBanner(
             tone: InfoBannerTone.alert,
             message: l10n.aiPasteParseFailed(state.parseError ?? ''),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          PillButton(
+            label: l10n.aiPasteShareCorrection,
+            tone: PillTone.outline,
+            onPressed: () => _deliver(context, cubit.shareCorrection),
           ),
           const SizedBox(height: AppSpacing.sm),
           PillButton(
@@ -327,16 +406,6 @@ class _PasteStepState extends State<_PasteStep> {
         ),
       ],
     );
-  }
-
-  Future<void> _copy(
-    BuildContext context,
-    Future<void> Function() copy,
-    String notice,
-  ) async {
-    final messenger = ScaffoldMessenger.of(context);
-    await copy();
-    messenger.showMessage(notice);
   }
 }
 
