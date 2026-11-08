@@ -7,6 +7,7 @@ import '../../../core/block_type_labels.dart';
 import '../../../core/design/app_radius.dart';
 import '../../../core/design/app_spacing.dart';
 import '../../../core/design/theme_context.dart';
+import '../../../core/extensions/exercise_format.dart';
 import '../../../core/widgets/meta_chip.dart';
 import '../../../core/widgets/surface_card.dart';
 import '../../../data/entities/block.dart';
@@ -209,16 +210,8 @@ class PlanExerciseRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    final volume = exercise.sets != null
-        ? '${exercise.sets}×${exercise.reps ?? '?'}'
-        : (exercise.reps ?? '');
-    final details = <String>[
-      if ((exercise.load ?? '').isNotEmpty) exercise.load!,
-      if (exercise.restSeconds != null)
-        l10n.planDetailExerciseRest(exercise.restSeconds!),
-      if (exercise.durationSeconds != null)
-        l10n.planDetailExerciseDuration(exercise.durationSeconds!),
-    ];
+    final volume = exercise.volume;
+    final details = exercise.prescriptionDetails(l10n);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

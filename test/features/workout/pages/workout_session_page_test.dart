@@ -165,7 +165,7 @@ void main() {
 
     expect(find.text('Giorno A'), findsOneWidget);
     expect(find.text('Panca piana'), findsOneWidget);
-    expect(find.text('2×8 · rec 120s'), findsOneWidget);
+    expect(find.text('2×8 · Recupero 120s'), findsOneWidget);
     expect(find.text('Rematore'), findsOneWidget);
     expect(find.text('Serie 1'), findsNWidgets(2));
   });
