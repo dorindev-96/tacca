@@ -431,19 +431,19 @@ class WorkoutSessionBloc
     _publishLive();
   }
 
-  /// Spunta la serie [setNumber] di [item], svolta a [at], già compilata.
-  ///
-  /// Minimo attrito (RF-06): si riparte dall'ultimo valore usato in questa
-  /// sessione, poi da quello dell'ultima volta, infine dalla prescrizione.
+  /// Spunta la serie [setNumber] di [item], svolta a [at], già compilata con
+  /// [setPrefill]: gli stessi valori che il log rapido propone.
   void _addSet(SessionItem item, int setNumber, DateTime at) {
-    final reference =
-        item.completedSets.where((s) => s.setNumber < setNumber).lastOrNull ??
-        state.lastPerformances[item.name]?.sets.lastOrNull;
+    final prefill = setPrefill(
+      item,
+      setNumber,
+      lastTime: state.lastPerformances[item.name],
+    );
     item.entry.sets.add(
       LogSet(
         setNumber: setNumber,
-        reps: reference == null ? item.exercise?.reps : reference.reps,
-        weightKg: reference?.weightKg,
+        reps: prefill.reps,
+        weightKg: prefill.weightKg,
         completedAt: at,
       ),
     );

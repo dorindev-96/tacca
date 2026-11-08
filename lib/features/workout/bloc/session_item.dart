@@ -2,6 +2,7 @@ import '../../../data/entities/block.dart';
 import '../../../data/entities/exercise.dart';
 import '../../../data/entities/log_entry.dart';
 import '../../../data/entities/log_set.dart';
+import '../../../data/repositories/workout_log_repository.dart';
 
 /// Una riga della sessione: l'esercizio **prescritto** dalla scheda accostato
 /// al **registro** delle serie effettivamente svolte.
@@ -105,4 +106,29 @@ extension SessionProgress on Iterable<SessionItem> {
   /// Serie registrate in tutto.
   int get loggedSetCount =>
       fold(0, (total, item) => total + item.entry.sets.length);
+}
+
+/// I valori con cui parte la serie [setNumber] di [item]: li registra la
+/// spunta e li propone il log rapido, che devono dire la stessa cosa.
+///
+/// Minimo attrito (RF-06): il riferimento è l'ultima serie già fatta *in
+/// questa sessione* prima di [setNumber], poi l'ultima di [lastTime] (la volta
+/// scorsa). Il peso viene solo dal riferimento — il carico prescritto è testo
+/// libero ("70% 1RM"), non un numero di kg. Le ripetizioni vengono dal
+/// riferimento e, se lì mancano, dalla prescrizione: una serie registrata
+/// senza ripetizioni non dice "zero", dice "non annotate", e la scheda è
+/// l'ipotesi migliore.
+({double? weightKg, String? reps}) setPrefill(
+  SessionItem item,
+  int setNumber, {
+  LastPerformance? lastTime,
+}) {
+  final reference =
+      item.completedSets.where((s) => s.setNumber < setNumber).lastOrNull ??
+      lastTime?.sets.lastOrNull;
+  final reps = reference?.reps?.trim();
+  return (
+    weightKg: reference?.weightKg,
+    reps: reps == null || reps.isEmpty ? item.exercise?.reps : reps,
+  );
 }

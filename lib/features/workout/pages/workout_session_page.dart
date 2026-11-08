@@ -416,18 +416,19 @@ class _SessionScaffold extends StatelessWidget {
     SessionItem item,
     int setNumber,
   ) async {
-    final suggestion = state.lastPerformances[item.name];
-    final reference = suggestion == null || suggestion.sets.isEmpty
-        ? null
-        : suggestion.sets.last;
+    final prefill = setPrefill(
+      item,
+      setNumber,
+      lastTime: state.lastPerformances[item.name],
+    );
 
     final outcome = await showSetLogSheet(
       context,
       exerciseName: item.name,
       setNumber: setNumber,
       current: item.setNumbered(setNumber),
-      suggestedWeightKg: reference?.weightKg,
-      suggestedReps: reference?.reps ?? item.exercise?.reps,
+      suggestedWeightKg: prefill.weightKg,
+      suggestedReps: prefill.reps,
     );
 
     switch (outcome) {
