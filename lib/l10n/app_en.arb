@@ -189,6 +189,7 @@
   "planEditorDayLabel": "Day label",
   "planEditorSingleDayLabel": "Single day",
   "planEditorDayName": "Day {letter}",
+  "planEditorImportedPlanName": "Imported plan",
   "planEditorAddDay": "Add day",
   "planEditorRemoveDay": "Remove day",
   "planEditorRemoveDayConfirmTitle": "Remove the day?",

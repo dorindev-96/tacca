@@ -45,6 +45,22 @@ class PlanEditorCubit extends Cubit<PlanEditorState> {
     if (draft.days.isEmpty) {
       draft.days.add(WorkoutDay(label: labels.singleDay, sortOrder: 0));
     }
+    _fillBlanks(draft, labels);
+  }
+
+  /// Il parser riporta quello che ha letto e lascia vuoto il resto: i
+  /// ripieghi si scrivono qui, nella lingua di chi crea la scheda, perché
+  /// restano nei dati. Come in un giorno aggiunto a mano, un giorno senza
+  /// nome prende la lettera della sua posizione; quello di una scheda a
+  /// giorno singolo è il giorno implicito.
+  static void _fillBlanks(WorkoutPlan draft, PlanEditorLabels labels) {
+    if (draft.name.isBlank) draft.name = labels.importedPlanName;
+    for (final (i, day) in draft.days.indexed) {
+      if (!day.label.isBlank) continue;
+      day.label = draft.days.length == 1
+          ? labels.singleDay
+          : labels.dayName(_dayLetter(i));
+    }
   }
 
   PlanEditorCubit.edit({

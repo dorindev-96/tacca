@@ -190,6 +190,7 @@
   "planEditorDayLabel": "Libellé du jour",
   "planEditorSingleDayLabel": "Jour unique",
   "planEditorDayName": "Jour {letter}",
+  "planEditorImportedPlanName": "Programme importé",
   "planEditorAddDay": "Ajouter un jour",
   "planEditorRemoveDay": "Supprimer le jour",
   "planEditorRemoveDayConfirmTitle": "Supprimer le jour ?",

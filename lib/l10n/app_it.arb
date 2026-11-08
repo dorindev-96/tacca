@@ -432,6 +432,8 @@
     "description": "Etichetta assegnata a un giorno appena aggiunto (A, B, C…). Finisce nei dati della scheda, non solo a schermo.",
     "placeholders": { "letter": { "type": "String" } }
   },
+  "planEditorImportedPlanName": "Scheda importata",
+  "@planEditorImportedPlanName": { "description": "Nome dato a una scheda importata con l'AI in cui non è stato letto nessun nome. Finisce nei dati della scheda, non solo a schermo." },
   "planEditorAddDay": "Aggiungi giorno",
   "@planEditorAddDay": { "description": "Azione per aggiungere un nuovo giorno." },
   "planEditorRemoveDay": "Rimuovi giorno",

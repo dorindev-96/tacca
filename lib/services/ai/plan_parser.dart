@@ -115,12 +115,15 @@ class PlanParser {
 
   /// Fallback dopo il secondo fallimento (§6.2 punto 5, RNF-05): il testo
   /// grezzo della risposta diventa un blocco `freeText` editabile.
+  ///
+  /// Nome e giorno restano senza testo: i ripieghi finiscono **dentro la
+  /// scheda**, quindi vanno scritti nella lingua di chi la crea, e il parser
+  /// una lingua non ce l'ha. Li mette `PlanEditorCubit.draft`.
   PlanDto fallback(String raw, {String? planName}) {
     return PlanDto(
-      name: planName.trimmedOrNull ?? 'Scheda importata',
+      name: planName.trimmedOrNull,
       days: [
         DayDto(
-          label: 'Giorno unico',
           blocks: [BlockDto(type: BlockType.freeText.name, content: raw)],
         ),
       ],
@@ -129,6 +132,9 @@ class PlanParser {
 
   /// Unico punto di conversione DTO → entity (§6.2 punto 6). Assegna i
   /// `sortOrder` e copia solo i parametri pertinenti al tipo di blocco.
+  ///
+  /// Riporta quello che ha letto e basta: un nome o un'etichetta assenti
+  /// restano vuoti, e li riempie l'editor nella lingua dell'utente.
   WorkoutPlan toEntity(PlanDto dto, {List<String> imagePaths = const []}) {
     final now = DateTime.now();
     final plan = WorkoutPlan(
@@ -142,7 +148,7 @@ class PlanParser {
 
     for (final (d, dayDto) in dto.days.indexed) {
       final day = WorkoutDay(
-        label: dayDto.label.trimmedOrNull ?? 'Giorno ${d + 1}',
+        label: dayDto.label.trimmedOrNull ?? '',
         notes: dayDto.notes,
         sortOrder: d,
       );

@@ -190,6 +190,7 @@
   "planEditorDayLabel": "Bezeichnung des Tages",
   "planEditorSingleDayLabel": "Einziger Tag",
   "planEditorDayName": "Tag {letter}",
+  "planEditorImportedPlanName": "Importierter Plan",
   "planEditorAddDay": "Tag hinzufügen",
   "planEditorRemoveDay": "Tag entfernen",
   "planEditorRemoveDayConfirmTitle": "Tag entfernen?",

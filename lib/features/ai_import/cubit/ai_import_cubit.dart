@@ -8,6 +8,7 @@ import '../../../core/extensions/blank_text.dart';
 import '../../../services/ai/ai_provider.dart';
 import '../../../services/ai/ai_selection.dart';
 import '../../../services/ai/plan_parser.dart';
+import '../../../services/ai/prompts.dart';
 import '../../../services/images/image_input.dart';
 import '../../../services/images/ocr_service.dart';
 import '../../../services/images/plan_image_store.dart';
@@ -137,7 +138,6 @@ class AiImportCubit extends Cubit<AiImportState> {
         for (final bytes in state.images) await _imageStore.saveOriginal(bytes),
       ];
       final draft = _parser.toEntity(extraction.plan, imagePaths: imagePaths);
-      if (draft.name.isBlank) draft.name = 'Scheda importata';
 
       emit(
         state.copyWith(
@@ -172,7 +172,7 @@ class AiImportCubit extends Cubit<AiImportState> {
         if (page.isNotEmpty)
           pages.length == 1
               ? page
-              : '--- Pagina ${i + 1} di ${pages.length} ---\n$page',
+              : '${ocrPageHeader(i + 1, pages.length)}\n$page',
     ].join('\n\n');
   }
 }

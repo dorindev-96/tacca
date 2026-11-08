@@ -190,6 +190,7 @@
   "planEditorDayLabel": "Dagens namn",
   "planEditorSingleDayLabel": "Enda dagen",
   "planEditorDayName": "Dag {letter}",
+  "planEditorImportedPlanName": "Importerat program",
   "planEditorAddDay": "Lägg till dag",
   "planEditorRemoveDay": "Ta bort dag",
   "planEditorRemoveDayConfirmTitle": "Ta bort dagen?",

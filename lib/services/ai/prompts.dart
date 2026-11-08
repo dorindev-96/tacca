@@ -398,3 +398,12 @@ String retryUserText(String parseError) {
       'Answer again with the corrected JSON object ONLY, with no text before '
       'or after it, keeping the plan in its original language.';
 }
+
+/// Separatore fra le pagine lette dall'OCR del telefono, quando le foto
+/// arrivano al modello come testo (modello senza immagini).
+///
+/// È testo che il modello legge, quindi sta qui e in inglese come il resto
+/// dei prompt: dice dove finisce una foto e comincia l'altra, non va
+/// trascritto nella scheda.
+String ocrPageHeader(int pageIndex, int pageCount) =>
+    '--- Page $pageIndex of $pageCount ---';
