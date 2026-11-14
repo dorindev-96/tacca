@@ -26,6 +26,11 @@
 		A11CE000000000000000001F /* LiveSessionBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11CE0000000000000000016 /* LiveSessionBridge.swift */; };
 		A11CE0000000000000000022 /* CompleteSetIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11CE0000000000000000011 /* CompleteSetIntent.swift */; };
 		A11CE0000000000000000020 /* TaccaLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A11CE0000000000000000002 /* TaccaLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B22CE0000000000000000010 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22CE0000000000000000001 /* ShareViewController.swift */; };
+		B22CE0000000000000000011 /* SharedTextStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22CE0000000000000000002 /* SharedTextStore.swift */; };
+		B22CE0000000000000000012 /* SharedTextStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22CE0000000000000000002 /* SharedTextStore.swift */; };
+		B22CE0000000000000000013 /* SharedTextBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22CE0000000000000000003 /* SharedTextBridge.swift */; };
+		B22CE0000000000000000014 /* TaccaShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B22CE0000000000000000000 /* TaccaShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,6 +47,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = A11CE0000000000000000001;
 			remoteInfo = TaccaLiveActivity;
+		};
+		B22CE0000000000000000020 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B22CE0000000000000000030;
+			remoteInfo = TaccaShare;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -63,6 +75,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				A11CE0000000000000000020 /* TaccaLiveActivity.appex in Embed Foundation Extensions */,
+				B22CE0000000000000000014 /* TaccaShare.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -104,6 +117,13 @@
 		A11CE0000000000000000016 /* LiveSessionBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveSessionBridge.swift; sourceTree = "<group>"; };
 		A11CE0000000000000000017 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		A11CE0000000000000000021 /* LiveActivity.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = LiveActivity.xcconfig; path = Flutter/LiveActivity.xcconfig; sourceTree = "<group>"; };
+		B22CE0000000000000000000 /* TaccaShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TaccaShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B22CE0000000000000000001 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		B22CE0000000000000000002 /* SharedTextStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTextStore.swift; sourceTree = "<group>"; };
+		B22CE0000000000000000003 /* SharedTextBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTextBridge.swift; sourceTree = "<group>"; };
+		B22CE0000000000000000004 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B22CE0000000000000000005 /* TaccaShare.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TaccaShare.entitlements; sourceTree = "<group>"; };
+		B22CE0000000000000000006 /* ShareExtension.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = ShareExtension.xcconfig; path = Flutter/ShareExtension.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -124,6 +144,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		A11CE0000000000000000008 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B22CE0000000000000000033 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -158,6 +185,7 @@
 				7AFA3C8E1D35360C0083082E /* Release.xcconfig */,
 				9740EEB31CF90195004384FC /* Generated.xcconfig */,
 				A11CE0000000000000000021 /* LiveActivity.xcconfig */,
+				B22CE0000000000000000006 /* ShareExtension.xcconfig */,
 			);
 			name = Flutter;
 			sourceTree = "<group>";
@@ -169,6 +197,8 @@
 				97C146F01CF9000F007C117D /* Runner */,
 				A11CE000000000000000000E /* LiveSessionShared */,
 				A11CE000000000000000000D /* TaccaLiveActivity */,
+				B22CE0000000000000000051 /* SharedText */,
+				B22CE0000000000000000050 /* TaccaShare */,
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				CFE398DB9BE778F5126D4D38 /* Pods */,
@@ -182,6 +212,7 @@
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
 				A11CE0000000000000000002 /* TaccaLiveActivity.appex */,
+				B22CE0000000000000000000 /* TaccaShare.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -197,6 +228,7 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				A11CE0000000000000000016 /* LiveSessionBridge.swift */,
+				B22CE0000000000000000003 /* SharedTextBridge.swift */,
 				A11CE0000000000000000017 /* Runner.entitlements */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
@@ -235,6 +267,24 @@
 				A11CE0000000000000000013 /* TaccaLiveActivity.entitlements */,
 			);
 			path = TaccaLiveActivity;
+			sourceTree = "<group>";
+		};
+		B22CE0000000000000000051 /* SharedText */ = {
+			isa = PBXGroup;
+			children = (
+				B22CE0000000000000000002 /* SharedTextStore.swift */,
+			);
+			path = SharedText;
+			sourceTree = "<group>";
+		};
+		B22CE0000000000000000050 /* TaccaShare */ = {
+			isa = PBXGroup;
+			children = (
+				B22CE0000000000000000001 /* ShareViewController.swift */,
+				B22CE0000000000000000004 /* Info.plist */,
+				B22CE0000000000000000005 /* TaccaShare.entitlements */,
+			);
+			path = TaccaShare;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -277,6 +327,7 @@
 			);
 			dependencies = (
 				A11CE000000000000000000B /* PBXTargetDependency */,
+				B22CE0000000000000000021 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
@@ -300,6 +351,23 @@
 			productReference = A11CE0000000000000000002 /* TaccaLiveActivity.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		B22CE0000000000000000030 /* TaccaShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B22CE0000000000000000031 /* Build configuration list for PBXNativeTarget "TaccaShare" */;
+			buildPhases = (
+				B22CE0000000000000000032 /* Sources */,
+				B22CE0000000000000000033 /* Frameworks */,
+				B22CE0000000000000000034 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TaccaShare;
+			productName = TaccaShare;
+			productReference = B22CE0000000000000000000 /* TaccaShare.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -321,6 +389,9 @@
 					A11CE0000000000000000001 = {
 						CreatedOnToolsVersion = 15.0;
 					};
+					B22CE0000000000000000030 = {
+						CreatedOnToolsVersion = 15.0;
+					};
 				};
 			};
 			buildConfigurationList = 97C146E91CF9000F007C117D /* Build configuration list for PBXProject "Runner" */;
@@ -339,6 +410,7 @@
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
 				A11CE0000000000000000001 /* TaccaLiveActivity */,
+				B22CE0000000000000000030 /* TaccaShare */,
 			);
 		};
 /* End PBXProject section */
@@ -363,6 +435,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		A11CE0000000000000000009 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B22CE0000000000000000034 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -485,6 +564,8 @@
 				A11CE0000000000000000022 /* CompleteSetIntent.swift in Sources */,
 				A11CE000000000000000001D /* TaccaSessionAttributes.swift in Sources */,
 				A11CE000000000000000001E /* PendingActionStore.swift in Sources */,
+				B22CE0000000000000000012 /* SharedTextStore.swift in Sources */,
+				B22CE0000000000000000013 /* SharedTextBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -500,6 +581,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B22CE0000000000000000032 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B22CE0000000000000000010 /* ShareViewController.swift in Sources */,
+				B22CE0000000000000000011 /* SharedTextStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -512,6 +602,11 @@
 			isa = PBXTargetDependency;
 			target = A11CE0000000000000000001 /* TaccaLiveActivity */;
 			targetProxy = A11CE000000000000000000C /* PBXContainerItemProxy */;
+		};
+		B22CE0000000000000000021 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B22CE0000000000000000030 /* TaccaShare */;
+			targetProxy = B22CE0000000000000000020 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -928,6 +1023,92 @@
 			};
 			name = Profile;
 		};
+		B22CE0000000000000000040 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B22CE0000000000000000006 /* ShareExtension.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = TaccaShare/TaccaShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = 86UKG3NAA4;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TaccaShare/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.tverdohleb.tacca.Share;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		B22CE0000000000000000041 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B22CE0000000000000000006 /* ShareExtension.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = TaccaShare/TaccaShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = 86UKG3NAA4;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TaccaShare/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.tverdohleb.tacca.Share;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		B22CE0000000000000000042 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B22CE0000000000000000006 /* ShareExtension.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = TaccaShare/TaccaShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = 86UKG3NAA4;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TaccaShare/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.tverdohleb.tacca.Share;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Profile;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -967,6 +1148,16 @@
 				A11CE0000000000000000004 /* Debug */,
 				A11CE0000000000000000005 /* Release */,
 				A11CE0000000000000000006 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B22CE0000000000000000031 /* Build configuration list for PBXNativeTarget "TaccaShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B22CE0000000000000000040 /* Debug */,
+				B22CE0000000000000000041 /* Release */,
+				B22CE0000000000000000042 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

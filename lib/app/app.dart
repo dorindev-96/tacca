@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/constants.dart';
+import '../features/ai_import/widgets/shared_text_intake.dart';
 import '../features/legal/widgets/legal_gate.dart';
 import '../features/settings/cubit/locale_cubit.dart';
 import '../features/settings/cubit/theme_mode_cubit.dart';
@@ -65,8 +66,12 @@ class _AppState extends State<App> {
       localeListResolutionCallback: App.resolveLocale,
       routerConfig: _router,
       // La manleva del primo avvio sta *sopra* al router: finché non è
-      // accettata, `child` (cioè tutte le schermate) non viene montato.
-      builder: (context, child) => LegalGate(child: child!),
+      // accettata, `child` (cioè tutte le schermate) non viene montato. La
+      // raccolta del testo condiviso con l'app sta *dentro* la manleva, così
+      // non può aprire una schermata dietro un avviso non ancora accettato.
+      builder: (context, child) => LegalGate(
+        child: SharedTextIntake(router: _router, child: child!),
+      ),
     );
   }
 }

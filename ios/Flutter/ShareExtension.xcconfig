@@ -1,0 +1,7 @@
+// Configurazione del target dell'estensione di condivisione (TaccaShare).
+//
+// Come LiveActivity.xcconfig, e per la stessa ragione: porta dentro
+// FLUTTER_BUILD_NAME e FLUTTER_BUILD_NUMBER, perché Apple pretende che
+// versione e build di ogni estensione coincidano con quelle dell'app.
+// Niente Pods: l'estensione non linka né Flutter né i plugin.
+#include "Generated.xcconfig"

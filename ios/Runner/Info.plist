@@ -4,6 +4,24 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Lo schema con cui l'estensione di condivisione TaccaShare riapre
+	     l'app dopo aver lasciato il testo nell'App Group (tacca://shared-text,
+	     vedi AppDelegate). -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.tverdohleb.tacca</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>tacca</string>
+			</array>
+		</dict>
+	</array>
+	<!-- L'app non ha deep link: senza questo Flutter passerebbe l'URL qui
+	     sopra al router come una route da aprire. -->
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

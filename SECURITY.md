@@ -24,7 +24,7 @@ What to expect: this is a spare-time project maintained by one person, so the ho
 
 - Anything that exposes a stored API key (OpenRouter, Anthropic or Google) to another app, to a log, to a crash report, to an exported file or to the network beyond the intended request — including sending it to a provider other than the one it belongs to.
 - Anything that lets a third party read or modify the local database or the plan images without the user's action.
-- Injection or code-execution paths through the AI import: a hostile plan photo, a hostile pasted text, or a hostile model response walking through the parser.
+- Injection or code-execution paths through the AI import: a hostile plan photo, a hostile pasted text, a hostile text shared with the app from another app (Tacca is a share target for plain text), or a hostile model response walking through the parser.
 - A crafted backup file that, once picked for a restore, writes anywhere outside the app's own image folder, or changes the database without the user's confirmation, instead of being rejected.
 - A vulnerable dependency that is actually reachable from this app's code.
 
@@ -38,6 +38,10 @@ What to expect: this is a spare-time project maintained by one person, so the ho
 ## How the app handles secrets, for reference
 
 API keys are written only to `flutter_secure_storage` (iOS Keychain / Android Keystore) by `SecureSettingsRepository`, one entry per provider (`ai.openrouter.apiKey`, `ai.anthropic.apiKey`, `ai.google.apiKey`). A key is never written to ObjectBox, never included in an export or a backup, never logged, and never leaves the device except as the authentication header (`Authorization` for OpenRouter, `x-api-key` for Anthropic, `x-goog-api-key` for Google) of a request to *that same provider*, triggered by the user. The repository ships no key of its own, and `android/key.properties`, which holds the Android signing credentials on the maintainer's machine, is git-ignored and must never be committed.
+
+## Text shared with the app, for reference
+
+Tacca accepts plain text from the system share sheet so that the reply of an external AI chat can come back into the keyless import without the clipboard. The text is held by the platform side (a field of the Android activity; the App Group `UserDefaults` of the iOS share extension) until the Dart side asks for it, and then goes to the same parser as pasted text: it is never executed, never used as a path or a URL, and never written anywhere before the user reviews the resulting plan in the editor. The iOS extension opens the app through its own URL scheme (`tacca://shared-text`) and nothing else; deep linking is disabled, so no URL reaches the router.
 
 ## Local backups, for reference
 

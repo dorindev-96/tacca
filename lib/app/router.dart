@@ -47,6 +47,7 @@ import '../services/images/ocr_service.dart';
 import '../services/images/plan_image_store.dart';
 import '../services/live_session/live_session_controller.dart';
 import '../services/notifications/session_notifier.dart';
+import '../services/share/text_share_service.dart';
 import '../services/timer/timer_engine.dart';
 import '../services/wakelock/screen_wake.dart';
 
@@ -158,16 +159,19 @@ GoRouter createRouter() {
           child: const AiImportPage(),
         ),
       ),
-      // Lo stesso import, ma con l'AI fuori dall'app: l'utente porta il
-      // prompt nella chat che preferisce e riporta indietro la risposta
-      // (RF-03). Nessuna key, nessuna rete: qui non c'è AiProvider.
+      // Lo stesso import, ma con l'AI fuori dall'app: l'utente manda il
+      // prompt alla chat che preferisce dal foglio di condivisione e la
+      // risposta torna condivisa con Tacca, o incollata (RF-03). Nessuna
+      // key, nessuna rete: qui non c'è AiProvider. La route la apre anche
+      // `SharedTextIntake`, quando un'altra app condivide un testo con noi.
       GoRoute(
-        path: '/plans/new/import/paste',
+        path: AiPasteImportPage.routePath,
         builder: (context, state) => BlocProvider(
           create: (context) => AiPasteImportCubit(
             imageInput: context.read<ImageInput>(),
             imageStore: context.read<PlanImageStore>(),
             ocr: context.read<OcrService>(),
+            share: context.read<TextShareService>(),
             clipboard: context.read<ClipboardService>(),
           ),
           child: const AiPasteImportPage(),

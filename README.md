@@ -27,7 +27,7 @@ Personal project, pre-1.0. What is actually built:
 | History | ✅ done |
 | Local backup: export to a file, restore from it | ✅ done |
 | AI import from photo / gallery / pasted text | ✅ done, **OpenRouter, Anthropic and Google Gemini** |
-| AI import through your own chat, no key needed | ✅ done — copy the prompt, paste the answer back |
+| AI import through your own chat, no key needed | ✅ done — share the prompt to your chat, share the reply back |
 | AI chat to create/edit a plan | 🚫 not planned — importing a plan and then editing it by hand covers the need |
 | Providers | ✅ done |
 
@@ -45,7 +45,7 @@ Personal project, pre-1.0. What is actually built:
 
 **AI import (optional, bring your own key).** Photograph a paper plan, pick images from the gallery, or paste text; the model returns a structured plan that lands in the manual editor for review — nothing is saved until you press save. If the selected model has no vision support, the photos go through the phone's on-device OCR first and only the text is sent. If the model fails to produce valid JSON twice in a row, the raw answer is kept as a free-text block: your input is never discarded.
 
-**AI import through your own chat (no key at all).** The same import with the model outside the app, in two guided steps. Step one takes your plan — typed, pasted, or photographed and read by the phone's on-device OCR into an editable field — and copies a self-contained prompt to the clipboard. You paste it into whichever AI chat you already use, then step two takes the answer back. The pasted text goes through the very same pipeline as the API route, and it does not have to be clean JSON: the parser digs the plan out of greetings, code fences, whole pasted conversations, trailing commas and stray comments. If it still cannot read it, you get the parser's own error formulated as a correction to paste back into the chat — the manual twin of the automatic retry — and, as a last resort, the answer is kept as a free-text block. No API key, no account, no network call: the app never talks to anyone here.
+**AI import through your own chat (no key at all).** The same import with the model outside the app, in two guided steps. Step one takes your plan — typed, pasted, or photographed and read by the phone's on-device OCR into an editable field — and hands a self-contained prompt to the **system share sheet**: you pick the AI chat you already use from the list of apps and the prompt lands in it. Step two takes the answer back, and the shortest way is the same gesture in reverse: *Share* the reply from the chat and pick **Tacca** — the app opens on step two with the reply already read, and if it parses the review editor opens at once. Copying and pasting by hand still works (*Copia il prompt*, *Incolla dagli appunti*), and when no share sheet is available the prompt goes to the clipboard on its own. The reply goes through the very same pipeline as the API route, and it does not have to be clean JSON: the parser digs the plan out of greetings, code fences, whole pasted conversations, trailing commas and stray comments. If it still cannot read it, you get the parser's own error formulated as a correction to paste back into the chat — the manual twin of the automatic retry — and, as a last resort, the answer is kept as a free-text block. No API key, no account, no network call: the app never talks to anyone here.
 
 **Local backup.** *Impostazioni → Backup* writes the whole archive — every plan, archived ones included, the full workout history and the original photos of imported plans — into a single `.tacca` file and hands it to the system share sheet, so it can go to Files, Drive, an email to yourself or another phone. Restoring picks that file with the system file picker, reads and checks it end to end before anything changes, says what it is about to replace, and only then swaps the archive in a single database transaction: a broken, truncated or foreign file is rejected with nothing touched, and restoring the same backup twice does not duplicate anything. Settings and API keys are deliberately not in the backup. The file is gzip-compressed JSON Lines, one record per line, so even a backup with dozens of photos is written and read one record at a time.
 
@@ -55,7 +55,7 @@ Personal project, pre-1.0. What is actually built:
 
 Requirements: **Flutter 3.35.x** (Dart 3.9), and Android 8.0+ (`minSdk 26`) or iOS 15.6+.
 
-On iOS the lock-screen Live Activity is a second Xcode target that needs an App Group enabling once on your developer account — [docs/ios-live-activity.md](docs/ios-live-activity.md). Skip it and the app still builds and runs; you just get no banner.
+On iOS the lock-screen Live Activity is a second Xcode target that needs an App Group enabling once on your developer account — [docs/ios-live-activity.md](docs/ios-live-activity.md). Skip it and the app still builds and runs; you just get no banner. The share extension that lets a chat app share its reply back into Tacca is a third target with the same one-off step — [docs/ios-share-extension.md](docs/ios-share-extension.md); without it the reply is pasted by hand.
 
 ```bash
 flutter pub get

@@ -8,7 +8,7 @@ import '../../../data/entities/workout_plan.dart';
 part 'ai_paste_import_state.freezed.dart';
 
 /// I due passi del flusso guidato (RF-03, modalità senza API key): si prepara
-/// il messaggio da copiare, poi si riporta indietro la risposta della chat.
+/// il messaggio da mandare alla chat, poi si riporta indietro la risposta.
 enum AiPasteImportStep { compose, paste }
 
 /// Cosa è andato storto, senza dire *come* raccontarlo: il testo lo sceglie
@@ -18,6 +18,24 @@ enum AiPasteImportStep { compose, paste }
 /// [PlanParser] in `parseError`: quello non è testo d'interfaccia, è ciò che
 /// va rimandato alla chat perché si corregga.
 enum AiPasteImportError { ocrEmpty, parse }
+
+/// Com'è uscito dall'app un messaggio per la chat (il prompt, la correzione).
+///
+/// Lo restituiscono i metodi del cubit che lo mandano fuori, perché la pagina
+/// deve dire all'utente cosa è successo — e in particolare quando il foglio
+/// di condivisione non c'era e il testo è finito negli appunti al suo posto.
+enum AiPasteDelivery {
+  /// Consegnato all'app scelta nel foglio di condivisione.
+  shared,
+
+  /// Messo negli appunti: perché l'utente l'ha chiesto, o perché il foglio
+  /// di condivisione non era disponibile.
+  copied,
+
+  /// L'utente ha chiuso il foglio senza scegliere niente: non è uscito
+  /// niente e non cambia niente.
+  cancelled,
+}
 
 @freezed
 sealed class AiPasteImportState with _$AiPasteImportState {
@@ -34,11 +52,12 @@ sealed class AiPasteImportState with _$AiPasteImportState {
     @Default('') String text,
     @Default('') String hint,
 
-    /// Il messaggio copiato negli appunti, conservato per poterlo ricopiare
-    /// e mostrare nel secondo passo.
+    /// Il messaggio mandato alla chat, conservato per poterlo rimandare o
+    /// copiare dal secondo passo.
     @Default('') String prompt,
 
-    /// La risposta incollata dall'utente.
+    /// La risposta della chat: incollata dall'utente o arrivata da sola,
+    /// condivisa con l'app dalla chat.
     @Default('') String response,
     @Default(false) bool isReadingImages,
     @Default(false) bool isParsing,
@@ -58,7 +77,7 @@ sealed class AiPasteImportState with _$AiPasteImportState {
   }) = _AiPasteImportState;
 
   /// Senza testo non c'è niente da far leggere a una chat: le foto da sole
-  /// non bastano, perché negli appunti ci va del testo.
+  /// non bastano, perché alla chat va del testo.
   bool get canContinue => !text.isBlank && !isReadingImages;
 
   bool get canFinish => !response.isBlank && !isParsing;

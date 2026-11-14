@@ -20,10 +20,18 @@
         android:label="Tacca"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- singleTask e non singleTop: l'activity riceve anche i testi che
+             le altre app condividono con Tacca (intent-filter SEND qui
+             sotto). Con singleTop una condivisione partita da un'altra app
+             creerebbe una SECONDA istanza dell'activity dentro il task di
+             quell'app, cioè un secondo motore Flutter nello stesso processo
+             che riapre ObjectBox sulla stessa cartella e muore. Con
+             singleTask il sistema riusa l'istanza che c'è (onNewIntent) o ne
+             crea una sola nel task di Tacca. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
@@ -40,6 +48,16 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- Tacca come destinazione di "Condividi" per un testo: è il
+                 viaggio di ritorno dell'import senza API key (RF-03), la
+                 risposta della chat AI condivisa con l'app invece che copiata.
+                 Il testo lo tiene MainActivity finché il Dart non lo chiede
+                 (canale tacca/shared_text). -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
             </intent-filter>
         </activity>
         <!-- Ricezione delle notifiche programmate dei timer, anche dopo un

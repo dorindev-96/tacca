@@ -3,7 +3,7 @@ description: "Gym workout plans: manual editor, guided session with timers, hist
 repository: https://github.com/dorex96/tacca
 issue_tracker: https://github.com/dorex96/tacca/issues
 publish_to: 'none'
-version: 1.0.1+20
+version: 1.0.1+22
 
 environment:
   sdk: ^3.9.0
@@ -35,9 +35,13 @@ dependencies:
   # Apre i termini e condizioni nel browser di sistema. L'app non
   # incorpora nessuna WebView: vedi lib/services/links/link_opener.dart.
   url_launcher: ^6.3.2
-  # Foglio di condivisione di sistema: serve solo a consegnare a un'altra app
-  # (WhatsApp, mail, "Salva nelle foto") il PNG di una scheda esportata. Il
-  # disegno dell'immagine è nostro, vedi services/images/widget_image_renderer.dart.
+  # Foglio di condivisione di sistema: consegna a un'altra app il PNG di una
+  # scheda esportata (WhatsApp, mail, "Salva nelle foto") e il prompt
+  # dell'import senza API key alla chat AI scelta dall'utente
+  # (services/share/). Il disegno dell'immagine è nostro, vedi
+  # services/images/widget_image_renderer.dart. Il viaggio di ritorno — il
+  # testo che un'altra app condivide con Tacca — non passa da qui: è nativo,
+  # vedi docs/ios-share-extension.md.
   share_plus: ^12.0.2
   # Selettore di file di sistema (plugin ufficiale flutter.dev): serve solo a
   # scegliere il file di un backup da ripristinare, Impostazioni → Backup.
