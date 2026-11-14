@@ -4,6 +4,8 @@ PODS:
     - FlutterMacOS
   - device_info_plus (0.0.1):
     - Flutter
+  - file_selector_ios (0.0.1):
+    - Flutter
   - Flutter (1.0.0)
   - flutter_image_compress_common (1.0.0):
     - Flutter
@@ -49,6 +51,8 @@ PODS:
   - SDWebImageWebPCoder (0.15.0):
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.17)
+  - share_plus (0.0.1):
+    - Flutter
   - url_launcher_ios (0.0.1):
     - Flutter
   - vibration (3.0.0):
@@ -59,6 +63,7 @@ PODS:
 DEPENDENCIES:
   - audioplayers_darwin (from `.symlinks/plugins/audioplayers_darwin/darwin`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
+  - file_selector_ios (from `.symlinks/plugins/file_selector_ios/ios`)
   - Flutter (from `Flutter`)
   - flutter_image_compress_common (from `.symlinks/plugins/flutter_image_compress_common/ios`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
@@ -70,6 +75,7 @@ DEPENDENCIES:
   - objectbox_flutter_libs (from `.symlinks/plugins/objectbox_flutter_libs/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
+  - share_plus (from `.symlinks/plugins/share_plus/ios`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
   - vibration (from `.symlinks/plugins/vibration/ios`)
   - wakelock_plus (from `.symlinks/plugins/wakelock_plus/ios`)
@@ -86,6 +92,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/audioplayers_darwin/darwin"
   device_info_plus:
     :path: ".symlinks/plugins/device_info_plus/ios"
+  file_selector_ios:
+    :path: ".symlinks/plugins/file_selector_ios/ios"
   Flutter:
     :path: Flutter
   flutter_image_compress_common:
@@ -108,6 +116,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/package_info_plus/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
+  share_plus:
+    :path: ".symlinks/plugins/share_plus/ios"
   url_launcher_ios:
     :path: ".symlinks/plugins/url_launcher_ios/ios"
   vibration:
@@ -118,6 +128,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   audioplayers_darwin: f15e209a3e856d1a7edcf98dc029f484fead2242
   device_info_plus: bf2e3232933866d73fe290f2942f2156cdd10342
+  file_selector_ios: 80c12e90ad3f2045ed6819d03742f1a4c5ec3f93
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_image_compress_common: d1d827ee42025290fc9e3203ece582e4c74182ed
   flutter_local_notifications: ff50f8405aaa0ccdc7dcfb9022ca192e8ad9688f
@@ -133,6 +144,7 @@ SPEC CHECKSUMS:
   path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba
   SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
   SDWebImageWebPCoder: 0e06e365080397465cc73a7a9b472d8a3bd0f377
+  share_plus: 8b6f8b3447e494cca5317c8c3073de39b3600d1f
   url_launcher_ios: bb13df5870e8c4234ca12609d04010a21be43dfa
   vibration: 8e4d81c3e73ab229a9fb5ab2692f789c4a46d74d
   wakelock_plus: 76957ab028e12bfa4e66813c99e46637f367fc7e
