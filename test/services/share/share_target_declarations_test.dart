@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tacca/services/share/shared_text_receiver.dart';
+import 'package:tacca/services/share/text_share_service.dart';
 
 /// Il viaggio di ritorno dell'import senza key vive in dichiarazioni native
 /// che nessun test Dart esercita e che la CI non compila: l'`intent-filter`
@@ -62,6 +63,22 @@ void main() {
       ).readAsStringSync();
       expect(bridge, contains('"${PlatformSharedTextReceiver.channelName}"'));
       expect(bridge, contains('"takePending"'));
+    });
+
+    test('il foglio per il testo lo presenta il nostro ponte, compilato e '
+        'registrato nell\'app', () {
+      final bridge = File(
+        'ios/Runner/TextShareBridge.swift',
+      ).readAsStringSync();
+      expect(bridge, contains('"${SystemTextShareService.iosChannelName}"'));
+      expect(
+        File('ios/Runner/AppDelegate.swift').readAsStringSync(),
+        contains('TextShareBridge('),
+      );
+      expect(
+        File('ios/Runner.xcodeproj/project.pbxproj').readAsStringSync(),
+        contains('TextShareBridge.swift in Sources */,'),
+      );
     });
 
     test('app ed estensione condividono lo stesso App Group', () {

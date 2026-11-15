@@ -10,6 +10,9 @@ import UIKit
   /// Ponte del testo condiviso con l'app dall'estensione `TaccaShare`.
   private var sharedText: SharedTextBridge?
 
+  /// Foglio di condivisione per il testo che esce dall'app (vedi il file).
+  private var textShare: TextShareBridge?
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -24,6 +27,7 @@ import UIKit
     if let controller = window?.rootViewController as? FlutterViewController {
       liveSession = LiveSessionBridge(messenger: controller.binaryMessenger)
       sharedText = SharedTextBridge(messenger: controller.binaryMessenger)
+      textShare = TextShareBridge(messenger: controller.binaryMessenger, rootController: controller)
     }
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)

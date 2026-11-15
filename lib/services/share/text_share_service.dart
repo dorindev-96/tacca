@@ -1,4 +1,5 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Com'è finita una condivisione di testo.
@@ -33,8 +34,22 @@ abstract interface class TextShareService {
   });
 }
 
+/// Su iOS il foglio lo presenta il nostro `TextShareBridge.swift`, altrove
+/// share_plus.
+///
+/// Su iOS share_plus lascia l'app congelata quando l'estensione scelta
+/// rimanda subito alla propria app (Gemini, scelta dalla lista "Altro"): il
+/// contenitore dell'estensione resta sopra l'app, invisibile, e si prende i
+/// tocchi. Il ponte nostro risponde una volta sola e, a condivisione finita
+/// o al ritorno dall'altra app, chiude quello che è rimasto. Se il ponte non
+/// c'è (un'app costruita senza) si ripiega su share_plus.
 class SystemTextShareService implements TextShareService {
-  const SystemTextShareService();
+  const SystemTextShareService({MethodChannel? iosChannel})
+    : _iosChannel = iosChannel ?? const MethodChannel(iosChannelName);
+
+  static const String iosChannelName = 'tacca/text_share';
+
+  final MethodChannel _iosChannel;
 
   @override
   Future<TextShareOutcome> share(
@@ -42,6 +57,49 @@ class SystemTextShareService implements TextShareService {
     String? subject,
     Rect? originRect,
   }) async {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      final native = await _shareOnIos(text, subject, originRect);
+      if (native != null) return native;
+    }
+    return _shareWithPlugin(text, subject, originRect);
+  }
+
+  /// `null` quando il ponte nativo non risponde: si passa a share_plus.
+  Future<TextShareOutcome?> _shareOnIos(
+    String text,
+    String? subject,
+    Rect? originRect,
+  ) async {
+    final String? raw;
+    try {
+      raw = await _iosChannel.invokeMethod<String>('share', {
+        'text': text,
+        'subject': ?subject,
+        if (originRect != null)
+          'origin': [
+            originRect.left,
+            originRect.top,
+            originRect.width,
+            originRect.height,
+          ],
+      });
+    } on MissingPluginException {
+      return null;
+    } on PlatformException {
+      return TextShareOutcome.unavailable;
+    }
+    return switch (raw) {
+      'shared' => TextShareOutcome.shared,
+      'dismissed' => TextShareOutcome.dismissed,
+      _ => TextShareOutcome.unavailable,
+    };
+  }
+
+  Future<TextShareOutcome> _shareWithPlugin(
+    String text,
+    String? subject,
+    Rect? originRect,
+  ) async {
     final ShareResult result;
     try {
       result = await SharePlus.instance.share(

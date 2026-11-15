@@ -12,6 +12,33 @@ and then takes the reply back. The reply can come back two ways:
 2. pasted by hand, as before — *Copia il prompt* and *Incolla dagli appunti*
    are still there on step 2 for chats the share sheet does not reach.
 
+### Going out on iOS: our own share sheet for text
+
+On iOS the prompt and the correction message are **not** shared through
+share_plus but through `ios/Runner/TextShareBridge.swift` (channel
+`tacca/text_share`); images and backups still use share_plus. The reason is a
+UIKit defect: when the chosen share extension completes its request before its
+view has appeared — which is what an extension that bounces straight to its
+own app does, Gemini for one — UIKit tries to dismiss the extension's
+container before presenting it, and the container stays on top of the app,
+invisible, swallowing every touch. Picked from the share sheet's *More* list
+the chain of presented controllers is longer and it happens every time: back
+in Tacca, the app looks frozen. share_plus answers from the completion
+handler and does nothing else. The bridge:
+
+1. answers Dart **once**, even if the completion fires more than once — and a
+   `completed == false` call while the sheet is still on screen (opening
+   *More*) is not taken as a cancel;
+2. once the share is over, dismisses whatever the presenting controller still
+   has on top of it;
+3. if the app went to the background during the share and comes back without
+   a completion, treats the share as done (`shared`) and does the same
+   clean-up.
+
+The one trade-off: leaving the sheet open, switching to another app by hand
+and coming back closes the sheet and moves to step 2. *Condividi di nuovo* is
+right there.
+
 The first path needs the app to be a **share target**. That is one line of
 manifest on Android and a second Xcode target on iOS.
 
@@ -95,6 +122,9 @@ launch mode, URL scheme, extension activation rule) by
 - [ ] Step 1, *Condividi il prompt e continua*: the share sheet opens; pick a
       chat app → the chat receives the prompt and Tacca is on step 2 when you
       come back. Dismiss the sheet instead → Tacca stays on step 1.
+- [ ] Step 1 again, but scroll the share sheet to the end, tap *More* and
+      pick Gemini there: back in Tacca the app must respond to touches and be
+      on step 2. Same with *More* → cancel: still on step 1, still responsive.
 - [ ] In the chat, *Share* on the reply → Tacca is in the list; pick it → the
       app comes to the front on step 2, and the review editor opens if the
       reply parses.

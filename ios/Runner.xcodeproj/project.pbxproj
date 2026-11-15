@@ -30,6 +30,7 @@
 		B22CE0000000000000000011 /* SharedTextStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22CE0000000000000000002 /* SharedTextStore.swift */; };
 		B22CE0000000000000000012 /* SharedTextStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22CE0000000000000000002 /* SharedTextStore.swift */; };
 		B22CE0000000000000000013 /* SharedTextBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22CE0000000000000000003 /* SharedTextBridge.swift */; };
+		B22CE0000000000000000015 /* TextShareBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22CE0000000000000000007 /* TextShareBridge.swift */; };
 		B22CE0000000000000000014 /* TaccaShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B22CE0000000000000000000 /* TaccaShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -121,6 +122,7 @@
 		B22CE0000000000000000001 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		B22CE0000000000000000002 /* SharedTextStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTextStore.swift; sourceTree = "<group>"; };
 		B22CE0000000000000000003 /* SharedTextBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTextBridge.swift; sourceTree = "<group>"; };
+		B22CE0000000000000000007 /* TextShareBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextShareBridge.swift; sourceTree = "<group>"; };
 		B22CE0000000000000000004 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B22CE0000000000000000005 /* TaccaShare.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TaccaShare.entitlements; sourceTree = "<group>"; };
 		B22CE0000000000000000006 /* ShareExtension.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = ShareExtension.xcconfig; path = Flutter/ShareExtension.xcconfig; sourceTree = "<group>"; };
@@ -229,6 +231,7 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				A11CE0000000000000000016 /* LiveSessionBridge.swift */,
 				B22CE0000000000000000003 /* SharedTextBridge.swift */,
+				B22CE0000000000000000007 /* TextShareBridge.swift */,
 				A11CE0000000000000000017 /* Runner.entitlements */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
@@ -566,6 +569,7 @@
 				A11CE000000000000000001E /* PendingActionStore.swift in Sources */,
 				B22CE0000000000000000012 /* SharedTextStore.swift in Sources */,
 				B22CE0000000000000000013 /* SharedTextBridge.swift in Sources */,
+				B22CE0000000000000000015 /* TextShareBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
