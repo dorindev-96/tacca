@@ -22,7 +22,9 @@ import '../services/ai/providers/routing_ai_provider.dart';
 import '../services/backup/backup_files.dart';
 import '../services/backup/backup_service.dart';
 import '../services/clipboard/clipboard_service.dart';
+import '../services/feedback/app_audio_session.dart';
 import '../services/feedback/session_feedback.dart';
+import '../services/feedback/ui_sounds.dart';
 import '../services/images/image_input.dart';
 import '../services/images/ocr_service.dart';
 import '../services/images/plan_image_store.dart';
@@ -86,8 +88,20 @@ class AppProviders extends StatelessWidget {
           create: (context) => ObjectBoxWorkoutLogRepository(objectBox),
         ),
         RepositoryProvider<TimerEngine>(create: (context) => TimerEngine()),
+        // Su iOS la sessione audio è una per tutta l'app: i due che suonano
+        // (segnali del timer, suoni dell'interfaccia) se la passano da qui.
+        RepositoryProvider<AppAudioSession>(
+          create: (context) => AppAudioSession(),
+        ),
         RepositoryProvider<SessionFeedback>(
-          create: (context) => PluginSessionFeedback(),
+          create: (context) => PluginSessionFeedback(
+            audioSession: context.read<AppAudioSession>(),
+          ),
+        ),
+        RepositoryProvider<UiSounds>(
+          create: (context) =>
+              PluginUiSounds(audioSession: context.read<AppAudioSession>()),
+          dispose: (sounds) => sounds.dispose(),
         ),
         // Un solo host per il plugin delle notifiche: `initialize` registra
         // una sola coppia di callback e i servizi che le usano sono due.

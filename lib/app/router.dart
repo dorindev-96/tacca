@@ -42,6 +42,7 @@ import '../services/backup/backup_files.dart';
 import '../services/backup/backup_service.dart';
 import '../services/clipboard/clipboard_service.dart';
 import '../services/feedback/session_feedback.dart';
+import '../services/feedback/ui_sounds.dart';
 import '../services/images/image_input.dart';
 import '../services/images/ocr_service.dart';
 import '../services/images/plan_image_store.dart';
@@ -318,6 +319,9 @@ class _HomeShellState extends State<_HomeShell> {
     // l'accettazione, cioè molto dopo la prima lettura del database. Si
     // guarda quindi lo stato appena montati, oltre ad ascoltarne i cambi.
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeProposeResume());
+    // Il plop della tab bar si carica adesso, non al primo tocco: lì
+    // arriverebbe a goccia già ferma.
+    context.read<UiSounds>().prepare();
   }
 
   void _onDestinationSelected(int index) {
@@ -352,6 +356,9 @@ class _HomeShellState extends State<_HomeShell> {
               child: HomeTabBar(
                 currentIndex: widget.navigationShell.currentIndex,
                 onSelected: _onDestinationSelected,
+                // Il suono è della goccia che arriva, non del dito che
+                // tocca: lo decide la barra quando.
+                onDropLanded: () => context.read<UiSounds>().drop(),
                 tabs: [
                   HomeTab(icon: AppIcons.noteAdd, label: l10n.navPlans),
                   HomeTab(icon: AppIcons.calendar, label: l10n.navHistory),

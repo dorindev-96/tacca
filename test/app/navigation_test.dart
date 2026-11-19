@@ -19,6 +19,7 @@ import 'package:tacca/services/ai/model_catalog.dart';
 import 'package:tacca/services/backup/backup_files.dart';
 import 'package:tacca/services/backup/backup_service.dart';
 import 'package:tacca/services/feedback/session_feedback.dart';
+import 'package:tacca/services/feedback/ui_sounds.dart';
 import 'package:tacca/services/live_session/live_session_controller.dart';
 import 'package:tacca/services/notifications/session_notifier.dart';
 import 'package:tacca/services/timer/timer_engine.dart';
@@ -82,6 +83,7 @@ void main() {
     WidgetTester tester, {
     required FakePlanRepository plans,
     required FakeWorkoutLogRepository logs,
+    RecordingUiSounds? sounds,
   }) async {
     final settings = FakeSettingsRepository();
     final router = createRouter();
@@ -97,6 +99,9 @@ void main() {
           ),
           RepositoryProvider<BackupService>.value(value: FakeBackupService()),
           RepositoryProvider<BackupFiles>.value(value: FakeBackupFiles()),
+          RepositoryProvider<UiSounds>.value(
+            value: sounds ?? RecordingUiSounds(),
+          ),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -176,6 +181,36 @@ void main() {
       find.text('Nessuna scheda. Creane una per iniziare.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('la goccia della tab bar fa plop quando arriva, una volta per '
+      'cambio di destinazione', (tester) async {
+    final sounds = RecordingUiSounds();
+    await pumpApp(
+      tester,
+      plans: FakePlanRepository(),
+      logs: FakeWorkoutLogRepository(),
+      sounds: sounds,
+    );
+    // Il suono si carica al montaggio della shell, e nessuno suona da solo.
+    expect(sounds.prepareCount, 1);
+    expect(sounds.drops, 0);
+
+    await tester.tap(find.byKey(const ValueKey('home-tab-Storico')));
+    await tester.pump();
+    // Sul tocco la goccia è appena partita: il plop è dell'arrivo.
+    expect(sounds.drops, 0);
+    await tester.pumpAndSettle();
+    expect(sounds.drops, 1);
+
+    // Ri-toccare la tab in cui si è già non sposta niente: nessun suono.
+    await tester.tap(find.byKey(const ValueKey('home-tab-Storico')));
+    await tester.pumpAndSettle();
+    expect(sounds.drops, 1);
+
+    await tester.tap(find.byKey(const ValueKey('home-tab-Schede')));
+    await tester.pumpAndSettle();
+    expect(sounds.drops, 2);
   });
 
   testWidgets('dalle Impostazioni si arriva al backup e si torna indietro', (
@@ -280,6 +315,7 @@ void main() {
         providers: [
           RepositoryProvider<PlanRepository>.value(value: plans),
           RepositoryProvider<WorkoutLogRepository>.value(value: logs),
+          RepositoryProvider<UiSounds>.value(value: RecordingUiSounds()),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -393,6 +429,7 @@ void main() {
           RepositoryProvider<PlanRepository>.value(value: plans),
           RepositoryProvider<WorkoutLogRepository>.value(value: logs),
           RepositoryProvider<TimerEngine>.value(value: timerEngine),
+          RepositoryProvider<UiSounds>.value(value: RecordingUiSounds()),
           RepositoryProvider<SessionFeedback>.value(
             value: RecordingSessionFeedback(),
           ),

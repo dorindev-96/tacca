@@ -64,7 +64,8 @@ flutter:
   uses-material-design: true
   generate: true
   assets:
-    # Segnali acustici dei timer della sessione (§7).
+    # Segnali acustici dei timer della sessione (§7) e il "plop" della
+    # goccia nella tab bar (services/feedback/).
     - assets/audio/
     # Catalogo dei provider e dei modelli selezionabili (Impostazioni AI, RF-08).
     - assets/ai/
