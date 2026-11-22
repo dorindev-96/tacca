@@ -74,7 +74,7 @@ Recurring pieces live in `lib/core/widgets/`: `AppScaffold` (page shell: header 
 
 Bottom sheets must open on the **root** navigator (`showAppSheet` does): the floating tab bar lives in the shell's `Stack`, so a sheet opened on the branch navigator renders underneath it.
 
-The tab bar's lime pill moves like a drop (`home_tab_bar.dart`) and it stays **one** shape for the whole trip — never one pill fading out while another fades in, which would put two limes on screen. It lands with a "plop" played through `UiSounds`. Any new sound goes through `services/feedback/` and claims the audio session from `AppAudioSession` before playing: on iOS the session is shared by the whole app, and a player that configures it on its own either breaks the timer beeps under the silent switch or stops the user's music.
+The tab bar's lime pill moves like a drop (`home_tab_bar.dart`) and it stays **one** shape for the whole trip — never one pill fading out while another fades in, which would put two limes on screen. It starts moving with a "plop" played through `UiSounds`, in the same frame as the animation (the system tap click is off, so a tap makes one sound, not two). Any new sound goes through `services/feedback/` and claims the audio session from `AppAudioSession` before playing: on iOS the session is shared by the whole app, and a player that configures it on its own either breaks the timer beeps under the silent switch or stops the user's music.
 
 **Strings.** Every user-facing string goes through the ARB files in `lib/l10n/`. Never hardcode text in a widget, not even temporarily.
 

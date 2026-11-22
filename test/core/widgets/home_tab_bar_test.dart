@@ -18,13 +18,13 @@ class _Host extends StatefulWidget {
   const _Host({
     this.initialIndex = 0,
     this.tabs = _tabs,
-    this.onDropLanded,
+    this.onDropStarted,
     this.onSelected,
   });
 
   final int initialIndex;
   final List<HomeTab> tabs;
-  final VoidCallback? onDropLanded;
+  final VoidCallback? onDropStarted;
   final ValueChanged<int>? onSelected;
 
   @override
@@ -41,7 +41,7 @@ class _HostState extends State<_Host> {
     return HomeTabBar(
       tabs: widget.tabs,
       currentIndex: index,
-      onDropLanded: widget.onDropLanded,
+      onDropStarted: widget.onDropStarted,
       onSelected: (value) {
         widget.onSelected?.call(value);
         select(value);
@@ -55,7 +55,7 @@ void main() {
     WidgetTester tester, {
     int initialIndex = 0,
     List<HomeTab> tabs = _tabs,
-    VoidCallback? onDropLanded,
+    VoidCallback? onDropStarted,
     ValueChanged<int>? onSelected,
     Brightness brightness = Brightness.light,
     bool disableAnimations = false,
@@ -64,7 +64,7 @@ void main() {
     Widget bar = _Host(
       initialIndex: initialIndex,
       tabs: tabs,
-      onDropLanded: onDropLanded,
+      onDropStarted: onDropStarted,
       onSelected: onSelected,
     );
     if (width != null) bar = SizedBox(width: width, child: bar);
@@ -300,42 +300,53 @@ void main() {
     expect(dropBounds(tester).height, closeTo(36, 0.01));
   });
 
-  testWidgets("l'arrivo si annuncia una volta sola, quando la goccia tocca "
-      'la nuova tab', (tester) async {
-    var landings = 0;
-    await pumpBar(tester, onDropLanded: () => landings++);
-    expect(landings, 0);
+  testWidgets('la partenza si annuncia una volta sola, nel fotogramma in cui '
+      'la goccia parte', (tester) async {
+    var starts = 0;
+    await pumpBar(tester, onDropStarted: () => starts++);
+    expect(starts, 0);
 
     await tester.tap(tab('Storico'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 60));
-    expect(landings, 0, reason: 'la goccia è ancora in viaggio');
-
-    await tester.pump(const Duration(milliseconds: 160));
-    expect(landings, 1);
+    expect(starts, 1, reason: 'il suono parte con la goccia, non dopo');
+    expect(tester.hasRunningAnimations, isTrue);
 
     await tester.pumpAndSettle();
-    expect(landings, 1);
+    expect(starts, 1);
 
     // Ri-toccare la tab attiva non muove niente.
     await tester.tap(tab('Storico'));
     await tester.pumpAndSettle();
-    expect(landings, 1);
+    expect(starts, 1);
+  });
+
+  testWidgets('il tocco non fa il click di sistema: il suono è solo il plop', (
+    tester,
+  ) async {
+    await pumpBar(tester);
+    final inkWells = tester.widgetList<InkWell>(
+      find.descendant(
+        of: find.byType(HomeTabBar),
+        matching: find.byType(InkWell),
+      ),
+    );
+    expect(inkWells, isNotEmpty);
+    expect(inkWells.every((w) => w.enableFeedback == false), isTrue);
   });
 
   testWidgets('con le animazioni disattivate dal sistema la pillola si '
       'sposta e basta', (tester) async {
-    var landings = 0;
+    var starts = 0;
     await pumpBar(
       tester,
       disableAnimations: true,
-      onDropLanded: () => landings++,
+      onDropStarted: () => starts++,
     );
 
     await tester.tap(tab('Impostazioni'));
     await tester.pump();
 
-    expect(landings, 1);
+    expect(starts, 1);
     expect(tester.hasRunningAnimations, isFalse);
     final drop = dropBounds(tester);
     expect(drop.height, closeTo(36, 0.01));

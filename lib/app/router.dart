@@ -320,7 +320,7 @@ class _HomeShellState extends State<_HomeShell> {
     // guarda quindi lo stato appena montati, oltre ad ascoltarne i cambi.
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeProposeResume());
     // Il plop della tab bar si carica adesso, non al primo tocco: lì
-    // arriverebbe a goccia già ferma.
+    // arriverebbe in ritardo sulla goccia.
     context.read<UiSounds>().prepare();
   }
 
@@ -356,9 +356,9 @@ class _HomeShellState extends State<_HomeShell> {
               child: HomeTabBar(
                 currentIndex: widget.navigationShell.currentIndex,
                 onSelected: _onDestinationSelected,
-                // Il suono è della goccia che arriva, non del dito che
-                // tocca: lo decide la barra quando.
-                onDropLanded: () => context.read<UiSounds>().drop(),
+                // Il suono parte con la goccia, nello stesso fotogramma:
+                // lo decide la barra quando.
+                onDropStarted: () => context.read<UiSounds>().drop(),
                 tabs: [
                   HomeTab(icon: AppIcons.noteAdd, label: l10n.navPlans),
                   HomeTab(icon: AppIcons.calendar, label: l10n.navHistory),

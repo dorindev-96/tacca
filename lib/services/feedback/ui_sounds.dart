@@ -13,7 +13,7 @@ abstract interface class UiSounds {
   /// Carica i suoni, perché il primo non arrivi in ritardo sul gesto.
   Future<void> prepare();
 
-  /// Il "plop" della goccia che arriva sulla destinazione scelta nella tab
+  /// Il "plop" della goccia che parte verso la destinazione scelta nella tab
   /// bar. Non propaga mai eccezioni: un suono mancato non è un errore.
   Future<void> drop();
 

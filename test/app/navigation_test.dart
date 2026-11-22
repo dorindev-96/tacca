@@ -183,7 +183,7 @@ void main() {
     );
   });
 
-  testWidgets('la goccia della tab bar fa plop quando arriva, una volta per '
+  testWidgets('la goccia della tab bar fa plop quando parte, una volta per '
       'cambio di destinazione', (tester) async {
     final sounds = RecordingUiSounds();
     await pumpApp(
@@ -198,8 +198,8 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('home-tab-Storico')));
     await tester.pump();
-    // Sul tocco la goccia è appena partita: il plop è dell'arrivo.
-    expect(sounds.drops, 0);
+    // Il plop parte insieme alla goccia, non a goccia arrivata.
+    expect(sounds.drops, 1);
     await tester.pumpAndSettle();
     expect(sounds.drops, 1);
 

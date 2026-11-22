@@ -46,7 +46,7 @@ class HomeTabBar extends StatefulWidget {
     required this.tabs,
     required this.currentIndex,
     required this.onSelected,
-    this.onDropLanded,
+    this.onDropStarted,
     super.key,
   });
 
@@ -54,11 +54,12 @@ class HomeTabBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onSelected;
 
-  /// Chiamata una volta per ogni cambio di destinazione, nel momento in cui
-  /// la goccia tocca la nuova tab: è l'aggancio del suono, che deve cadere
-  /// sull'arrivo e non sul tocco. Con le animazioni disattivate dal sistema
-  /// la goccia non viaggia e la chiamata è immediata.
-  final VoidCallback? onDropLanded;
+  /// Chiamata una volta per ogni cambio di destinazione, nel fotogramma in
+  /// cui la goccia parte: è l'aggancio del suono, che deve accompagnare il
+  /// movimento dall'inizio e non arrivare dopo. Con le animazioni
+  /// disattivate dal sistema la goccia non viaggia, e la chiamata arriva lo
+  /// stesso.
+  final VoidCallback? onDropStarted;
 
   static const double _width = 340;
 
@@ -76,9 +77,6 @@ class HomeTabBar extends StatefulWidget {
 
 class _HomeTabBarState extends State<HomeTabBar>
     with SingleTickerProviderStateMixin {
-  /// Punto dell'animazione in cui la testa ha raggiunto la destinazione.
-  static const double _landingPoint = 0.3;
-
   /// La testa: parte subito e arriva in un quarto della durata, con un filo
   /// di rimbalzo.
   static const Curve _headCurve = _SpringCurve(damping: 0.75, frequency: 14);
@@ -104,7 +102,7 @@ class _HomeTabBarState extends State<HomeTabBar>
     vsync: this,
     duration: HomeTabBar.dropDuration,
     value: 1,
-  )..addListener(_maybeLand);
+  );
 
   /// Quanto ogni tab era "attiva" (0–1) alla partenza dello spostamento in
   /// corso. Non è per forza uno 0/1 netto: un tocco a metà viaggio riparte
@@ -115,8 +113,6 @@ class _HomeTabBarState extends State<HomeTabBar>
   /// disegnato (che diventano la partenza del prossimo spostamento).
   _DropEdges? _edgesFrom;
   _DropEdges? _edgesDrawn;
-
-  bool _landed = true;
 
   List<double> _restAmounts(int index) => [
     for (var i = 0; i < widget.tabs.length; i++) i == index ? 1.0 : 0.0,
@@ -138,7 +134,6 @@ class _HomeTabBarState extends State<HomeTabBar>
       // Destinazioni diverse: nessun viaggio ha più senso, si riparte fermi.
       _amountsFrom = _restAmounts(widget.currentIndex);
       _edgesFrom = null;
-      _landed = true;
       _controller.value = 1;
       return;
     }
@@ -146,20 +141,13 @@ class _HomeTabBarState extends State<HomeTabBar>
 
     _amountsFrom = _amountsAt(_controller.value, oldWidget.currentIndex);
     _edgesFrom = _edgesDrawn;
-    _landed = false;
 
     if (MediaQuery.disableAnimationsOf(context)) {
       _controller.value = 1;
-      _maybeLand();
     } else {
       _controller.forward(from: 0);
     }
-  }
-
-  void _maybeLand() {
-    if (_landed || _controller.value < _landingPoint) return;
-    _landed = true;
-    widget.onDropLanded?.call();
+    widget.onDropStarted?.call();
   }
 
   @override
@@ -337,9 +325,12 @@ class _HomeTabBarState extends State<HomeTabBar>
               // Niente velo dei tocchi: il `Material` più vicino è quello
               // della shell, che disegna l'inchiostro *sotto* il fondo pieno
               // della barra. Sarebbe un'animazione a ogni tocco che nessuno
-              // vede; la risposta al tocco è la goccia che parte.
+              // vede; la risposta al tocco è la goccia che parte. Per la
+              // stessa ragione niente click di sistema: il suono del tocco è
+              // il plop, e due suoni per un gesto si sentono come un ritardo.
               child: InkWell(
                 onTap: () => widget.onSelected(i),
+                enableFeedback: false,
                 splashFactory: NoSplash.splashFactory,
                 highlightColor: Colors.transparent,
                 hoverColor: Colors.transparent,
