@@ -18,6 +18,7 @@ import 'package:tacca/services/backup/backup_format.dart';
 import 'package:tacca/services/backup/backup_service.dart';
 import 'package:tacca/services/clipboard/clipboard_service.dart';
 import 'package:tacca/services/feedback/session_feedback.dart';
+import 'package:tacca/services/feedback/ui_sounds.dart';
 import 'package:tacca/services/images/image_input.dart';
 import 'package:tacca/services/images/paged_image.dart';
 import 'package:tacca/services/images/ocr_service.dart';
@@ -204,6 +205,23 @@ class RecordingSessionFeedback implements SessionFeedback {
 
   @override
   Future<void> emit(TimerSignal signal) async => signals.add(signal);
+
+  @override
+  Future<void> dispose() async {}
+}
+
+/// Conta i suoni dell'interfaccia invece di farli sentire.
+class RecordingUiSounds implements UiSounds {
+  int prepareCount = 0;
+
+  /// Quanti "plop" della tab bar sono partiti.
+  int drops = 0;
+
+  @override
+  Future<void> prepare() async => prepareCount++;
+
+  @override
+  Future<void> drop() async => drops++;
 
   @override
   Future<void> dispose() async {}

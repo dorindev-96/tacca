@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:vibration/vibration.dart';
 
 import '../timer/timer_engine.dart';
+import 'app_audio_session.dart';
 
 /// Resa percepibile dei segnali del timer: suono + vibrazione (§7).
 ///
@@ -21,9 +22,13 @@ abstract interface class SessionFeedback {
 
 /// Implementazione reale su `audioplayers` + `vibration`.
 class PluginSessionFeedback implements SessionFeedback {
+  PluginSessionFeedback({required AppAudioSession audioSession})
+    : _audioSession = audioSession;
+
   static const _intervalAsset = 'audio/beep.wav';
   static const _finishedAsset = 'audio/beep_end.wav';
 
+  final AppAudioSession _audioSession;
   final AudioPlayer _player = AudioPlayer(playerId: 'workout-timer');
   bool _canVibrate = false;
 
@@ -31,20 +36,10 @@ class PluginSessionFeedback implements SessionFeedback {
   Future<void> prepare() async {
     try {
       // Categoria "playback": il beep si sente anche con l'interruttore
-      // silenzioso su iOS, e non interrompe la musica dell'utente.
-      await AudioPlayer.global.setAudioContext(
-        AudioContext(
-          iOS: AudioContextIOS(
-            category: AVAudioSessionCategory.playback,
-            options: const {AVAudioSessionOptions.mixWithOthers},
-          ),
-          android: const AudioContextAndroid(
-            contentType: AndroidContentType.sonification,
-            usageType: AndroidUsageType.assistanceSonification,
-            audioFocus: AndroidAudioFocus.gainTransientMayDuck,
-          ),
-        ),
-      );
+      // silenzioso su iOS, e non interrompe la musica dell'utente. Passa da
+      // [AppAudioSession] perché su iOS la sessione è una sola, e i suoni
+      // dell'interfaccia la vogliono diversa.
+      await _audioSession.claim(AudioRole.timerSignal);
       await _player.setReleaseMode(ReleaseMode.stop);
       _canVibrate = await Vibration.hasVibrator();
     } catch (error, stackTrace) {
@@ -60,6 +55,9 @@ class PluginSessionFeedback implements SessionFeedback {
     };
 
     try {
+      // Di norma è già sua da `prepare`: costa qualcosa solo se nel
+      // frattempo ha suonato l'interfaccia.
+      await _audioSession.claim(AudioRole.timerSignal);
       await _player.stop();
       await _player.play(AssetSource(asset));
     } catch (error, stackTrace) {
